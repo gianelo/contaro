@@ -8,7 +8,11 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}", "eslint-rules/**/*.test.ts"],
+    include: [
+      "src/**/*.test.{ts,tsx}",
+      "eslint-rules/**/*.test.ts",
+      "scripts/**/*.test.ts",
+    ],
     // Integration tests need a running Postgres; `pnpm test:db` runs them.
     exclude: [
       "node_modules/**",
