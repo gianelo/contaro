@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: contaro-pg
+    environment:
+      POSTGRES_USER: contaro
+      POSTGRES_PASSWORD: contaro
+      POSTGRES_DB: contaro
+    ports:
+      # 5434 so it does not collide with other local Postgres instances.
+      - "5434:5432"
+    volumes:
+      # postgres:18 expects the mount at /var/lib/postgresql, not .../data.
+      - contaro-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contaro -d contaro"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  contaro-pgdata:

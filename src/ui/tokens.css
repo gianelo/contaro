@@ -1,0 +1,122 @@
+/*
+ * The single place colour, type, spacing and radii are defined.
+ * Values are taken from the design canvas (design/*.dc.html).
+ *
+ * Each colour is declared once with light-dark(), so the two themes cannot
+ * drift apart. The theme follows the OS preference and can be forced with
+ * [data-theme="dark"] / [data-theme="light"], which flip color-scheme and so
+ * flip every light-dark() below with them.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Surfaces */
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#f2f2f7, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+
+  /* Text */
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+
+  /* Lines */
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+
+  /* Brand */
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+
+  /* Destructive. The canvas has no dark set for the status colours below;
+     these are the light hues lifted for contrast against a black ground. */
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+
+  /* Warning */
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+
+  /* Information */
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+
+  /* Scrim behind a bottom sheet */
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+
+  /* Type scale */
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
+    "Segoe UI", Roboto, sans-serif;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 17px;
+  --text-xl: 19px;
+  --text-2xl: 21px;
+  --text-3xl: 30px;
+  --text-title: 32px;
+  --text-amount: 52px;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Spacing */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 20px;
+  --space-10: 24px;
+
+  /* Radii */
+  --radius-sm: 9px;
+  --radius-md: 11px;
+  --radius-lg: 13px;
+  --radius-xl: 16px;
+  --radius-sheet: 22px;
+  --radius-pill: 999px;
+
+  /*
+   * The minimum touch size for anything a finger can hit. Applied in exactly
+   * one place: the .hitTarget class in hit-target.module.css.
+   */
+  --hit-target: 44px;
+
+  /* Shadows are not colours, so light-dark() cannot hold them. */
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --shadow-raised: none;
+    --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 60%);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --shadow-raised: none;
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 60%);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}

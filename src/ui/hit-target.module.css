@@ -1,0 +1,10 @@
+/*
+ * The one place the 44px minimum touch size is applied. Every interactive
+ * component composes this class; nothing else sets a touch size, so the rule
+ * has exactly one place to be wrong.
+ */
+.hitTarget {
+  min-height: var(--hit-target);
+  min-width: var(--hit-target);
+  box-sizing: border-box;
+}
