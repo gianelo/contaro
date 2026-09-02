@@ -1,5 +1,5 @@
 import { AppShell } from "@/ui/app-shell";
-import { Button } from "@/ui/button";
+import { ButtonLink } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { MainNavigation } from "./navigation";
 import { Account } from "./account";
@@ -20,7 +20,7 @@ export default function HomePage() {
         <Card>
           <h2 className={styles.emptyTitle}>{t("home.empty.title")}</h2>
           <p className={styles.emptyBody}>{t("home.empty.body")}</p>
-          <Button disabled>{t("home.empty.action")}</Button>
+          <ButtonLink href="/espacios/nuevo">{t("home.empty.action")}</ButtonLink>
         </Card>
       </div>
     </AppShell>

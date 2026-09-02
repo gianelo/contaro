@@ -4,7 +4,10 @@ import { useState } from "react";
 import { Button } from "@/ui/button";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { BottomSheet } from "@/ui/bottom-sheet";
+import { SelectField, TextField } from "@/ui/field";
+import { Notice } from "@/ui/notice";
 import { t } from "@/i18n";
+import { currencyLabel } from "@/i18n/currency";
 import styles from "./gallery.module.css";
 
 /**
@@ -36,6 +39,24 @@ export function Gallery() {
             {t("gallery.item.plain")}
           </GroupedListItem>
         </GroupedList>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.heading}>{t("gallery.fields")}</h2>
+        <TextField
+          name="gallery-name"
+          label={t("space.new.name")}
+          hint={t("space.new.name.hint")}
+        />
+        <SelectField
+          name="gallery-currency"
+          label={t("space.new.currency")}
+          choices={[
+            { value: "ARS", label: currencyLabel("ARS") },
+            { value: "USD", label: currencyLabel("USD") },
+          ]}
+        />
+        <Notice variant="warning">{t("space.new.currency.forever")}</Notice>
       </section>
 
       <section className={styles.section}>

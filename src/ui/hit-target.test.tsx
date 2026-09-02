@@ -4,6 +4,7 @@ import { Button } from "./button";
 import { GroupedList, GroupedListItem } from "./grouped-list";
 import { BottomSheet } from "./bottom-sheet";
 import { TabBar } from "./tab-bar";
+import { SelectField, TextField } from "./field";
 import { hitTarget } from "./hit-target";
 
 /**
@@ -63,3 +64,25 @@ describe("hit targets", () => {
     );
   });
 });
+
+describe("hit targets on form controls", () => {
+  it("a text field carries the hit target", () => {
+    render(<TextField name="name" label="Nombre" />);
+    expect(screen.getByRole("textbox", { name: "Nombre" })).toHaveClass(
+      hitTarget,
+    );
+  });
+
+  it("a picker carries the hit target", () => {
+    render(
+      <SelectField
+        name="currency"
+        label="Moneda"
+        choices={[{ value: "ARS", label: "Peso argentino (ARS)" }]}
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "Moneda" })).toHaveClass(
+      hitTarget,
+    );
+  });
+})

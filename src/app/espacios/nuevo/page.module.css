@@ -1,0 +1,5 @@
+.title {
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  padding: var(--space-4) 0 var(--space-10);
+}

@@ -1,7 +1,5 @@
+import type { ReadSession } from "@/auth/session";
 import type { Member } from "@/domain/identity/resolve-member";
-
-/** The Member a session claims to belong to, or no session at all. */
-export type ReadSession = () => Promise<{ memberId: string } | null>;
 
 export type FindMember = (id: string) => Promise<Member | null>;
 

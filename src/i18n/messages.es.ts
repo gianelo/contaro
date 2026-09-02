@@ -20,6 +20,7 @@ export const es = {
   "gallery.title": "Componentes",
   "gallery.buttons": "Botones",
   "gallery.list": "Lista agrupada",
+  "gallery.fields": "Campos",
   "gallery.sheet": "Hoja inferior",
   "gallery.sheet.open": "Abrir la hoja",
   "gallery.sheet.title": "Cerrar septiembre",
@@ -36,6 +37,30 @@ export const es = {
   "signin.error.unverified":
     "Esa cuenta de Google todavía no tiene el correo verificado. Verificalo con Google y volvé a intentar.",
   "signin.error.other": "No pudimos entrarte. Probá de nuevo.",
+
+  "space.new.title": "Nuevo espacio",
+  "space.new.name": "Nombre",
+  "space.new.name.hint": "Casa, Personal, Viaje\u2026",
+  "space.new.currency": "Moneda",
+  "space.new.currency.forever":
+    "La moneda no se puede cambiar nunca. Si te equivocás vas a tener que crear otro espacio y empezar de cero.",
+  "space.new.submit": "Crear el espacio",
+  "space.new.working": "Creando\u2026",
+  "space.new.error.name": "Ponele un nombre al espacio.",
+  "space.new.error.currency": "Elegí una moneda de la lista.",
+  "space.new.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
+  "space.new.error.failed": "No pudimos crear el espacio. Probá de nuevo.",
+
+  "space.month": "Este mes",
+  "space.month.spent": "Gastado",
+
+  "currency.ARS": "Peso argentino",
+  "currency.USD": "Dólar estadounidense",
+  "currency.EUR": "Euro",
+  "currency.UYU": "Peso uruguayo",
+  "currency.BRL": "Real brasileño",
+  "currency.CLP": "Peso chileno",
+  "currency.PYG": "Guaraní",
 
   "account.label": "Tu sesión",
   "account.signOut": "Salir",
