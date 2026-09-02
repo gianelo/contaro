@@ -8,6 +8,8 @@ next-env.d.ts
 .env
 .env.local
 
+.codegraph/
+
 coverage/
 test-results/
 playwright-report/
