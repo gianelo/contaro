@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+
+.env
+.env.local
+
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
