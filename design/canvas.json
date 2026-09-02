@@ -1,0 +1,105 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Cargar gasto",
+      "is_interactive": true
+    },
+    {
+      "file": "CargarGastoOscuro.dc.html",
+      "x": 0,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Cargar gasto · oscuro",
+      "is_interactive": true
+    },
+    {
+      "file": "Presupuesto.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 1080,
+      "title": "Presupuesto del mes"
+    },
+    {
+      "file": "Movimientos.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Movimientos"
+    },
+    {
+      "file": "Espacios.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Espacios"
+    },
+    {
+      "file": "CrearEspacio.dc.html",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Crear espacio"
+    },
+    {
+      "file": "SheetPagar.dc.html",
+      "x": 470,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Sheet · Marcar pagado"
+    },
+    {
+      "file": "SheetCopiar.dc.html",
+      "x": 940,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Sheet · Copiar presupuesto"
+    },
+    {
+      "file": "SheetArrastre.dc.html",
+      "x": 1410,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Sheet · Aprobar arrastre"
+    },
+    {
+      "file": "SheetCerrar.dc.html",
+      "x": 1880,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Sheet · Cerrar el mes"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "nota-pantallas",
+      "x": 0,
+      "y": -150,
+      "w": 620,
+      "text": "PANTALLAS DEL DÍA 1\nCargar gasto tiene controles vivos: tocá el teclado y las categorías.\nLas otras cuatro son mockups para mirar y ajustar."
+    },
+    {
+      "id": "nota-sheets",
+      "x": 0,
+      "y": 1110,
+      "w": 440,
+      "text": "MODO OSCURO + CONFIRMACIONES\nLa primera es la misma pantalla de cargar gasto, también viva, con la paleta oscura.\nCerrar el mes es la única confirmación irreversible: por eso va en rojo."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

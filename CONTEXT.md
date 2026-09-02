@@ -1,0 +1,62 @@
+# contaro
+
+A personal finance tool for tracking expenses and budgets, used by one person alone or by a couple pooling their money.
+
+## Language
+
+**Space**:
+A container holding members, a single currency, its movements and its budgets. A personal Space has one member; a couple's Space has two.
+_Avoid_: Wallet, Group, Account, Cartera, Grupo, Cuenta
+
+**Member**:
+A person with access to a Space. Members are added by email invitation.
+_Avoid_: User, Partner, Participant
+
+**Movement**:
+A single entry of money leaving or entering a Space. An expense and an income are the two kinds of Movement.
+_Avoid_: Transaction, Entry, Record
+
+**Recorded by**:
+The Member who created a Movement. Set automatically from the signed-in Member and never changed afterwards; it exists to answer "who typed this in".
+_Avoid_: Author, Creator, Owner
+
+**Attributed to**:
+The Member whose money a Movement actually is, defaulting to the one recording it and changeable at entry time. It is what reports read to break down who spent and who earned, and it is empty on a Carry-over.
+_Avoid_: Owner, Belongs to, Payer
+
+**Origin**:
+Where a Movement came from: a Member, or the Carry-over of a named month. A report about Members reads only Movements whose origin is a Member.
+_Avoid_: Source, Kind, Type
+
+**Space currency**:
+The single currency a Space is denominated in, chosen when the Space is created and never changed afterwards. Every Movement and every report in that Space uses it.
+_Avoid_: Base currency, Default currency
+
+**Category**:
+The bucket a Movement is classified under, such as food, rent or leisure. Categories come from a global catalogue that every Space sees, which a Space can extend with its own; a Category may hold subcategories.
+
+**Budget**:
+The plan of expenses a Space expects to make in a given month, made up of Budget items. It stays editable throughout its month, and real spending is measured against it; it never blocks a Movement from being recorded.
+_Avoid_: Limit, Cap, Allowance
+
+**Budget item**:
+One expected expense inside a Budget, carrying its Category and amount. Every item is either fixed or variable.
+_Avoid_: Line, Entry, Row
+
+**Fixed item**:
+A Budget item whose amount and due date are known, such as rent or a subscription. Marking it paid is what creates its Movement.
+
+**Variable item**:
+A Budget item that sets an expected amount for its Category, such as food or leisure. Movements recorded in that Category count against it, and it is never marked paid.
+
+**Pace**:
+How much of a Budget's variable items a Space would have spent by today, were spending spread evenly across the month. Fixed items are excluded: they fall due on their own date rather than evenly, so measuring them against the calendar compares unlike things.
+_Avoid_: Rhythm, Burn rate, Expected spend
+
+**Carry-over**:
+The unspent part of a month's Budget. At close the Members approve it, and it is recorded as income in the following month, attributed to no Member.
+_Avoid_: Leftover, Rollover, Surplus
+
+**Monthly close**:
+The point, triggered by hand once a Member decides the month is complete, at which its Budget and Movements become permanently immutable: nothing in a closed month can be edited, and no Movement can be added to it.
+_Avoid_: Lock, Freeze, Cutoff
