@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "pnpm db:up && pnpm db:migrate && playwright test",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
@@ -23,6 +23,7 @@
   "dependencies": {
     "drizzle-orm": "0.45.2",
     "next": "16.3.4",
+    "next-auth": "5.0.0-beta.32",
     "postgres": "3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8"

@@ -14,6 +14,20 @@ pnpm db:migrate
 pnpm dev                       # http://localhost:3000
 ```
 
+Sign-in needs three more variables in `.env.local`:
+
+```bash
+AUTH_SECRET=                   # pnpm dlx auth secret
+AUTH_GOOGLE_ID=
+AUTH_GOOGLE_SECRET=
+```
+
+The Google pair comes from an OAuth 2.0 client in the Google Cloud console with
+`http://localhost:3000/api/auth/callback/google` as an authorised redirect URI.
+Anywhere other than Vercel, also set `AUTH_TRUST_HOST=true` (ADR-0006). The
+test suites need none of this: `pnpm test:e2e` signs its own session cookies
+and never reaches Google.
+
 Playwright drives WebKit on a phone viewport, so install it once:
 
 ```bash
@@ -28,7 +42,7 @@ pnpm exec playwright install webkit
 | `pnpm lint` | ESLint, including the domain boundary |
 | `pnpm test` | Unit and component tests (no database needed) |
 | `pnpm test:db` | Integration tests against a real Postgres |
-| `pnpm test:e2e` | Playwright, mobile WebKit, against a production build |
+| `pnpm test:e2e` | Playwright, mobile WebKit, a production build and a real Postgres (it starts one) |
 | `pnpm verify` | typecheck + lint + unit tests |
 | `pnpm verify:all` | everything above |
 
@@ -37,10 +51,12 @@ pnpm exec playwright install webkit
 ```
 src/
 ├── app/        Next.js App Router: routes, layout, and /ui (component gallery)
+├── auth/       Auth.js: the Google handshake, and only that (ADR-0006)
 ├── domain/     The rules. No framework imports (ADR-0005, enforced by lint)
 ├── db/         Drizzle schema, connection and migrations
 ├── i18n/       The Spanish message catalogue and the translator
-└── ui/         Design tokens and the base components
+├── ui/         Design tokens and the base components
+└── proxy.ts    Puts every page behind a session
 eslint-rules/   The domain boundary rule and its tests
 e2e/            Playwright specs
 ```
@@ -69,6 +85,26 @@ class in `src/ui/hit-target.module.css`, and it is proved three ways:
 stylesheet setting its own size, and `e2e/hit-targets.spec.ts` measures real
 geometry in WebKit. `/ui` renders every base component so the browser has
 something to measure.
+
+## Sign-in
+
+Auth.js runs the Google handshake and signs a JWT session cookie; who that
+person is stays ours. `resolveMember` in `src/domain/identity/` decides whether
+an identity is a new Member or an existing one, and refuses one it cannot
+place; `src/db/members.ts` only fetches and writes. See ADR-0006.
+
+`src/proxy.ts` puts every page behind a session and sends a signed-out visitor
+to `/ingresar`. `/api` is outside it on purpose, so a route answers 401 itself
+rather than redirecting a fetch to HTML.
+
+`src/app/api/me/` is the seam that proves a session resolves to its Member, and
+it is proved twice over. `handler.ts` takes both the session and the lookup as
+arguments, so every answer — no session, a session naming a Member, a session
+naming one that is gone — is driven without a server; `e2e/sign-in.spec.ts`
+then seeds a real Member, mints the cookie a Google handshake would have
+produced, and drives the whole chain against the running app. A Google
+handshake itself cannot happen in a test, so `e2e/session.ts` starts where one
+would have finished.
 
 All interface copy resolves through `src/i18n/`, with Spanish as the only
 shipped language. Navigation is a slot on `<AppShell>` — today a tab bar, and

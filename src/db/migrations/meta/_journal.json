@@ -8,6 +8,13 @@
       "when": 1788362349539,
       "tag": "0000_enable_pgcrypto",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788365710548,
+      "tag": "0001_create_members",
+      "breakpoints": true
     }
   ]
 }

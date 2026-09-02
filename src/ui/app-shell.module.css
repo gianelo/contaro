@@ -16,3 +16,7 @@
   bottom: 0;
   flex-shrink: 0;
 }
+
+.account {
+  flex-shrink: 0;
+}
