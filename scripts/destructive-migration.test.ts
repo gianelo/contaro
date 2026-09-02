@@ -40,6 +40,20 @@ describe("destructiveChanges", () => {
     ).toEqual(["ADD COLUMN NOT NULL without DEFAULT"]);
   });
 
+  it("ignores a destructive change that is only quoted as a value", () => {
+    expect(
+      destructiveChanges(`INSERT INTO "notes" ("body") VALUES ('DROP TABLE spaces');`),
+    ).toEqual([]);
+  });
+
+  it("does not let a -- inside a string literal swallow the rest of the line", () => {
+    expect(
+      destructiveChanges(
+        `INSERT INTO "notes" ("body") VALUES ('a--b'); ALTER TABLE "spaces" DROP COLUMN "nickname";`,
+      ),
+    ).toEqual(["DROP COLUMN"]);
+  });
+
   it("ignores a destructive change that is only mentioned in a comment", () => {
     expect(
       destructiveChanges(`

@@ -1,8 +1,9 @@
 import { defineConfig } from "vitest/config";
 import { config } from "dotenv";
 
-// Two lines, inline in both configs on purpose: importing a shared .ts module
-// from a Vite/drizzle config trips their native config loaders.
+// dotenv is loaded inline here rather than through a shared helper: a module
+// with an import-time side effect trips this loader. A pure import is fine —
+// drizzle.config.ts imports one.
 config({ path: ".env.local", quiet: true });
 config({ path: ".env", quiet: true });
 

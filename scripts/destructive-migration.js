@@ -1,10 +1,15 @@
-/** The two shapes ADR-0008 forbids outright, each named as the report names it. */
+/**
+ * The three shapes ADR-0008 forbids, each named as the report names it.
+ *
+ * One table rather than two rules and a special case: the last one cannot be a
+ * plain pattern, because `NOT NULL` and `DEFAULT` have to be weighed against
+ * each other within a single statement.
+ */
 const FORBIDDEN = [
-  { name: "DROP TABLE", pattern: /\bDROP\s+TABLE\b/i },
-  { name: "DROP COLUMN", pattern: /\bDROP\s+COLUMN\b/i },
+  { name: "DROP TABLE", found: (sql) => /\bDROP\s+TABLE\b/i.test(sql) },
+  { name: "DROP COLUMN", found: (sql) => /\bDROP\s+COLUMN\b/i.test(sql) },
+  { name: "ADD COLUMN NOT NULL without DEFAULT", found: addsRequiredColumnWithoutDefault },
 ];
-
-const REQUIRED_COLUMN = "ADD COLUMN NOT NULL without DEFAULT";
 
 /**
  * Reads a migration file and reports the changes ADR-0008 forbids.
@@ -13,17 +18,13 @@ const REQUIRED_COLUMN = "ADD COLUMN NOT NULL without DEFAULT";
  * @returns {string[]} one entry per destructive change, empty when there is none
  */
 export function destructiveChanges(sql) {
-  sql = withoutComments(sql);
-  const found = FORBIDDEN.filter(({ pattern }) => pattern.test(sql)).map(
-    ({ name }) => name,
-  );
-  if (addsRequiredColumnWithoutDefault(sql)) found.push(REQUIRED_COLUMN);
-  return found;
+  const executable = onlyExecutable(sql);
+  return FORBIDDEN.filter(({ found }) => found(executable)).map(({ name }) => name);
 }
 
 /**
- * `NOT NULL` and `DEFAULT` are matched per statement, not per file: a file that
- * adds one column with a default and another without still loses the rows.
+ * A file that adds one column with a default and another without still loses
+ * the rows, so the two words are weighed per statement rather than per file.
  *
  * @param {string} sql
  * @returns {boolean}
@@ -40,15 +41,71 @@ function addsRequiredColumnWithoutDefault(sql) {
 }
 
 /**
- * Drops `--` line comments and `/* *\/` blocks, so a destructive statement that
- * someone only wrote about does not fail the build. It also disposes of the
- * `--> statement-breakpoint` markers drizzle-kit writes between statements.
+ * Blanks out everything Postgres would not execute as SQL — comments, string
+ * literals and quoted identifiers — so that only statements are matched
+ * against.
+ *
+ * A pass rather than a chain of `.replace()` calls, because the constructs
+ * hide each other: `--` inside a string literal is not a comment, and if it is
+ * treated as one it swallows the rest of the line, which in a check like this
+ * one means silently missing a real DROP.
+ *
+ * Dollar-quoted bodies (`$$ ... $$`) are deliberately left alone. What is
+ * inside one is a function that really runs, so a DROP written there is a DROP.
  *
  * @param {string} sql
- * @returns {string}
+ * @returns {string} the same text with every non-executable run replaced by spaces
  */
-function withoutComments(sql) {
-  return sql.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+function onlyExecutable(sql) {
+  let out = "";
+  let i = 0;
+
+  while (i < sql.length) {
+    const rest = sql.slice(i);
+
+    if (rest.startsWith("--")) {
+      const end = sql.indexOf("\n", i);
+      i = end === -1 ? sql.length : end;
+      out += " ";
+    } else if (rest.startsWith("/*")) {
+      const end = sql.indexOf("*/", i + 2);
+      i = end === -1 ? sql.length : end + 2;
+      out += " ";
+    } else if (sql[i] === "'" || sql[i] === '"') {
+      i = endOfQuoted(sql, i);
+      out += " ";
+    } else {
+      out += sql[i];
+      i += 1;
+    }
+  }
+
+  return out;
+}
+
+/**
+ * The index just past the quoted run starting at `start`. Postgres escapes a
+ * quote by doubling it, so `'it''s'` is one literal and not two.
+ *
+ * @param {string} sql
+ * @param {number} start index of the opening quote
+ * @returns {number}
+ */
+function endOfQuoted(sql, start) {
+  const quote = sql[start];
+  let i = start + 1;
+
+  while (i < sql.length) {
+    if (sql[i] !== quote) {
+      i += 1;
+    } else if (sql[i + 1] === quote) {
+      i += 2;
+    } else {
+      return i + 1;
+    }
+  }
+
+  return sql.length;
 }
 
 /**

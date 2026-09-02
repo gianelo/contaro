@@ -6,6 +6,10 @@ name: migrate
 # It does not wait for `verify`. Nothing reaches `main` except through a green
 # `verify:all`, and expand/contract is what makes a schema that is briefly
 # ahead of the code harmless.
+#
+# `dev` is ungated on purpose: it is the branch work happens on, and a preview
+# whose schema lags the code deployed against it is the breakage ADR-0009 says
+# to avoid. The check below still runs, so an ungated push cannot destroy.
 on:
   push:
     branches: [main, dev]
@@ -42,8 +46,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Already green on the merge, and run again here: this is the last thing
-      # standing between a DROP COLUMN and a real database.
+      # Already green on the merge, and run again here because a push to `dev`
+      # never passed through one.
       - run: pnpm check:migrations
 
       - run: pnpm db:migrate

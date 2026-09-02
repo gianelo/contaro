@@ -43,7 +43,8 @@ pnpm exec playwright install webkit
 | `pnpm test` | Unit and component tests (no database needed) |
 | `pnpm test:db` | Integration tests against a real Postgres |
 | `pnpm test:e2e` | Playwright, mobile WebKit, a production build and a real Postgres (it starts one) |
-| `pnpm verify` | typecheck + lint + unit tests |
+| `pnpm check:migrations` | Refuses a migration that destroys without saying so (ADR-0008) |
+| `pnpm verify` | typecheck + lint + the migration check + unit tests |
 | `pnpm verify:all` | everything above |
 
 ## Layout
@@ -60,7 +61,7 @@ src/
 eslint-rules/   The domain boundary rule and its tests
 scripts/        The migration safety check (ADR-0008) and its tests
 e2e/            Playwright specs
-.github/        verify:all on every push, migrations on main and dev
+.github/        verify:all on pull requests and pushes, migrations on main and dev
 ```
 
 ## Deployment
