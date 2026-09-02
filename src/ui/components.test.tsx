@@ -93,13 +93,25 @@ describe("AppShell", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders without navigation at all", () => {
+  it("renders the account through a slot too, whatever it holds", () => {
+    render(
+      <AppShell account={<section aria-label="Otra sesión" />}>
+        <p>Contenido</p>
+      </AppShell>,
+    );
+    expect(
+      screen.getByRole("region", { name: "Otra sesión" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders without navigation or account at all", () => {
     render(
       <AppShell>
         <p>Contenido</p>
       </AppShell>,
     );
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(screen.queryByRole("region")).not.toBeInTheDocument();
     expect(screen.getByText("Contenido")).toBeInTheDocument();
   });
 });

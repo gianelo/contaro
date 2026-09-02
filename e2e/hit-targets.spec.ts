@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 
 const MIN = 44;
 
@@ -35,7 +35,7 @@ test("every interactive element on the home screen is at least 44px", async ({
   await page.goto("/");
   const { undersized, count } = await undersizedTargets(page);
 
-  expect(count).toBe(4); // three tabs and the empty-state button
+  expect(count).toBe(5); // three tabs, the way out, and the empty-state button
   expect(undersized).toEqual([]);
 });
 

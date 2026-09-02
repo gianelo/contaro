@@ -29,6 +29,17 @@ export const es = {
   "gallery.destructive": "Cerrar septiembre",
   "gallery.plain": "Todavía no",
 
+  "signin.title": "Entrar a contaro",
+  "signin.body":
+    "Entrás con tu cuenta de Google. No guardamos ninguna contraseña tuya.",
+  "signin.action": "Entrar con Google",
+  "signin.error.unverified":
+    "Esa cuenta de Google todavía no tiene el correo verificado. Verificalo con Google y volvé a intentar.",
+  "signin.error.other": "No pudimos entrarte. Probá de nuevo.",
+
+  "account.label": "Tu sesión",
+  "account.signOut": "Salir",
+
   "action.cancel": "Cancelar",
   "action.save": "Guardar",
   "action.dismiss": "Descartar",

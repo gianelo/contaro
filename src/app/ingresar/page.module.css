@@ -1,0 +1,30 @@
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-8);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.6px;
+}
+
+.body {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.error {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-destructive-text);
+}
