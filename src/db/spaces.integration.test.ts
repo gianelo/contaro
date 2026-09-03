@@ -1,0 +1,127 @@
+// @vitest-environment node
+import { afterAll, expect, it } from "vitest";
+import { createDatabase, databaseUrl } from "./connection";
+import { memberFromGoogle } from "./members";
+import { createSpaceForMember, findSpaceForMember } from "./spaces";
+
+// Run with `pnpm test:db`, which starts Postgres first.
+const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
+
+afterAll(async () => {
+  await sql.end();
+});
+
+/** The database outlives a run, so every test invents its own Member. */
+let next = 0;
+const aMember = async (name: string) =>
+  memberFromGoogle(db, {
+    subject: `spaces-${process.pid}-${Date.now()}-${next++}`,
+    email: `${name.toLowerCase()}@example.com`,
+    name,
+  });
+
+it("creates a Space with the name and currency it was given", async () => {
+  const ana = await aMember("Ana");
+
+  const space = await createSpaceForMember(db, ana.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  expect(space).toMatchObject({ name: "Casa", currency: "ARS" });
+  expect(space.id).toEqual(expect.any(String));
+});
+
+it("puts the creator inside the Space it just made", async () => {
+  const beto = await aMember("Beto");
+
+  const space = await createSpaceForMember(db, beto.id, {
+    name: "Personal",
+    currency: "ARS",
+  });
+
+  await expect(findSpaceForMember(db, space.id, beto.id)).resolves.toEqual(
+    space,
+  );
+});
+
+it("does not hand a Space to someone who is not in it", async () => {
+  const cami = await aMember("Cami");
+  const dani = await aMember("Dani");
+  const space = await createSpaceForMember(db, cami.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  await expect(findSpaceForMember(db, space.id, dani.id)).resolves.toBeNull();
+});
+
+it("does not resolve an id no Space has", async () => {
+  const eli = await aMember("Eli");
+
+  await expect(
+    findSpaceForMember(db, "3f2b0c1e-0000-4000-8000-00000000dead", eli.id),
+  ).resolves.toBeNull();
+});
+
+it("answers an identifier that is not a uuid at all, rather than failing", async () => {
+  const fede = await aMember("Fede");
+
+  await expect(
+    findSpaceForMember(db, "nuevo", fede.id),
+  ).resolves.toBeNull();
+});
+
+it("refuses to create a Space in a currency contaro does not offer", async () => {
+  const gaby = await aMember("Gaby");
+
+  await expect(
+    createSpaceForMember(db, gaby.id, { name: "Casa", currency: "XYZ" }),
+  ).rejects.toThrow();
+});
+
+it("writes nothing at all when the Space is refused", async () => {
+  const hugo = await aMember("Hugo");
+
+  await createSpaceForMember(db, hugo.id, { name: "Casa", currency: "ARS" });
+  await expect(
+    createSpaceForMember(db, hugo.id, { name: "  ", currency: "ARS" }),
+  ).rejects.toThrow();
+
+  const rows = await sql`
+    SELECT count(*)::int AS count FROM space_members WHERE member_id = ${hugo.id}
+  `;
+  expect(rows[0]?.count).toBe(1);
+});
+
+it("guards the currency without freezing the rest of the Space", async () => {
+  const ines = await aMember("Ines");
+  const space = await createSpaceForMember(db, ines.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  // A trigger that refused every UPDATE would pass the test below and break
+  // the rename #5 needs, so the guard is measured against what it must let by.
+  await sql`UPDATE spaces SET name = 'Casa nueva' WHERE id = ${space.id}`;
+
+  await expect(findSpaceForMember(db, space.id, ines.id)).resolves.toMatchObject(
+    { name: "Casa nueva" },
+  );
+});
+
+it("refuses to change a Space's currency, even from outside the domain", async () => {
+  const juan = await aMember("Juan");
+  const space = await createSpaceForMember(db, juan.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  await expect(
+    sql`UPDATE spaces SET currency = 'USD' WHERE id = ${space.id}`,
+  ).rejects.toThrow(/never be changed/i);
+
+  await expect(findSpaceForMember(db, space.id, juan.id)).resolves.toMatchObject(
+    { currency: "ARS" },
+  );
+});

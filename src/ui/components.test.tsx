@@ -5,6 +5,8 @@ import { Button } from "./button";
 import { GroupedList, GroupedListItem } from "./grouped-list";
 import { BottomSheet } from "./bottom-sheet";
 import { AppShell } from "./app-shell";
+import { SelectField, TextField } from "./field";
+import { Notice } from "./notice";
 
 describe("Button", () => {
   it("calls its handler", async () => {
@@ -113,5 +115,69 @@ describe("AppShell", () => {
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     expect(screen.queryByRole("region")).not.toBeInTheDocument();
     expect(screen.getByText("Contenido")).toBeInTheDocument();
+  });
+});
+
+describe("TextField", () => {
+  it("ties its label to its control", async () => {
+    render(<TextField name="name" label="Nombre" />);
+
+    await userEvent.type(screen.getByLabelText("Nombre"), "Casa");
+
+    expect(screen.getByLabelText("Nombre")).toHaveValue("Casa");
+  });
+
+  it("reads its hint out with the control, rather than leaving it decorative", () => {
+    render(<TextField name="name" label="Nombre" hint="Casa, Personal" />);
+
+    expect(screen.getByRole("textbox", { name: "Nombre" })).toHaveAccessibleDescription(
+      "Casa, Personal",
+    );
+  });
+});
+
+describe("SelectField", () => {
+  it("offers exactly the choices it was given", () => {
+    render(
+      <SelectField
+        name="currency"
+        label="Moneda"
+        choices={[
+          { value: "ARS", label: "Peso argentino (ARS)" },
+          { value: "USD", label: "Dólar estadounidense (USD)" },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["Peso argentino (ARS)", "Dólar estadounidense (USD)"]);
+  });
+
+  it("starts on the choice it was told to start on", () => {
+    render(
+      <SelectField
+        name="currency"
+        label="Moneda"
+        defaultValue="USD"
+        choices={[
+          { value: "ARS", label: "Peso argentino (ARS)" },
+          { value: "USD", label: "Dólar estadounidense (USD)" },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("combobox", { name: "Moneda" })).toHaveValue("USD");
+  });
+});
+
+describe("Notice", () => {
+  it("is a note on the screen, not an alert about something that happened", () => {
+    render(<Notice variant="warning">La moneda no se puede cambiar.</Notice>);
+
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "La moneda no se puede cambiar.",
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

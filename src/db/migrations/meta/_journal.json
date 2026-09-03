@@ -15,6 +15,13 @@
       "when": 1788365710548,
       "tag": "0001_create_members",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788368388321,
+      "tag": "0002_create_spaces",
+      "breakpoints": true
     }
   ]
 }

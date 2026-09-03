@@ -48,8 +48,8 @@ test("every base component is at least 44px, sheet included", async ({
 
   const { undersized, count } = await undersizedTargets(page);
 
-  // Four buttons, an actionable list row, the scrim, and the two sheet
-  // actions. If a component stops rendering, this count catches it.
-  expect(count).toBe(8);
+  // Four buttons, an actionable list row, a text field, a picker, the scrim,
+  // and the two sheet actions. If a component stops rendering, this catches it.
+  expect(count).toBe(10);
   expect(undersized).toEqual([]);
 });

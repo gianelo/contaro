@@ -1,0 +1,40 @@
+name: verify
+
+# This is what protects `main`. ADR-0008: because the migration Action and the
+# Vercel deploy run in parallel, CI cannot gate the deploy — only the merge.
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-all:
+    name: verify:all
+    runs-on: ubuntu-latest
+    env:
+      # The Postgres `pnpm db:up` starts, from docker-compose.yml. CI never
+      # reaches Neon: production and preview data stay where they are.
+      DATABASE_URL: postgres://contaro:contaro@localhost:5434/contaro
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The e2e project drives a phone viewport, so WebKit is the browser.
+      - run: pnpm exec playwright install --with-deps webkit
+
+      # typecheck, lint, the migration check, unit, integration and e2e.
+      # `test:db` and `test:e2e` start their own Postgres through docker
+      # compose, which the runner has.
+      - run: pnpm verify:all

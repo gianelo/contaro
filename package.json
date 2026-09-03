@@ -16,7 +16,8 @@
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test",
+    "check:migrations": "node scripts/check-migrations.js",
+    "verify": "pnpm typecheck && pnpm lint && pnpm check:migrations && pnpm test",
     "test:db": "pnpm db:up && pnpm db:migrate && vitest run --config vitest.integration.config.ts",
     "verify:all": "pnpm verify && pnpm test:db && pnpm test:e2e"
   },

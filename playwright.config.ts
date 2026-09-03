@@ -3,8 +3,9 @@ import { config as loadEnv } from "dotenv";
 import { authSecret } from "./e2e/secret";
 
 // The seam tests seed a Member, so the run needs the same DATABASE_URL the
-// server does. Inline for the same reason the vitest configs are: importing a
-// shared .ts module from a native config loader trips it.
+// server does. Inline for the same reason the vitest configs are: a module
+// with an import-time side effect trips this loader. A pure import is fine —
+// this file already imports one from ./e2e/secret.
 loadEnv({ path: ".env.local", quiet: true });
 loadEnv({ path: ".env", quiet: true });
 

@@ -43,7 +43,8 @@ pnpm exec playwright install webkit
 | `pnpm test` | Unit and component tests (no database needed) |
 | `pnpm test:db` | Integration tests against a real Postgres |
 | `pnpm test:e2e` | Playwright, mobile WebKit, a production build and a real Postgres (it starts one) |
-| `pnpm verify` | typecheck + lint + unit tests |
+| `pnpm check:migrations` | Refuses a migration that destroys without saying so (ADR-0008) |
+| `pnpm verify` | typecheck + lint + the migration check + unit tests |
 | `pnpm verify:all` | everything above |
 
 ## Layout
@@ -58,8 +59,43 @@ src/
 ├── ui/         Design tokens and the base components
 └── proxy.ts    Puts every page behind a session
 eslint-rules/   The domain boundary rule and its tests
+scripts/        The migration safety check (ADR-0008) and its tests
 e2e/            Playwright specs
+.github/        verify:all on pull requests and pushes, migrations on main and dev
 ```
+
+## Deployment
+
+`main` serves https://contaro.gianbarboza.com and `dev` serves
+https://dev.contaro.gianbarboza.com, each against its own Neon branch. The
+reasoning is in ADR-0008 (migrations run in CI, and never destroy) and ADR-0009
+(a preview never sees production data).
+
+CI cannot gate the deploy, because the migration Action and the Vercel deploy
+run in parallel — so it gates the merge instead, and nothing reaches `main`
+without a green `verify:all`. What makes the gap between them harmless is
+expand/contract, and `pnpm check:migrations` is what enforces it: a migration
+containing `DROP TABLE`, `DROP COLUMN`, or an `ADD COLUMN … NOT NULL` with no
+default fails the build. A loss that is deliberate says so, and says why:
+
+```sql
+-- deliberate-loss: nothing has read spaces.nickname since #31.
+```
+
+| Variable | Set in | What it is |
+| --- | --- | --- |
+| `DATABASE_URL` | Vercel, per environment | Neon's **pooled** endpoint — what the running app uses |
+| `DATABASE_URL_UNPOOLED` | GitHub environment `production` / `preview` | Neon's **direct** endpoint — what `drizzle-kit` migrates through |
+| `AUTH_SECRET` | Vercel, per environment | Its own value in each; a preview must not be able to mint a production session |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Vercel | One OAuth client, with a redirect URI per host |
+
+`AUTH_TRUST_HOST` stays unset on Vercel: Auth.js infers it from `VERCEL=1`.
+Anywhere else it is needed (ADR-0006).
+
+postgres.js needs no `prepare: false` against Neon's pooled endpoint. Neon runs
+PgBouncer 1.22+ with `max_prepared_statements` set, which supports the
+protocol-level prepared statements postgres.js uses; only SQL-level `PREPARE`
+is unavailable, and nothing here writes one.
 
 ## The domain boundary
 

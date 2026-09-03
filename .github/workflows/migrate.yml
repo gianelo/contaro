@@ -1,0 +1,53 @@
+name: migrate
+
+# ADR-0008: a GitHub Action applies migrations — not the Vercel build, which
+# runs deployments concurrently and holds no lock, and not a person's hands.
+#
+# It does not wait for `verify`. Nothing reaches `main` except through a green
+# `verify:all`, and expand/contract is what makes a schema that is briefly
+# ahead of the code harmless.
+#
+# `dev` is ungated on purpose: it is the branch work happens on, and a preview
+# whose schema lags the code deployed against it is the breakage ADR-0009 says
+# to avoid. The check below still runs, so an ungated push cannot destroy.
+on:
+  push:
+    branches: [main, dev]
+
+# The lock the Vercel build never had: two pushes to the same branch migrate
+# one after the other, and the second is not cancelled half way through.
+concurrency:
+  group: migrate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    # `main` migrates the production Neon branch and `dev` the preview one
+    # (ADR-0009). Each environment holds its own DATABASE_URL_UNPOOLED, so
+    # neither branch can be pointed at the other's rows by accident.
+    environment: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+
+    env:
+      # Neon's direct endpoint. `migrationUrl` in src/db/migration-url.ts
+      # refuses a pooled one outright.
+      DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Already green on the merge, and run again here because a push to `dev`
+      # never passed through one.
+      - run: pnpm check:migrations
+
+      - run: pnpm db:migrate
