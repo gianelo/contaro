@@ -43,6 +43,13 @@
       "when": 1788450525048,
       "tag": "0005_record_income",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788476906187,
+      "tag": "0006_invite_a_second_member",
+      "breakpoints": true
     }
   ]
 }

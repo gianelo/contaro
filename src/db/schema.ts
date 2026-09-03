@@ -8,6 +8,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
@@ -28,7 +29,9 @@ import {
  *
  * `googleSubject` is Google's `sub` claim, stable for the life of the account
  * and never reused. It is what a Member is looked up by; the email address is
- * carried for display and for the invitations in #5, and can change.
+ * carried for display and is what an Invitation is addressed to (#9). It can
+ * change, which is why every comparison against one goes through
+ * `normaliseEmail` rather than trusting the string Google last handed back.
  */
 export const members = pgTable("members", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -62,8 +65,10 @@ export const spaces = pgTable("spaces", {
  * Who is in a Space. A Member belongs to many Spaces and a Space holds one or
  * two Members, so membership is its own table rather than a column on either.
  *
- * The pair is the primary key: the same Member cannot be in the same Space
- * twice, and the invitation in #9 can lean on that instead of checking first.
+ * The pair is the primary key, so the same Member cannot be in the same Space
+ * twice. How many Members one holds is migration 0006's trigger: two, counted
+ * with the Space's row locked so that two acceptances landing together cannot
+ * each see room for one more (ADR-0017).
  */
 export const spaceMembers = pgTable(
   "space_members",
@@ -79,6 +84,75 @@ export const spaceMembers = pgTable(
       .defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.spaceId, table.memberId] })],
+);
+
+/**
+ * The offer of a Space's second seat, made to an email address (#9).
+ *
+ * An address and not a Member id, because the whole point is that the person
+ * may not exist here yet: an address is the only name a stranger has, and
+ * "with or without ever having used contaro" is what this table buys.
+ *
+ * `status` is text with a check for the reason `movements.direction` is: the
+ * set of words belongs to the domain (`isInvitationStatus`), not to a Postgres
+ * type. It is four words and not a row that disappears, because "she said no"
+ * and "he took it back" are two different things that happened.
+ *
+ * `invited_by` does not cascade from `members`, the way a Movement's two
+ * Members do not: the Space is owed an honest record of who did the inviting
+ * even if that Member's own row is one day gone.
+ */
+export const spaceInvitations = pgTable(
+  "space_invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    /** Normalised by `normaliseEmail`; migration 0006 refuses anything else. */
+    email: text("email").notNull(),
+    invitedBy: uuid("invited_by")
+      .notNull()
+      .references(() => members.id),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** When it stopped being pending. Set with `status` and never unset. */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => [
+    check(
+      "space_invitations_status_is_one_of_four",
+      sql`${table.status} IN ('pending', 'accepted', 'declined', 'revoked')`,
+    ),
+    // An answer and the moment of it arrive together. Half of them is a row
+    // that cannot say when the seat was freed.
+    check(
+      "space_invitations_answered_or_waiting",
+      sql`(${table.status} = 'pending' AND ${table.resolvedAt} IS NULL)
+        OR (${table.status} <> 'pending' AND ${table.resolvedAt} IS NOT NULL)`,
+    ),
+    // The comparison that decides who may accept is a string equality, so an
+    // address stored in any other shape is an Invitation nobody can redeem.
+    check(
+      "space_invitations_email_is_normalised",
+      sql`${table.email} = lower(btrim(${table.email}))`,
+    ),
+    // The seat, in the database. A Space holds two Members, so it has exactly
+    // one seat to offer and at most one Invitation outstanding at a time --
+    // and this is what makes that true against every path into the table, not
+    // only the one that counts through `inviteToSpace`. Two requests racing on
+    // "invite Ana" and "invite Sol" cannot both win.
+    uniqueIndex("space_invitations_one_pending_per_space")
+      .on(table.spaceId)
+      .where(sql`${table.status} = 'pending'`),
+    // The reader's question, asked on every visit to the Space list: "is
+    // anything waiting for me?". Only pending rows are ever an answer to it.
+    index("space_invitations_pending_email_idx")
+      .on(table.email)
+      .where(sql`${table.status} = 'pending'`),
+  ],
 );
 
 /**

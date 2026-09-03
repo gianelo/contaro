@@ -10,6 +10,7 @@ import {
 } from "@/db/movements";
 import { findSpaceForMember } from "@/db/spaces";
 import { answer } from "@/app/form";
+import { report } from "@/app/report";
 import { monthOf } from "@/domain/calendar/month";
 import {
   handleAmendMovement,
@@ -148,19 +149,6 @@ export async function strikeMovementAction(
   return { error: refusalMessage(outcome) };
 }
 
-/**
- * What the server is told when something went wrong that is nobody's typo.
- *
- * The person gets `refusalMessage`, which says nothing about the cause: a
- * dropped connection reported as "the amount is wrong" sends them to correct a
- * field that was never the problem. Written once because three copies of it is
- * three places for one to stop logging.
- */
-function report(what: string, outcome: { kind: string; cause?: unknown }): void {
-  if (outcome.kind === "failed") {
-    console.error(`${what} failed.`, outcome.cause);
-  }
-}
 
 /** The month's list, said in one place so three redirects cannot drift. */
 function monthsList(spaceId: string, month: string): string {

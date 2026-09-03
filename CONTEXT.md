@@ -5,7 +5,7 @@ A personal finance tool for tracking expenses and budgets, used by one person al
 ## Language
 
 **Space**:
-A container holding members, a single currency, its movements and its budgets. A personal Space has one member; a couple's Space has two.
+A container holding members, a single currency, its movements and its budgets. A personal Space has one member; a couple's Space has two, and two is the most it can ever hold. The second member arrives by Invitation and no other way.
 _Avoid_: Wallet, Group, Account, Cartera, Grupo, Cuenta
 
 **Member**:
@@ -15,6 +15,10 @@ _Avoid_: User, Partner, Participant
 **Reader**:
 The Member an amount is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014).
 _Avoid_: Viewer, User, Audience
+
+**Invitation**:
+The offer of a Space's one free seat, addressed to an email address rather than to a Member, because the person invited may never have used contaro. While it waits it holds the seat, so a Space with one Member and one Invitation outstanding cannot invite anybody else; the person it names is the only one who can take it, and it is taken rather than given (ADR-0017). It is pending until it is answered, and then it is accepted, declined by the person invited, or revoked by the Space.
+_Avoid_: Request, Share, Join link, Invite code
 
 **Movement**:
 A single entry of money leaving or entering a Space. An expense and an income are the two kinds of Movement, and which one it is is its Direction.
