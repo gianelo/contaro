@@ -24,6 +24,15 @@ describe("navigating inside a Space", () => {
     );
   });
 
+  it("keeps a Space's own Categories inside it, the way #6 needs", () => {
+    render(<SpaceNavigation spaceId={casa} activeId="budget" />);
+
+    expect(screen.getByRole("link", { name: "Categorías" })).toHaveAttribute(
+      "href",
+      `/espacios/${casa}/categorias`,
+    );
+  });
+
   it("offers the way back out to the list, which belongs to no Space", () => {
     render(<SpaceNavigation spaceId={casa} activeId="budget" />);
 

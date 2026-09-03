@@ -11,6 +11,7 @@ export const es = {
   "nav.main": "Principal",
   "nav.budget": "Presupuesto",
   "nav.movements": "Movimientos",
+  "nav.categories": "Categorías",
   "nav.spaces": "Espacios",
 
   "spaces.title": "Espacios",
@@ -56,6 +57,54 @@ export const es = {
   "space.month": "Este mes",
   "space.month.spent": "Gastado",
   "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
+
+  "categories.subtitle":
+    "Vienen con contaro y las podés ampliar. Lo que agregues acá no sale de este espacio.",
+  "categories.add": "Agregar una categoría",
+  "categories.own": "Tuya",
+  "categories.alone": "Sin subcategorías",
+
+  "categories.new.title": "Nueva categoría",
+  "categories.new.name": "Nombre",
+  "categories.new.name.hint": "Panadería, Mate, Regalos\u2026",
+  "categories.new.parent": "Va dentro de",
+  "categories.new.parent.none": "Nada, es una categoría principal",
+  "categories.new.parent.hint":
+    "Una categoría puede tener subcategorías, y una subcategoría no.",
+  "categories.new.submit": "Agregar la categoría",
+  "categories.new.working": "Agregando\u2026",
+  "categories.new.error.name": "Ponele un nombre que este espacio no use todavía.",
+  "categories.new.error.parent": "Elegí una categoría de este espacio.",
+  "categories.new.error.space": "No pudimos ver de qué espacio se trata.",
+  "categories.new.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
+  "categories.new.error.failed": "No pudimos agregar la categoría. Probá de nuevo.",
+
+  // Everything under `category.` is a shipped Category's name, keyed by its
+  // slug in the seed migration, and nothing else may live in that namespace:
+  // src/i18n/category.test.ts asserts the two lists are the same list.
+  "category.food": "Comida",
+  "category.food.groceries": "Supermercado",
+  "category.food.dining": "Restaurantes y delivery",
+  "category.home": "Hogar",
+  "category.home.rent": "Alquiler",
+  "category.home.utilities": "Servicios",
+  "category.home.upkeep": "Expensas y mantenimiento",
+  "category.transport": "Transporte",
+  "category.transport.fuel": "Nafta",
+  "category.transport.public": "Transporte público",
+  "category.transport.vehicle": "Auto y moto",
+  "category.health": "Salud",
+  "category.health.pharmacy": "Farmacia",
+  "category.health.care": "Consultas y estudios",
+  "category.leisure": "Ocio",
+  "category.leisure.outings": "Salidas",
+  "category.leisure.subscriptions": "Suscripciones",
+  "category.personal": "Personal",
+  "category.personal.clothing": "Ropa",
+  "category.personal.grooming": "Cuidado personal",
+  "category.education": "Educación",
+  "category.pets": "Mascotas",
+  "category.other": "Otros",
 
   "currency.ARS": "Peso argentino",
   "currency.USD": "Dólar estadounidense",

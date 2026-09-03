@@ -22,6 +22,13 @@
       "when": 1788368388321,
       "tag": "0002_create_spaces",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788404072483,
+      "tag": "0003_create_categories",
+      "breakpoints": true
     }
   ]
 }

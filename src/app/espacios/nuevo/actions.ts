@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { database } from "@/db/client";
 import { createSpaceForMember } from "@/db/spaces";
+import { answer } from "@/app/form";
 import {
   handleCreateSpace,
   refusalMessage,
@@ -40,10 +41,4 @@ export async function createSpaceAction(
   }
 
   return { error: refusalMessage(outcome) };
-}
-
-/** A form field is a string or a file; anything that is not a string is not an answer. */
-function answer(form: FormData, name: string): string {
-  const value = form.get(name);
-  return typeof value === "string" ? value : "";
 }

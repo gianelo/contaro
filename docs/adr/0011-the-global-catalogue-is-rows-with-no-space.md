@@ -1,0 +1,19 @@
+# The global Category catalogue is rows with no Space, and its names are translations
+
+Every Space is born seeing a catalogue of Categories, and each Space may extend it with its own (#6). Somewhere has to hold that catalogue. The obvious home in this codebase was **the domain, as code**: currencies live there for exactly this reason — "adding a currency is a decision, not a row someone inserts" (ADR-0007) — and a catalogue in code needs no rows written when a Space is created, and can be named at compile time.
+
+We decided the catalogue is **rows in `categories` whose `space_id` is null**. A null Space means global and visible to every Space; a Space's id means that Space alone. Both kinds are one table.
+
+The reason is the foreign key. A Movement (#7) and a Budget item (#10) both point at exactly one Category, and with a code catalogue that reference would be a slug in some rows and a uuid in others, validated by the domain because Postgres could not. With one table every Category has a uuid, `movements.category_id` is one real foreign key, and "the Category this Movement was recorded under exists" stops being a rule we remember to check. The Category is also the one thing here that a person genuinely extends at runtime, which is what makes it unlike a currency: a closed union type cannot describe a set that users add to.
+
+Adding a global Category is still a reviewed commit — it is an `INSERT` in a migration with a written-out identifier, so every environment names the same Category by the same id — and it still reaches every Space at once, including Spaces created long before it, because there is one copy of the catalogue rather than one per Space. Seeding a copy into each Space at creation was rejected for that: it makes the catalogue unmaintainable the day after the first Space exists.
+
+## Consequences
+
+Retiring a shipped heading sets its subcategories' `parent_id` to null rather than deleting them, because what hangs off a heading includes Categories a Member typed — and, once #7 lands, the Movements recorded under those. A heading is ours to retire; their naming is not ours to delete.
+
+A shipped Category carries a `slug` and no `name`; a Space's own carries a `name` and no `slug`. A check constraint makes the two exclusive, and `CategoryLabel` is the domain's two-kinded answer to "what is this called". A shipped name is the message `category.<slug>`, translated like every other piece of copy, so a second language stays a file rather than a migration — the promise from #2 that internationalisation was wired from the first ticket. The `category.` message namespace therefore holds slugs and nothing else, and `src/i18n/category.test.ts` fails the build if the migration and the message file ever name different sets.
+
+Because a shipped name is a translation, nothing below the interface can sort the catalogue: the database has only slugs and the domain has only keys. The order a person reads is decided in `readableCatalogue`, alphabetically by the name on the screen — the order, not the layout: a screen is still free to group what it shows, as the catalogue does by putting the headings that hold nothing together at the end. Alphabetical and not curated, because a catalogue a person extends is one whose curation nobody maintains.
+
+Two levels, and no more. A Category may hold subcategories and a subcategory may hold none, enforced by the domain and by a trigger on the table, the way ADR-0001's immutable currency is enforced in both places. That is what lets a Budget on a parent cover a subtree a person can picture (#10). The same trigger refuses a Category placed under one belonging to another Space; a composite foreign key would have said "the same Space" but would also have forbidden the ordinary case, which is a Member's own Category under a shipped heading.

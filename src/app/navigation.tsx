@@ -2,7 +2,7 @@ import { TabBar, type Tab } from "@/ui/tab-bar";
 import { t } from "@/i18n";
 
 /** The closed set of destinations, so a typo in activeId is a type error. */
-export type TabId = "budget" | "movements" | "spaces";
+export type TabId = "budget" | "movements" | "categories" | "spaces";
 
 /**
  * Navigation exists inside a Space, because every screen it reaches is about
@@ -22,6 +22,11 @@ function spaceTabs(spaceId: string): readonly Tab<TabId>[] {
       id: "movements",
       href: `${inside}/movimientos`,
       label: t("nav.movements"),
+    },
+    {
+      id: "categories",
+      href: `${inside}/categorias`,
+      label: t("nav.categories"),
     },
     { id: "spaces", href: "/espacios", label: t("nav.spaces") },
   ];
