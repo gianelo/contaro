@@ -1,0 +1,29 @@
+# An amount is written the way its reader reads numbers
+
+`numberLocale` was one constant, `"es-AR"`, and it decided the separators of every figure contaro showed to everybody. That held while the Members were Argentine and stopped holding the moment they were not, and the failure it produces is silent: `es-AR` writes 1234.50 Mexican pesos as `MXN 1.234,50`, and a person reading under Mexican conventions takes that away as one peso twenty-three. The number on the screen is right and the amount in their head is wrong by three orders of magnitude, with nothing to notice.
+
+ADR-0007 had already settled half of it — "formatting takes the locale as an argument and the currency from the `Money`" — so the rule was written and only the value passed as that argument had never been made to vary. The open question was not *which* locale but **whose**: the app's, the Space's, or the reader's.
+
+We decided it is the **reader's**, taken from `Accept-Language`.
+
+The alternative worth weighing was the Space's: an MXN Space always written `es-MX`, for everyone in it. It buys one real thing, which is that two Members comparing a screenshot see the same characters. But it only moves the failure: an Argentine Member of an MXN Space is then shown `$12,345.50` and reads it under the conventions they actually read under. That is the same silent error with the roles swapped, and it is worse for being the one we chose on purpose. Two Members seeing one amount written two ways is not a disagreement — the amount is the same, and each of them reads it correctly, which is the only property that matters.
+
+`Accept-Language` and not `x-vercel-ip-country`, though the country is already read one route over. They answer different questions. The country is a guess about where a body is; the header is a statement about how a person reads, made by that person when they set up their device. ADR-0013 confined geolocation to *ordering* the currency picker precisely because it is wrong often enough — a VPN, a holiday, a corporate egress — and there the cost of being wrong is a list in a mildly odd order. Here the cost is an inverted decimal point on every figure, so the same wrongness buys a far worse outcome. An Argentine on holiday in Mexico City still reads `1.234,50`.
+
+Nothing about the currency changes. Only the separators are the reader's, and `Intl` makes that safer than it sounds: it spells a currency that is not the reader's own with its code, so the bare symbol can only ever mean the one money that reader would read it as. A Mexican looking at an ARS Space is shown `ARS 1,234.50`, never `$`. ADR-0001 and ADR-0007 are untouched.
+
+## Consequences
+
+The header is parsed in `src/i18n/number-locale.ts` and read in `src/app/reader.ts`, the same two-part shape #23 used for the country and for the same reason: the pure part takes a string and the edge takes a `Headers`, so the whole path — header to locale to separators — is driven in milliseconds with no server, and the domain never sees a request (ADR-0005).
+
+`formatMoney` now takes a locale *or a list* of them, because a browser states its conventions in preference order and `Intl` walks down them. That is what makes the fallback cheap: an unknown locale costs a step rather than an answer.
+
+A Reader whose conventions are unknown gets `es-AR`, and it is a last resort rather than a default — a request that says anything about its Reader is never formatted with it. It is Argentine because that is where the Members are, not because it is neutral: plain `es` looks like the neutral choice and is not one. It writes `1234,50 ARS` — code trailing, no thousands separator below five digits — which is byte for byte what `es-ES` writes, because `es` *is* Spain's convention. Choosing it would be choosing Spain for someone we know nothing about, which is the same act as choosing Argentina with none of the reason. The fallback is appended to the list, so it is last unless the Reader ranked it themselves.
+
+An `Accept-Language` that is malformed, a wildcard, or refused with `q=0` is dropped rather than thrown, because `Intl.NumberFormat` answers a bad tag with a `RangeError` and a browser sending junk must not be a screen that will not render. The same reasoning as ADR-0013's case-insensitive country read: a header is not code. The list is also cut at ten tags — a browser sends two or three, the header is attacker-controlled, and every extra locale is another lookup on every amount on the page.
+
+Two narrower rules follow from the sentence above being taken literally. A `q` nobody can parse — `q=`, `q`, `q=zzz` — is read as one that was never written, and the tag it hangs off survives; only a weight that really parses and really is zero drops a tag. Dropping `es-MX;q=` would silently write that Reader's money `es-AR`, which is precisely the failure this ADR exists to close, arrived at through a broken parameter instead of a missing feature. And a tag is reduced to its language, script and region before it is used: `es-MX-u-nu-thai` is well-formed, and it writes an amount as `ARS ๑,๒๓๔.๕๐` — different digits, not different separators. This decision hands a header the separators, so the extension subtags are dropped rather than passed on.
+
+*Reader* is a term in `CONTEXT.md` now, because this decision needed a name for the Member an amount is being shown to as distinct from the Member it belongs to, and inventing one in an ADR without putting it in the glossary is how a vocabulary drifts.
+
+Every screen that shows an amount must now read the header, which opts it into per-request rendering. That is already true of everything under `/espacios/[id]`, which is behind a session and reads a Space by Member. When the Movements arrive in #7 the locales come from the same seam, and a figure formatted without them will be one nobody read for.

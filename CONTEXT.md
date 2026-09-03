@@ -12,6 +12,10 @@ _Avoid_: Wallet, Group, Account, Cartera, Grupo, Cuenta
 A person with access to a Space. Members are added by email invitation.
 _Avoid_: User, Partner, Participant
 
+**Reader**:
+The Member an amount is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014).
+_Avoid_: Viewer, User, Audience
+
 **Movement**:
 A single entry of money leaving or entering a Space. An expense and an income are the two kinds of Movement.
 _Avoid_: Transaction, Entry, Record

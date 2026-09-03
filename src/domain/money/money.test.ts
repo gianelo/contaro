@@ -72,3 +72,19 @@ describe("formatting an amount", () => {
     expect(readable(formatMoney(money(-500, "ARS"), "es-AR"))).toContain("-");
   });
 });
+
+describe("formatting an amount for a reader who could be anywhere", () => {
+  it("takes the first of the reader's locales it knows how to write", () => {
+    // Intl walks the list, so an unknown locale costs nothing but a step.
+    expect(readable(formatMoney(money(1234_50, "MXN"), ["zz-ZZ", "es-MX"]))).toBe(
+      "$1,234.50",
+    );
+  });
+
+  it("writes one amount two ways for two readers, and never two amounts", () => {
+    const rent = money(1234_50, "MXN");
+
+    expect(readable(formatMoney(rent, ["es-MX"]))).toBe("$1,234.50");
+    expect(readable(formatMoney(rent, ["es-AR"]))).toBe("MXN 1.234,50");
+  });
+});

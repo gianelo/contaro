@@ -1,6 +1,8 @@
+import { headers } from "next/headers";
 import { formatMoney, zero } from "@/domain/money/money";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
-import { numberLocale, t } from "@/i18n";
+import { t } from "@/i18n";
+import { numberLocalesFor } from "@/app/reader";
 import { SpaceScreen } from "./screen";
 import { currentSpace } from "./space";
 
@@ -15,6 +17,10 @@ export default async function SpacePage({
 }) {
   const { id } = await params;
   const space = await currentSpace(id);
+  // The Space's money, written the way whoever opened this reads numbers
+  // (ADR-0014). Two Members of one Space read one amount two ways; it is the
+  // same amount, and it is in the Space's currency for both of them.
+  const locales = numberLocalesFor(await headers());
 
   return (
     <SpaceScreen space={space} tab="budget">
@@ -25,9 +31,7 @@ export default async function SpacePage({
           here now because what matters is that it is denominated in the Space's
           currency and never in the reader's.
         */}
-        <GroupedListItem
-          trailing={formatMoney(zero(space.currency), numberLocale)}
-        >
+        <GroupedListItem trailing={formatMoney(zero(space.currency), locales)}>
           {t("space.month.spent")}
         </GroupedListItem>
       </GroupedList>

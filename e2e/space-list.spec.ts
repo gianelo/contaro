@@ -147,27 +147,34 @@ test("a Member switches between Spaces without signing out", async ({
   );
 });
 
-test("two Spaces of the same Member never show each other's money", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  const hugo = await createMember("Hugo Aparte");
-  const pesos = await createSpaceFor(hugo.id, "Casa", "ARS");
-  const dolares = await createSpaceFor(hugo.id, "Viaje", "USD");
-  await startSession(context, baseURL!, hugo);
+// The separators are the reader's now (ADR-0014), so a spec that pins a
+// formatted amount has to say who is reading it. This one is about the
+// currency, not the conventions, and it names them only to hold them still.
+test.describe("a Member who reads numbers the Argentine way", () => {
+  test.use({ locale: "es-AR" });
 
-  await page.goto(`/espacios/${pesos.id}`);
-  await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
-    "$ 0,00",
-  );
-  await expect(page.getByText("Dólar estadounidense")).toHaveCount(0);
+  test("never sees one of their Spaces show another's money", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    const hugo = await createMember("Hugo Aparte");
+    const pesos = await createSpaceFor(hugo.id, "Casa", "ARS");
+    const dolares = await createSpaceFor(hugo.id, "Viaje", "USD");
+    await startSession(context, baseURL!, hugo);
 
-  await page.goto(`/espacios/${dolares.id}`);
-  await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
-    "US$ 0,00",
-  );
-  await expect(page.getByText("Peso argentino")).toHaveCount(0);
+    await page.goto(`/espacios/${pesos.id}`);
+    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+      "$ 0,00",
+    );
+    await expect(page.getByText("Dólar estadounidense")).toHaveCount(0);
+
+    await page.goto(`/espacios/${dolares.id}`);
+    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+      "US$ 0,00",
+    );
+    await expect(page.getByText("Peso argentino")).toHaveCount(0);
+  });
 });
 
 test("the tab bar inside a Space stays inside that Space", async ({

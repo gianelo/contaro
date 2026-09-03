@@ -113,43 +113,50 @@ test("the picker offers the currencies by name, in the order they are read", asy
   expect(options).toContain("Peso colombiano (COP)");
 });
 
-test("a Space in Colombian pesos shows its amounts without centavos", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await startSession(context, baseURL!, await createMember("Gabi Bogota"));
+// These two end on a formatted amount, and the separators are the reader's
+// now (ADR-0014). Naming the conventions is what keeps the assertions about
+// the Space's currency rather than about Playwright's default locale.
+test.describe("a Member who reads numbers the Argentine way", () => {
+  test.use({ locale: "es-AR" });
 
-  await page.goto("/espacios/nuevo");
-  await page.getByLabel("Nombre").fill("Bogotá");
-  await page.getByLabel("Moneda").selectOption("COP");
-  await page.getByRole("button", { name: "Crear el espacio" }).click();
+  test("in Colombian pesos, shows its amounts without centavos", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await startSession(context, baseURL!, await createMember("Gabi Bogota"));
 
-  await expect(page.getByText("Peso colombiano (COP)")).toBeVisible();
-  await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
-    "COP 0",
-  );
-});
+    await page.goto("/espacios/nuevo");
+    await page.getByLabel("Nombre").fill("Bogotá");
+    await page.getByLabel("Moneda").selectOption("COP");
+    await page.getByRole("button", { name: "Crear el espacio" }).click();
 
-test("amounts inside a Space are shown in that Space's currency", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await startSession(context, baseURL!, await createMember("Dani Dolar"));
+    await expect(page.getByText("Peso colombiano (COP)")).toBeVisible();
+    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+      "COP 0",
+    );
+  });
 
-  await page.goto("/espacios/nuevo");
-  await page.getByLabel("Nombre").fill("Viaje");
-  await page.getByLabel("Moneda").selectOption("USD");
-  await page.getByRole("button", { name: "Crear el espacio" }).click();
+  test("is shown amounts in the Space's currency, never in their own", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await startSession(context, baseURL!, await createMember("Dani Dolar"));
 
-  await expect(page.getByText("Dólar estadounidense (USD)")).toBeVisible();
+    await page.goto("/espacios/nuevo");
+    await page.getByLabel("Nombre").fill("Viaje");
+    await page.getByLabel("Moneda").selectOption("USD");
+    await page.getByRole("button", { name: "Crear el espacio" }).click();
 
-  // Nothing is recorded yet (#7), but the figure that is there is already
-  // denominated in the Space's money and not in the reader's.
-  await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
-    "US$ 0,00",
-  );
+    await expect(page.getByText("Dólar estadounidense (USD)")).toBeVisible();
+
+    // Nothing is recorded yet (#7), but the figure that is there is already
+    // denominated in the Space's money and not in the reader's.
+    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+      "US$ 0,00",
+    );
+  });
 });
 
 /**
