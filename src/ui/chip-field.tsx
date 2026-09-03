@@ -27,7 +27,16 @@ export type ChipFieldProps = {
   name: string;
   legend: string;
   chips: readonly Chip[];
+  /** What is chosen to begin with, when nothing outside is tracking it. */
   defaultValue?: string;
+  /**
+   * What is chosen, when something outside is. Pass it with `onChange` to make
+   * the field controlled — the way `SelectField` is — for a choice the rest of
+   * the screen has to react to, such as the direction of a Movement deciding
+   * whether there is a Category to ask about at all.
+   */
+  value?: string;
+  onChange?: (value: string) => void;
   required?: boolean;
   /** Shown in place of the chips when there are none to offer. */
   empty?: ReactNode;
@@ -52,9 +61,16 @@ export function ChipField({
   legend,
   chips,
   defaultValue,
+  value,
+  onChange,
   required = false,
   empty,
 }: ChipFieldProps) {
+  // Controlled or not, never half of each: React warns about a `checked` with
+  // no `onChange`, and an input that switches between the two mid-life loses
+  // what the person had chosen.
+  const controlled = value !== undefined && onChange !== undefined;
+
   return (
     <fieldset className={styles.field}>
       <legend className={styles.legend}>{legend}</legend>
@@ -69,7 +85,12 @@ export function ChipField({
                 type="radio"
                 name={name}
                 value={chip.value}
-                defaultChecked={defaultValue === chip.value}
+                {...(controlled
+                  ? {
+                      checked: value === chip.value,
+                      onChange: () => onChange(chip.value),
+                    }
+                  : { defaultChecked: defaultValue === chip.value })}
                 required={required}
                 aria-label={
                   chip.qualifier ? `${chip.label}, ${chip.qualifier}` : undefined

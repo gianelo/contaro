@@ -8,7 +8,7 @@
   font-weight: var(--weight-medium);
 }
 
-.day {
+.beneath {
   display: block;
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
@@ -18,4 +18,37 @@
   display: flex;
   flex-direction: column;
   margin-top: var(--space-9);
+}
+
+/*
+ * The month, with a step either side of it. The name is centred and the two
+ * steps hold their width whether or not there is anywhere to step to, so the
+ * heading does not move as a thumb walks back through the year.
+ */
+.months {
+  display: grid;
+  /* The two side columns take their width from the steps in them, and every
+     step -- including the empty one standing in for a month with nowhere to
+     go -- composes `hitTarget`. So the touch size still has exactly one place
+     to be set, and the month's name does not slide as a thumb walks the year. */
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  margin-bottom: var(--space-7);
+}
+
+.month {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--color-accent);
+  font-size: var(--text-lg);
+  text-decoration: none;
 }

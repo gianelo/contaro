@@ -1,16 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { calendarDate } from "../calendar/month";
+import { calendarDate, type CalendarDate } from "../calendar/month";
 import type { Category } from "../category/category";
 import { money } from "../money/money";
 import type { Space } from "../space/space";
 import {
   amendMovement,
+  DirectionIsImmutableError,
+  earned,
   MAX_MOVEMENT_AMOUNT,
+  movementsByDay,
   recordMovement,
   RecorderIsImmutableError,
   spent,
   UnrecordableMovementError,
   type Movement,
+  type MovementDirection,
   type Recording,
 } from "./movement";
 
@@ -53,6 +57,7 @@ const recording = (changes: Partial<Recording> = {}): Recording => ({
 
 const draft = (changes: Partial<Parameters<typeof recordMovement>[0]> = {}) => ({
   spaceId: CASA.id,
+  direction: "expense" as const,
   categoryId: SUPER.id,
   amount: 128_400,
   occurredOn: "2026-09-03",
@@ -60,12 +65,17 @@ const draft = (changes: Partial<Parameters<typeof recordMovement>[0]> = {}) => (
   ...changes,
 });
 
+/** The same draft, going the other way: money entering the Space. */
+const income = (changes: Partial<Parameters<typeof recordMovement>[0]> = {}) =>
+  draft({ direction: "income", categoryId: null, ...changes });
+
 describe("recording an expense", () => {
   it("records the amount in the Space's currency and the Category it is under", () => {
     const recorded = recordMovement(draft(), recording());
 
     expect(recorded).toEqual({
       spaceId: CASA.id,
+      direction: "expense",
       categoryId: SUPER.id,
       amount: money(128_400, "ARS"),
       occurredOn: TODAY,
@@ -223,10 +233,79 @@ describe("recording an expense", () => {
   });
 });
 
+describe("recording income", () => {
+  it("records money entering the Space in the same answers an expense takes", () => {
+    expect(recordMovement(income({ amount: 850_000_00 }), recording())).toEqual({
+      spaceId: CASA.id,
+      direction: "income",
+      // Income has no Category: the Category dimension exists to be measured
+      // against a Budget, and a Budget is a plan of expenses (CONTEXT.md).
+      categoryId: null,
+      amount: money(850_000_00, "ARS"),
+      occurredOn: TODAY,
+      recordedBy: GIAN,
+      attributedTo: GIAN,
+    });
+  });
+
+  it("attributes it to the other Member of the Space when they are named", () => {
+    // Whose money came in is the question every per-Member report reads, and
+    // it is asked of income exactly as it is asked of an expense.
+    expect(recordMovement(income({ attributedTo: ANA }), recording()).attributedTo)
+      .toBe(ANA);
+  });
+
+  it("refuses income of nothing, the way it refuses an expense of nothing", () => {
+    expect(() => recordMovement(income({ amount: 0 }), recording()))
+      .toThrow(UnrecordableMovementError);
+  });
+
+  it("refuses income filed under a Category", () => {
+    // Not a Category this Space cannot see -- one it can. There is no Category
+    // income may carry at all, so offering one is answering a question that
+    // was never asked.
+    expect(() => recordMovement(income({ categoryId: SUPER.id }), recording()))
+      .toThrow(UnrecordableMovementError);
+  });
+
+  it("refuses a direction that is neither of the two", () => {
+    // The answer arrives from a form, which carries any string at all. Refused
+    // by name and never rounded to an expense: a default here files somebody's
+    // salary as a purchase and says nothing about having done so.
+    try {
+      recordMovement({ ...income(), direction: "gasto" }, recording());
+      expect.unreachable("A Movement with no direction is not recordable.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(UnrecordableMovementError);
+      expect((error as UnrecordableMovementError).field).toBe("direction");
+    }
+  });
+
+  it("refuses an expense that carries no Category", () => {
+    expect(() => recordMovement(draft({ categoryId: null }), recording()))
+      .toThrow(UnrecordableMovementError);
+  });
+
+  it("points at the Category picker when the direction and the Category disagree", () => {
+    for (const wrong of [
+      income({ categoryId: SUPER.id }),
+      draft({ categoryId: null }),
+    ]) {
+      try {
+        recordMovement(wrong, recording());
+        expect.unreachable("This draft should not have been recordable.");
+      } catch (error) {
+        expect((error as UnrecordableMovementError).field).toBe("category");
+      }
+    }
+  });
+});
+
 describe("correcting a Movement that was got wrong", () => {
   const recorded: Movement = {
     id: "mov-1",
     spaceId: CASA.id,
+    direction: "expense",
     categoryId: SUPER.id,
     amount: money(128_400, "ARS"),
     occurredOn: TODAY,
@@ -276,6 +355,55 @@ describe("correcting a Movement that was got wrong", () => {
     expect(fixed.recordedBy).toBe(GIAN);
   });
 
+  it("refuses outright any attempt to turn an expense into income", () => {
+    // Which way the money went is what kind of Movement this is, not a field
+    // on one. Changing it would have to add or drop the Category in the same
+    // breath, and an entry that changes kind is a new entry: strike this one
+    // out (ADR-0015) and record the other.
+    expect(() =>
+      amendMovement(recorded, { direction: "income" }, recording()),
+    ).toThrow(DirectionIsImmutableError);
+  });
+
+  it("refuses a correction whose direction is neither of the two", () => {
+    // The screen carries it back as a hidden field, so it arrives as a string.
+    // Anything that is not this Movement's direction is refused by the same
+    // comparison, without a second rule to keep in step with the first.
+    expect(() =>
+      amendMovement(recorded, { direction: "gasto" }, recording()),
+    ).toThrow(DirectionIsImmutableError);
+  });
+
+  it("lets a correction restate the direction it already has", () => {
+    // The correction screen carries every answer, this one included. Refusing
+    // a value identical to the one on the row would refuse every ordinary
+    // correction, the way `recordedBy` is refused only when it differs.
+    expect(
+      amendMovement(recorded, { direction: "expense", amount: 90_000 }, recording())
+        .amount,
+    ).toEqual(money(90_000, "ARS"));
+  });
+
+  it("refuses to leave an expense with no Category", () => {
+    expect(() =>
+      amendMovement(recorded, { categoryId: null }, recording()),
+    ).toThrow(UnrecordableMovementError);
+  });
+
+  it("holds income to carrying no Category when it is corrected", () => {
+    const earning: Movement = {
+      ...recorded,
+      direction: "income",
+      categoryId: null,
+    };
+
+    expect(() =>
+      amendMovement(earning, { categoryId: SUPER.id }, recording()),
+    ).toThrow(UnrecordableMovementError);
+    expect(amendMovement(earning, { amount: 700_000 }, recording()).categoryId)
+      .toBeNull();
+  });
+
   it("refuses outright any attempt to name a different recorder", () => {
     expect(() =>
       amendMovement(recorded, { recordedBy: ANA }, recording()),
@@ -319,17 +447,27 @@ describe("correcting a Movement that was got wrong", () => {
   });
 });
 
-describe("what a Space has spent", () => {
-  const expense = (amount: number): Movement => ({
-    id: `mov-${amount}`,
-    spaceId: CASA.id,
-    categoryId: SUPER.id,
-    amount: money(amount, "ARS"),
-    occurredOn: TODAY,
-    recordedBy: GIAN,
-    attributedTo: GIAN,
-  });
+const movement = (
+  direction: MovementDirection,
+  amount: number,
+  occurredOn = TODAY,
+): Movement => ({
+  id: `mov-${direction}-${amount}-${occurredOn}`,
+  spaceId: CASA.id,
+  direction,
+  categoryId: direction === "expense" ? SUPER.id : null,
+  amount: money(amount, "ARS"),
+  occurredOn,
+  recordedBy: GIAN,
+  attributedTo: GIAN,
+});
 
+const expense = (amount: number, on?: CalendarDate) =>
+  movement("expense", amount, on);
+const earning = (amount: number, on?: CalendarDate) =>
+  movement("income", amount, on);
+
+describe("what a Space has spent", () => {
   it("is nothing at all when nothing has been recorded", () => {
     expect(spent([], "ARS")).toEqual(money(0, "ARS"));
   });
@@ -340,11 +478,77 @@ describe("what a Space has spent", () => {
     );
   });
 
+  it("leaves income out of it", () => {
+    // The month's two figures answer two questions, and a salary counted as
+    // spending is the one arithmetic error nobody would ever spot on a screen.
+    expect(spent([expense(128_400), earning(850_000_00)], "ARS")).toEqual(
+      money(128_400, "ARS"),
+    );
+  });
+
   it("refuses to add up money of two different kinds", () => {
     // A Space is denominated in one currency (ADR-0001), so a Movement in
     // another can only come from a write that went round the domain. Adding
     // the numbers would put a figure on screen that means nothing.
     expect(() => spent([{ ...expense(100), amount: money(100, "USD") }], "ARS"))
       .toThrow(UnrecordableMovementError);
+  });
+});
+
+describe("what a Space has earned", () => {
+  it("is nothing at all when nothing has come in", () => {
+    expect(earned([], "ARS")).toEqual(money(0, "ARS"));
+  });
+
+  it("is the sum of the income and nothing else", () => {
+    expect(
+      earned([earning(850_000_00), expense(128_400), earning(45_000_00)], "ARS"),
+    ).toEqual(money(895_000_00, "ARS"));
+  });
+
+  it("refuses to add up money of two different kinds", () => {
+    expect(() => earned([{ ...earning(100), amount: money(100, "USD") }], "ARS"))
+      .toThrow(UnrecordableMovementError);
+  });
+});
+
+describe("a month read a day at a time", () => {
+  const THIRD = calendarDate("2026-09-03");
+  const SECOND = calendarDate("2026-09-02");
+
+  it("has no days at all when nothing was recorded", () => {
+    expect(movementsByDay([])).toEqual([]);
+  });
+
+  it("puts everything recorded on one day under that day", () => {
+    const groceries = expense(128_400, THIRD);
+    const salary = earning(850_000_00, THIRD);
+
+    expect(movementsByDay([groceries, salary])).toEqual([
+      { day: THIRD, movements: [groceries, salary] },
+    ]);
+  });
+
+  it("reads the most recent day first, the way a list is read", () => {
+    const older = expense(18_000, SECOND);
+    const newer = expense(128_400, THIRD);
+
+    expect(movementsByDay([older, newer]).map((group) => group.day)).toEqual([
+      THIRD,
+      SECOND,
+    ]);
+  });
+
+  it("keeps within a day the order it was handed", () => {
+    // Which of two Movements on one day comes first is a question about how
+    // they were fetched -- newest typed first -- and not a rule of the model,
+    // the way `categoriesVisibleTo` keeps the order it is given.
+    const first = expense(1, THIRD);
+    const second = expense(2, THIRD);
+
+    expect(movementsByDay([first, second])[0]?.movements).toEqual([
+      first,
+      second,
+    ]);
   });
 });

@@ -36,6 +36,13 @@
       "when": 1788435104593,
       "tag": "0004_create_movements",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788450525048,
+      "tag": "0005_record_income",
+      "breakpoints": true
     }
   ]
 }

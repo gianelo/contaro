@@ -1,4 +1,4 @@
-import type { CalendarDate } from "@/domain/calendar/month";
+import { firstDayOf, type CalendarDate, type Month } from "@/domain/calendar/month";
 import { locale, t } from "./index";
 
 /**
@@ -39,4 +39,37 @@ export function dayLabel(date: CalendarDate, today: CalendarDate): string {
   return date.slice(0, 4) === today.slice(0, 4)
     ? sameYear.format(at)
     : otherYear.format(at);
+}
+
+const monthAlone = new Intl.DateTimeFormat(locale, {
+  month: "long",
+  timeZone: "UTC",
+});
+
+const monthWithYear = new Intl.DateTimeFormat(locale, {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/**
+ * How a month is named at the top of the screen showing it.
+ *
+ * Capitalised, unlike every month inside a `dayLabel`. Spanish writes months
+ * in lower case mid-sentence — "3 de septiembre" is correct and "3 de
+ * Septiembre" is not — and a heading is not a sentence. So the one place a
+ * month is capitalised is the one place it stands alone.
+ *
+ * The year is printed only when the month is not in the year being lived in,
+ * the way `dayLabel` measures against today: the ordinary heading is one word,
+ * and a month from another year cannot be misread as this year's.
+ */
+export function monthLabel(of: Month, thisMonth: Month): string {
+  const at = new Date(`${firstDayOf(of)}T00:00:00Z`);
+  const written =
+    of.slice(0, 4) === thisMonth.slice(0, 4)
+      ? monthAlone.format(at)
+      : monthWithYear.format(at);
+
+  return written.charAt(0).toUpperCase() + written.slice(1);
 }

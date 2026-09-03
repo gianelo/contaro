@@ -3,6 +3,7 @@
 import { useActionState, useState, useSyncExternalStore } from "react";
 import { isCalendarDate, type CalendarDate } from "@/domain/calendar/month";
 import type { CurrencyCode } from "@/domain/money/currency";
+import type { MovementDirection } from "@/domain/movement/movement";
 import { t } from "@/i18n";
 import { dayLabel } from "@/i18n/day";
 import { Button } from "@/ui/button";
@@ -33,7 +34,13 @@ export type MovementFormProps = {
   month?: string;
   initial: {
     amount: number;
-    categoryId: string;
+    /**
+     * Which way the money went. A correction opens on the direction the
+     * Movement has and can never leave it (`DirectionIsImmutableError`); a new
+     * Movement opens on an expense, which is what nearly every one of them is.
+     */
+    direction: MovementDirection;
+    categoryId: string | null;
     occurredOn: CalendarDate;
     attributedTo: string;
   };
@@ -79,6 +86,18 @@ export function MovementForm({
   const [chosenDay, setChosenDay] = useState<string | null>(null);
   const [chosenMember, setChosenMember] = useState<string | null>(null);
 
+  // Controlled, because the rest of the form depends on it: income carries no
+  // Category (#8), so choosing it takes the picker off the screen rather than
+  // leaving a question with no answer that could be right.
+  //
+  // Offered only on a new Movement. A correction cannot change it — which way
+  // the money went is what kind of Movement this is, not a field on one — so
+  // a toggle there would be a control whose only outcome is a refusal.
+  const [direction, setDirection] = useState<MovementDirection>(
+    initial.direction,
+  );
+  const correcting = movementId !== undefined;
+
   // What day it is, answered by the server while it renders and by the browser
   // once the browser is the one asking.
   //
@@ -102,7 +121,7 @@ export function MovementForm({
 
   // A correction opens on the day the Movement says — that is the whole point
   // of opening it — and a new one opens on today, until a thumb says otherwise.
-  const day = chosenDay ?? (movementId === undefined ? today : initial.occurredOn);
+  const day = chosenDay ?? (correcting ? initial.occurredOn : today);
 
   // Controlled, for the same reason the day is: the line above the keypad
   // names whoever this is attributed to, and an uncontrolled picker would
@@ -139,6 +158,37 @@ export function MovementForm({
         locales={locales}
         onChange={setAmount}
       />
+
+      {/*
+        Under the keypad, not above it. Story 18 in #1 puts the amount first
+        because it is the only part a person might forget on the way home from
+        the till, and a question above it is a question between them and the
+        number. It sits above the Category because it decides whether there is
+        a Category to ask about at all.
+
+        A correction cannot change it -- which way the money went is what kind
+        of Movement this is, not a field on one -- so there is no control
+        there, only the hidden field that carries the answer back. Carried and
+        not dropped: `amendMovementAction` reads it, so a form that came back
+        with the other one is refused rather than half-saved.
+      */}
+      {correcting ? (
+        <input type="hidden" name="direction" value={direction} />
+      ) : (
+        <ChipField
+          name="direction"
+          legend={t("movements.direction")}
+          chips={[
+            { value: "expense", label: t("movements.direction.expense") },
+            { value: "income", label: t("movements.direction.income") },
+          ]}
+          value={direction}
+          onChange={(chosen) =>
+            setDirection(chosen === "income" ? "income" : "expense")
+          }
+          required
+        />
+      )}
 
       <details className={styles.when}>
         {/* Composes the one class that owns the 44px, rather than
@@ -181,14 +231,21 @@ export function MovementForm({
         </div>
       </details>
 
-      <ChipField
-        name="categoryId"
-        legend={t("movements.category")}
-        chips={categories}
-        defaultValue={initial.categoryId || undefined}
-        empty={t("movements.category.none")}
-        required
-      />
+      {/*
+        Absent and not disabled when the money is coming in, so the form
+        carries no Category at all — which is exactly what `filing` in the
+        domain and the check in migration 0005 both require of income.
+      */}
+      {direction === "expense" ? (
+        <ChipField
+          name="categoryId"
+          legend={t("movements.category")}
+          chips={categories}
+          defaultValue={initial.categoryId ?? undefined}
+          empty={t("movements.category.none")}
+          required
+        />
+      ) : null}
 
       {state.error ? (
         <p role="alert" className={styles.error}>

@@ -52,6 +52,9 @@ export default async function NewMovementPage({
         serverDay={today}
         initial={{
           amount: 0,
+          // What nearly every Movement is. The toggle is right above the
+          // keypad for the ones that are not.
+          direction: "expense",
           // Nothing chosen: the Category is the one answer nobody can guess
           // for a person, so the picker starts empty and `required` has teeth.
           categoryId: "",

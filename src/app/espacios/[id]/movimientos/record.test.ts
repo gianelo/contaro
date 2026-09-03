@@ -4,6 +4,7 @@ import { money } from "@/domain/money/money";
 import {
   UnrecordableMovementError,
   type Movement,
+  type MovementDraft,
 } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import {
@@ -21,6 +22,7 @@ const TODAY = calendarDate("2026-09-03");
 const RECORDED: Movement = {
   id: "mov-1",
   spaceId: CASA.id,
+  direction: "expense",
   categoryId: "cat-super",
   amount: money(128_400, "ARS"),
   occurredOn: TODAY,
@@ -28,8 +30,9 @@ const RECORDED: Movement = {
   attributedTo: GIAN,
 };
 
-const draft = {
+const draft: MovementDraft = {
   spaceId: CASA.id,
+  direction: "expense",
   categoryId: "cat-super",
   amount: 128_400,
   occurredOn: "2026-09-03",

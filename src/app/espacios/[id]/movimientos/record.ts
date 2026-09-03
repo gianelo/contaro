@@ -195,6 +195,11 @@ export function refusalMessage(refusal: Refusal): string {
           return t("movements.error.day");
         case "attribution":
           return t("movements.error.attribution");
+        case "direction":
+          // Only reachable from a form that carried no direction or a word
+          // that is neither, which is a broken screen rather than a typo. It
+          // is named anyway: a person who somehow sees it can act on it.
+          return t("movements.error.direction");
         case "space":
           // The draft named no Space this Member is in. Nothing on the screen
           // is the problem, so pointing at a field would send them to fix the

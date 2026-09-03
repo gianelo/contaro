@@ -300,4 +300,56 @@ describe("ChipField", () => {
 
     expect(screen.getByText("Elegí una categoría")).toBeInTheDocument();
   });
+
+  it("shows what something outside it says is chosen", () => {
+    render(
+      <ChipField
+        name="categoryId"
+        legend="Categoría"
+        chips={chips}
+        value="pan"
+        onChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("radio", { name: "Panadería, Comida" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Súper" })).not.toBeChecked();
+  });
+
+  it("tells whatever is holding the choice which one a thumb landed on", async () => {
+    const chosen = vi.fn();
+
+    render(
+      <ChipField
+        name="categoryId"
+        legend="Categoría"
+        chips={chips}
+        value="super"
+        onChange={chosen}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("radio", { name: "Panadería, Comida" }));
+
+    expect(chosen).toHaveBeenCalledWith("pan");
+  });
+
+  it("stays where it is told when nothing outside changes its mind", async () => {
+    // A controlled field shows what it is given and nothing else. Without
+    // this, a chip could look chosen while the form carries the other one --
+    // the screen saying one thing and the submission saying another.
+    render(
+      <ChipField
+        name="categoryId"
+        legend="Categoría"
+        chips={chips}
+        value="super"
+        onChange={() => {}}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("radio", { name: "Panadería, Comida" }));
+
+    expect(screen.getByRole("radio", { name: "Súper" })).toBeChecked();
+  });
 });

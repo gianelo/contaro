@@ -2,7 +2,11 @@
 import { afterAll, expect, it } from "vitest";
 import { calendarDate, month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
-import { UnrecordableMovementError } from "@/domain/movement/movement";
+import {
+  earned,
+  spent,
+  UnrecordableMovementError,
+} from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { createDatabase, databaseUrl } from "./connection";
 import { memberFromGoogle } from "./members";
@@ -64,6 +68,7 @@ it("writes a Movement down and reads back what was recorded", async () => {
     recording(space, member.id),
     {
       spaceId: space.id,
+      direction: "expense",
       categoryId,
       amount: 128_400,
       occurredOn: "2026-09-03",
@@ -76,6 +81,7 @@ it("writes a Movement down and reads back what was recorded", async () => {
   expect(read).toEqual({
     id: recorded.id,
     spaceId: space.id,
+    direction: "expense",
     categoryId,
     amount: money(128_400, "ARS"),
     occurredOn: "2026-09-03",
@@ -89,6 +95,7 @@ it("denominates what it reads back in the Space's currency", async () => {
 
   const recorded = await recordMovementInSpace(db, recording(space, member.id), {
     spaceId: space.id,
+    direction: "expense",
     categoryId,
     amount: 1_999,
     occurredOn: "2026-09-01",
@@ -110,6 +117,7 @@ it("refuses a Category belonging to somebody else's Space", async () => {
   await expect(
     recordMovementInSpace(db, recording(space, member.id), {
       spaceId: space.id,
+      direction: "expense",
       categoryId: theirs.id,
       amount: 500,
       occurredOn: "2026-09-03",
@@ -125,6 +133,7 @@ it("refuses to attribute a Movement to somebody outside the Space", async () => 
   await expect(
     recordMovementInSpace(db, recording(space, member.id), {
       spaceId: space.id,
+      direction: "expense",
       categoryId,
       amount: 500,
       occurredOn: "2026-09-03",
@@ -141,6 +150,7 @@ it("lists the Movements of one month, most recent first", async () => {
   const record = (amount: number, occurredOn: string) =>
     recordMovementInSpace(db, later, {
       spaceId: space.id,
+      direction: "expense",
       categoryId,
       amount,
       occurredOn,
@@ -163,6 +173,7 @@ it("never lists a Movement recorded in another Space", async () => {
 
   await recordMovementInSpace(db, recording(theirs.space, theirs.member.id), {
     spaceId: theirs.space.id,
+    direction: "expense",
     categoryId: theirs.categoryId,
     amount: 777,
     occurredOn: "2026-09-02",
@@ -177,6 +188,7 @@ it("corrects a Movement without changing who recorded it", async () => {
 
   const recorded = await recordMovementInSpace(db, recording(space, member.id), {
     spaceId: space.id,
+    direction: "expense",
     categoryId,
     amount: 1_284_000,
     occurredOn: "2026-09-03",
@@ -203,6 +215,7 @@ it("refuses to correct a Movement recorded in another Space", async () => {
     recording(theirs.space, theirs.member.id),
     {
       spaceId: theirs.space.id,
+      direction: "expense",
       categoryId: theirs.categoryId,
       amount: 999,
       occurredOn: "2026-09-02",
@@ -224,6 +237,7 @@ it("strikes a Movement out and remembers who struck it", async () => {
 
   const recorded = await recordMovementInSpace(db, recording(space, member.id), {
     spaceId: space.id,
+    direction: "expense",
     categoryId,
     amount: 500,
     occurredOn: "2026-09-03",
@@ -246,6 +260,7 @@ it("hides a struck Movement from every reader", async () => {
 
   const recorded = await recordMovementInSpace(db, recording(space, member.id), {
     spaceId: space.id,
+    direction: "expense",
     categoryId,
     amount: 500,
     occurredOn: "2026-09-03",
@@ -262,6 +277,7 @@ it("strikes a Movement out once, however many times it is asked", async () => {
 
   const recorded = await recordMovementInSpace(db, recording(space, member.id), {
     spaceId: space.id,
+    direction: "expense",
     categoryId,
     amount: 500,
     occurredOn: "2026-09-03",
@@ -286,6 +302,7 @@ it("refuses to strike out a Movement recorded in another Space", async () => {
     recording(theirs.space, theirs.member.id),
     {
       spaceId: theirs.space.id,
+      direction: "expense",
       categoryId: theirs.categoryId,
       amount: 999,
       occurredOn: "2026-09-02",
@@ -313,6 +330,7 @@ it("refuses an amount the database itself would call impossible", async () => {
   await expect(
     recordMovementInSpace(db, recording(space, member.id), {
       spaceId: space.id,
+      direction: "expense",
       categoryId,
       amount: 0,
       occurredOn: "2026-09-03",
@@ -338,6 +356,7 @@ it("refuses, in the database itself, to move a Movement to another recorder", as
 
   const recorded = await recordMovementInSpace(db, recording(space, member.id), {
     spaceId: space.id,
+    direction: "expense",
     categoryId,
     amount: 500,
     occurredOn: "2026-09-03",
@@ -376,4 +395,112 @@ it("refuses, in the database itself, an attribution to a non-Member", async () =
       VALUES (${space.id}, ${categoryId}, 500, '2026-09-03', ${member.id}, ${stranger.id})
     `,
   ).rejects.toThrow(/is attributed to .*, who is not a Member/);
+});
+
+it("writes income down and reads it back carrying no Category", async () => {
+  const { member, space } = await aSpaceWithACategory("Entra plata");
+
+  const recorded = await recordMovementInSpace(db, recording(space, member.id), {
+    spaceId: space.id,
+    direction: "income",
+    categoryId: null,
+    amount: 850_000_00,
+    occurredOn: "2026-09-01",
+    attributedTo: null,
+  });
+
+  expect(recorded.direction).toBe("income");
+  expect(recorded.categoryId).toBeNull();
+  expect(recorded.amount).toEqual(money(850_000_00, "ARS"));
+
+  const readBack = await findMovementInSpace(db, space, recorded.id);
+  expect(readBack).toEqual(recorded);
+});
+
+it("reads a month holding both kinds of Movement", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Mes entero");
+  const context = recording(space, member.id);
+
+  await recordMovementInSpace(db, context, {
+    spaceId: space.id,
+    direction: "expense",
+    categoryId,
+    amount: 128_400,
+    occurredOn: "2026-09-03",
+    attributedTo: null,
+  });
+  await recordMovementInSpace(db, context, {
+    spaceId: space.id,
+    direction: "income",
+    categoryId: null,
+    amount: 850_000_00,
+    occurredOn: "2026-09-01",
+    attributedTo: null,
+  });
+
+  const read = await movementsInMonth(db, space, month("2026-09"));
+
+  expect(read.map((movement) => movement.direction)).toEqual([
+    "expense",
+    "income",
+  ]);
+  expect(spent(read, "ARS")).toEqual(money(128_400, "ARS"));
+  expect(earned(read, "ARS")).toEqual(money(850_000_00, "ARS"));
+});
+
+it("refuses, in the database itself, income filed under a Category", async () => {
+  // The domain refuses it in `filing`. This is the floor under that: a salary
+  // under "Supermercado" would be a row every Budget figure in #10 onwards
+  // silently reads as spending.
+  const { member, space, categoryId } = await aSpaceWithACategory("Piso #8");
+
+  await expect(
+    sql`
+      INSERT INTO movements (space_id, direction, category_id, amount, occurred_on, recorded_by, attributed_to)
+      VALUES (${space.id}, 'income', ${categoryId}, 500, '2026-09-03', ${member.id}, ${member.id})
+    `,
+  ).rejects.toThrow(/movements_expense_is_filed_and_income_is_not/);
+});
+
+it("refuses, in the database itself, an expense with no Category", async () => {
+  const { member, space } = await aSpaceWithACategory("Sin archivar");
+
+  await expect(
+    sql`
+      INSERT INTO movements (space_id, direction, category_id, amount, occurred_on, recorded_by, attributed_to)
+      VALUES (${space.id}, 'expense', NULL, 500, '2026-09-03', ${member.id}, ${member.id})
+    `,
+  ).rejects.toThrow(/movements_expense_is_filed_and_income_is_not/);
+});
+
+it("refuses, in the database itself, a direction that is neither", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Ni una ni otra");
+
+  await expect(
+    sql`
+      INSERT INTO movements (space_id, direction, category_id, amount, occurred_on, recorded_by, attributed_to)
+      VALUES (${space.id}, 'gasto', ${categoryId}, 500, '2026-09-03', ${member.id}, ${member.id})
+    `,
+  ).rejects.toThrow(/movements_direction_is_one_of_two/);
+});
+
+it("refuses, in the database itself, any attempt to change a direction", async () => {
+  // The same rule `movement_recorder_is_immutable` holds for the recorder, and
+  // for the same reason: an entry that can change kind is not a record of what
+  // happened. `amendMovement` refuses it too; this is what refuses it for
+  // every path that never goes through the domain.
+  const { member, space, categoryId } = await aSpaceWithACategory("No se da vuelta");
+
+  const recorded = await recordMovementInSpace(db, recording(space, member.id), {
+    spaceId: space.id,
+    direction: "expense",
+    categoryId,
+    amount: 128_400,
+    occurredOn: "2026-09-03",
+    attributedTo: null,
+  });
+
+  await expect(
+    sql`UPDATE movements SET direction = 'income' WHERE id = ${recorded.id}`,
+  ).rejects.toThrow(/direction can never be changed/);
 });

@@ -44,7 +44,7 @@ test("a Member records an expense in a few taps and finds it in the month", asyn
   const { space } = await aMemberWithASpace("Ana Gasta", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}/movimientos`);
-  await page.getByRole("link", { name: "Anotar un gasto" }).click();
+  await page.getByRole("link", { name: "Anotar un movimiento" }).click();
 
   // Story 18 in #1: the amount first, on a large keypad, because it is the
   // only part a person might forget on the way home from the till.
@@ -57,7 +57,7 @@ test("a Member records an expense in a few taps and finds it in the month", asyn
     new RegExp(`/espacios/${space.id}/movimientos\\?mes=`),
   );
 
-  const movements = page.getByRole("group", { name: "Movimientos" });
+  const movements = page.getByRole("region", { name: "Movimientos" });
   await expect(movements).toContainText("Supermercado");
   // es-AR puts a space between the symbol and the figure, and it is a
   // non-breaking one. The regex is about not asserting a space character
@@ -104,8 +104,8 @@ test("what the month has cost is the sum of what was recorded", async ({
   await record("100000");
   await record("50000");
 
-  // On the Budget tab, which is where the figure has always been: the totals
-  // on the month's list itself belong to #8.
+  // On the Budget tab. The month's own list carries both totals (#8); this
+  // is the one figure the Budget tab has shown since #7, still adding up.
   await page.goto(`/espacios/${space.id}`);
   await expect(
     page.getByRole("group", { name: "Este mes" }),
@@ -162,7 +162,7 @@ test("a Member records something their partner spent, and it says whose it was",
   await page.getByRole("button", { name: "Guardar" }).click();
 
   await expect(page).toHaveURL(/\/movimientos\?mes=/);
-  await expect(page.getByRole("group", { name: "Movimientos" })).toContainText(
+  await expect(page.getByRole("region", { name: "Movimientos" })).toContainText(
     /\$\s?50,00/,
   );
 });
@@ -207,7 +207,7 @@ test("a Member corrects an expense they got wrong", async ({
   await page.getByRole("button", { name: "Guardar los cambios" }).click();
   await expect(page).toHaveURL(/\/movimientos\?mes=/);
 
-  await expect(page.getByRole("group", { name: "Movimientos" })).toContainText(
+  await expect(page.getByRole("region", { name: "Movimientos" })).toContainText(
     /\$\s?1\.284,00/,
   );
   await page.goto(`/espacios/${space.id}`);
@@ -252,13 +252,13 @@ test("a Member deletes an expense, and is asked first", async ({
   await page.getByRole("button", { name: "Guardar" }).click();
   await page.getByRole("link", { name: /Otros/ }).click();
 
-  await page.getByRole("button", { name: "Borrar el gasto" }).click();
+  await page.getByRole("button", { name: "Borrar el movimiento" }).click();
   // #1: actions that destroy data confirm first.
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("button", { name: "Sí, borralo" }).click();
 
   await expect(page).toHaveURL(/\/movimientos\?mes=/);
-  await expect(page.getByRole("group", { name: "Movimientos" })).toContainText(
+  await expect(page.getByRole("region", { name: "Movimientos" })).toContainText(
     "Todavía no anotaste ningún movimiento acá.",
   );
   // And it stops counting: a deleted expense that still moved the total would
@@ -290,7 +290,7 @@ test("the list lands on the month the money is in, not the server's", async ({
   await page.getByRole("button", { name: "Guardar" }).click();
 
   await expect(page).toHaveURL(new RegExp(`mes=${day.slice(0, 7)}`));
-  await expect(page.getByRole("group", { name: "Movimientos" })).toContainText(
+  await expect(page.getByRole("region", { name: "Movimientos" })).toContainText(
     /\$\s?66,00/,
   );
 });
@@ -308,7 +308,7 @@ test("a month nobody has is the month it would have shown anyway", async ({
   );
 
   expect(junk?.status()).toBe(200);
-  await expect(page.getByRole("group", { name: "Movimientos" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Movimientos" })).toBeVisible();
 });
 
 test("another Member's Movements are not reachable, identifier and all", async ({
@@ -359,4 +359,192 @@ test("an expense is recorded on a phone without scrolling sideways", async ({
   );
 
   expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test("a Member records income in the same flow as an expense", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Nico Cobra", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+
+  // #8: the same screen, the same keypad, one chip apart. Choosing income
+  // takes the Category picker off the screen -- income carries none.
+  await page.getByRole("radio", { name: "Un ingreso" }).click();
+  await expect(page.getByRole("group", { name: "Categoría" })).toHaveCount(0);
+
+  await type(page, "85000000");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+  const movements = page.getByRole("region", { name: "Movimientos" });
+  await expect(movements).toContainText("Ingreso");
+  await expect(movements).toContainText(/\$\s?850\.000,00/);
+});
+
+test("the month's Movements are grouped by the day they happened on", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Vera Agrupa", context, baseURL!);
+
+  // Two days of one month, so there is a grouping to see at all. Both are in
+  // the past, which is the only kind of day a Movement can carry.
+  const dayBefore = new Date();
+  dayBefore.setDate(dayBefore.getDate() - 2);
+  const other = dayBefore.toISOString().slice(0, 10);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "1000");
+  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+  // Waited for, and not merely started: navigating away from a form whose
+  // action is still in flight abandons it, and the row never appears.
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "2000");
+  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByText("Cambiar").click();
+  await page.getByLabel("Día").fill(other);
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  const movements = page.getByRole("region", { name: "Movimientos" });
+  // A day is a heading with its own Movements under it, and the most recent
+  // day is read first: a person scanning a month starts from where they are.
+  const days = movements.getByRole("group");
+  await expect(days).toHaveCount(2);
+  await expect(days.first()).toContainText("Hoy");
+  await expect(days.first()).toContainText(/\$\s?10,00/);
+  await expect(days.last()).toContainText(/\$\s?20,00/);
+});
+
+test("the month shows what came in and what went out, side by side", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Sol Cuenta", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await page.getByRole("radio", { name: "Un ingreso" }).click();
+  await type(page, "500000");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "120000");
+  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  // Both figures and never their difference: a month where a salary arrived
+  // and the rent was paid is not a month where nothing happened.
+  const month = page.getByRole("group", { name: "Este mes" });
+  await expect(month).toContainText(/Ingresos[\s\S]*\$\s?5\.000,00/);
+  await expect(month).toContainText(/Gastos[\s\S]*\$\s?1\.200,00/);
+});
+
+test("in a shared Space every Movement says whose money it was", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const gian = await createMember("Gian Comparte");
+  const ana = await createMember("Ana Comparte");
+  const space = await createSpaceFor(gian.id, "Casa compartida", "ARS");
+  await joinSpace(space.id, ana.id);
+  await startSession(context, baseURL!, gian);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "3000");
+  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByText("Cambiar").click();
+  await page.getByLabel("Es plata de").selectOption({ label: "Ana Comparte" });
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  // #8: it is the shared Space that makes this worth saying on every row.
+  await expect(page.getByRole("region", { name: "Movimientos" })).toContainText(
+    "Plata de Ana Comparte",
+  );
+});
+
+test("a personal Space does not say whose money it was on every row", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Uno Solo", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "4000");
+  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  // Every Movement here is theirs, so a line saying so on every row says
+  // nothing and costs a row's worth of width.
+  await expect(
+    page.getByRole("region", { name: "Movimientos" }),
+  ).not.toContainText("Plata de");
+});
+
+test("the month in view can be changed, and stops at the one being lived in", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Tere Navega", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "7000");
+  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  const movements = page.getByRole("region", { name: "Movimientos" });
+  await expect(movements).toContainText(/\$\s?70,00/);
+
+  // Nothing can have happened after today, so there is nowhere forward to go.
+  await expect(page.getByRole("link", { name: "Mes siguiente" })).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Mes anterior" }).click();
+  await expect(movements).toContainText("Todavía no anotaste ningún movimiento acá.");
+
+  await page.getByRole("link", { name: "Mes siguiente" }).click();
+  await expect(movements).toContainText(/\$\s?70,00/);
+});
+
+test("a correction cannot turn an expense into income", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Pipe Da Vuelta", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "5500");
+  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  await page.getByRole("link", { name: /Otros/ }).click();
+  // There is no control for it: which way the money went is what kind of
+  // Movement this is, and a control whose only outcome is a refusal has no
+  // business on a screen.
+  await expect(page.getByRole("radio", { name: "Un ingreso" })).toHaveCount(0);
+
+  // So this is the only way to ask for it, and it is refused rather than
+  // half-saved. Without the action reading the hidden field, the four answers
+  // it does understand would be written and the fifth silently dropped.
+  await page.evaluate(() => {
+    const carried = document.querySelector<HTMLInputElement>(
+      'input[name="direction"]',
+    );
+    if (carried) carried.value = "income";
+  });
+  await page.getByRole("button", { name: "Guardar los cambios" }).click();
+
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page).not.toHaveURL(/\/movimientos\?mes=/);
 });

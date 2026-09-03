@@ -1,13 +1,25 @@
 import { database } from "@/db/client";
 import { membersOfSpace } from "@/db/spaces";
 import { findMovementInSpace, movementsInMonth } from "@/db/movements";
-import type { CalendarDate, Month } from "@/domain/calendar/month";
-import { calendarDate, isMonth, monthOf } from "@/domain/calendar/month";
+import type { CalendarDate, Month, MonthsAround } from "@/domain/calendar/month";
+import {
+  calendarDate,
+  isMonth,
+  monthOf,
+  monthsAround,
+} from "@/domain/calendar/month";
 import { formatMoney } from "@/domain/money/money";
-import { spent, type Movement } from "@/domain/movement/movement";
+import {
+  earned,
+  movementsByDay,
+  spent,
+  type Movement,
+  type MovementDirection,
+} from "@/domain/movement/movement";
 import type { SpaceMember } from "@/domain/space/access";
 import type { Space } from "@/domain/space/space";
-import { dayLabel } from "@/i18n/day";
+import { t } from "@/i18n";
+import { dayLabel, monthLabel } from "@/i18n/day";
 import type { Chip } from "@/ui/chip-field";
 import { readableCatalogueFor } from "../categorias/catalogue";
 
@@ -52,7 +64,11 @@ export function monthInView(asked?: string): Month {
  */
 export type ReadableMovement = {
   id: string;
-  /** The Category it is filed under, as a person reads it. */
+  direction: MovementDirection;
+  /**
+   * What the row is called: the Category an expense is filed under, as a
+   * person reads it, and the word for income, which is filed nowhere (#8).
+   */
   category: string;
   /** The heading that Category sits under, if it sits under one. */
   heading: string | null;
@@ -66,10 +82,37 @@ export type ReadableMovement = {
   minorUnits: number;
   day: string;
   occurredOn: CalendarDate;
-  categoryId: string;
+  categoryId: string | null;
   attributedTo: string;
+  /**
+   * Whose money it was, named — or nothing at all in a Space with one Member,
+   * where every Movement is theirs and saying so on every row says nothing.
+   */
+  attribution: string | null;
   /** Who typed it in. Shown and never offered as something to change. */
   recordedBy: string;
+};
+
+/** One day of the month and everything recorded on it, as a screen reads it. */
+export type ReadableDay = {
+  day: CalendarDate;
+  /** The day named the way a person says it: "Hoy", "2 de septiembre". */
+  label: string;
+  movements: readonly ReadableMovement[];
+};
+
+/** One Space's month, as the screen showing it needs to know it. */
+export type ReadableMonth = {
+  month: Month;
+  /** The month named at the top of the screen: "Septiembre". */
+  label: string;
+  /** The days that had something in them, most recent first. */
+  days: readonly ReadableDay[];
+  /** What went out and what came in, in the Space's money. */
+  spent: string;
+  earned: string;
+  /** Where the control at the top of the screen can go from here. */
+  around: MonthsAround;
 };
 
 /**
@@ -106,31 +149,46 @@ export async function spaceMembers(
 }
 
 /**
- * One Space's month: what was recorded in it and what it adds up to.
+ * One Space's month: what was recorded in it, what it adds up to, and where a
+ * thumb can go from it.
  *
  * The Category names come from `readableCatalogueFor`, which is the one place
  * a Category is named — a second answer to "what is this Category called"
- * would eventually disagree with the catalogue screen.
+ * would eventually disagree with the catalogue screen. The Member names come
+ * from the Space's own rows, and only where there is more than one of them:
+ * that is what makes "whose money was this" a question worth answering.
  */
 export async function readableMonth(
   space: Space,
   month: Month,
   locales: readonly string[],
-): Promise<{ movements: readonly ReadableMovement[]; spent: string }> {
-  const [recorded, catalogue] = await Promise.all([
+): Promise<ReadableMonth> {
+  const [recorded, catalogue, members] = await Promise.all([
     movementsInMonth(database(), space, month),
     readableCatalogueFor(space.id),
+    spaceMembers(space.id),
   ]);
 
   const named = namesFrom(catalogue);
   const today = todayOnTheServer();
+  const attributions = attributionsFrom(members);
+  const asRead = (movement: Movement) =>
+    readable(movement, named, attributions, locales, today);
 
   return {
-    movements: recorded.map((movement) => readable(movement, named, locales, today)),
+    month,
+    label: monthLabel(month, monthOf(today)),
+    days: movementsByDay(recorded).map((day) => ({
+      day: day.day,
+      label: dayLabel(day.day, today),
+      movements: day.movements.map(asRead),
+    })),
     // Read off the Movements rather than summed in SQL, so what the screen
     // shows is the total of exactly the rows beneath it and can never disagree
     // with them.
     spent: formatMoney(spent(recorded, space.currency), locales),
+    earned: formatMoney(earned(recorded, space.currency), locales),
+    around: monthsAround(month, monthOf(today)),
   };
 }
 
@@ -143,9 +201,15 @@ export async function readableMovement(
   const movement = await findMovementInSpace(database(), space, movementId);
   if (!movement) return null;
 
+  // No attributions, and so no query for the Members: this is the correction
+  // screen's reader, and that screen asks who the money belongs to with a
+  // picker rather than saying it in a line. `attribution` is a thing the
+  // month's list shows, and fetching a Space's Members to fill a field nobody
+  // reads is a round trip bought for nothing.
   return readable(
     movement,
     namesFrom(await readableCatalogueFor(space.id)),
+    new Map(),
     locales,
     todayOnTheServer(),
   );
@@ -168,9 +232,26 @@ function namesFrom(
   return named;
 }
 
+/**
+ * How each Member is named on a row, or nothing at all.
+ *
+ * Empty in a personal Space, and deliberately: "In a shared Space each
+ * Movement shows whose money it was" (#8), and in a Space of one the answer is
+ * always the person reading it. A line that says the same thing on every row
+ * is a line a thumb stops seeing, and it costs a row's worth of width.
+ */
+function attributionsFrom(
+  members: readonly SpaceMember[],
+): ReadonlyMap<string, string> {
+  if (members.length < 2) return new Map();
+
+  return new Map(members.map((member) => [member.id, member.name]));
+}
+
 function readable(
   movement: Movement,
   named: Naming,
+  attributions: ReadonlyMap<string, string>,
   locales: readonly string[],
   today: CalendarDate,
 ): ReadableMovement {
@@ -178,11 +259,18 @@ function readable(
   // Category retired by a migration. The money stays on the screen with its
   // identifier showing rather than disappearing, because a figure nobody can
   // see is worse than one nobody can name.
-  const category = named.get(movement.categoryId);
+  const category =
+    movement.categoryId === null ? undefined : named.get(movement.categoryId);
+  const attributedTo = attributions.get(movement.attributedTo);
 
   return {
     id: movement.id,
-    category: category?.name ?? movement.categoryId,
+    direction: movement.direction,
+    // Income is filed nowhere, so the word for it is the whole of its name.
+    category:
+      movement.direction === "income"
+        ? t("movements.income")
+        : (category?.name ?? movement.categoryId ?? ""),
     heading: category?.heading ?? null,
     amount: formatMoney(movement.amount, locales),
     minorUnits: movement.amount.amount,
@@ -190,6 +278,9 @@ function readable(
     occurredOn: movement.occurredOn,
     categoryId: movement.categoryId,
     attributedTo: movement.attributedTo,
+    attribution: attributedTo
+      ? t("movements.attributed", { member: attributedTo })
+      : null,
     recordedBy: movement.recordedBy,
   };
 }

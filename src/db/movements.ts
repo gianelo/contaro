@@ -9,6 +9,7 @@ import { categoriesVisibleTo, type Category } from "@/domain/category/category";
 import { money } from "@/domain/money/money";
 import {
   amendMovement,
+  isMovementDirection,
   recordMovement,
   type Movement,
   type MovementAmendment,
@@ -26,6 +27,7 @@ type Database = Connection["db"];
 const movementColumns = {
   id: movements.id,
   spaceId: movements.spaceId,
+  direction: movements.direction,
   categoryId: movements.categoryId,
   amount: movements.amount,
   occurredOn: movements.occurredOn,
@@ -37,7 +39,8 @@ const movementColumns = {
 type MovementRow = {
   id: string;
   spaceId: string;
-  categoryId: string;
+  direction: string;
+  categoryId: string | null;
   amount: number;
   occurredOn: string;
   recordedBy: string;
@@ -73,6 +76,7 @@ export async function recordMovementInSpace(
     .insert(movements)
     .values({
       spaceId: checked.spaceId,
+      direction: checked.direction,
       categoryId: checked.categoryId,
       amount: checked.amount.amount,
       occurredOn: checked.occurredOn,
@@ -112,6 +116,8 @@ export async function amendMovementInSpace(
 
   const [updated] = await db
     .update(movements)
+    // The direction is not here on purpose: it is as unchangeable as the
+    // recorder, refused by `amendMovement` above and by a trigger under this.
     .set({
       categoryId: checked.categoryId,
       amount: checked.amount.amount,
@@ -222,8 +228,10 @@ export async function movementsInMonth(
         standing,
       ),
     )
-    // The day it happened on, then the order they were typed in: two expenses
+    // The day it happened on, then the order they were typed in: two Movements
     // on one day read newest first, which is where a thumb is already looking.
+    // `movementsByDay` keeps whatever order it is handed, so this is the order
+    // the month's list is read in.
     .orderBy(desc(movements.occurredOn), desc(movements.createdAt));
 
   return rows.map((row) => asMovement(row, space));
@@ -307,9 +315,19 @@ function asMovement(row: MovementRow, space: Space): Movement {
     );
   }
 
+  // A direction the domain does not know can only come from a write that went
+  // round it and past the check in migration 0005. Refused rather than read as
+  // an expense: a row nobody can classify must not join a total by default.
+  if (!isMovementDirection(row.direction)) {
+    throw new Error(
+      `Movement ${row.id} is recorded as "${row.direction}", which is neither an expense nor income.`,
+    );
+  }
+
   return {
     id: row.id,
     spaceId: row.spaceId,
+    direction: row.direction,
     categoryId: row.categoryId,
     // Throws on a fraction, which can only come from a write that went round
     // the domain: a figure that is not whole minor units cannot be shown.

@@ -79,6 +79,7 @@ export default async function MovementPage({
           // Back into the minor units the keypad counts in, from the Money the
           // screen reads. The formatted amount is for eyes; this is the figure.
           amount: movement.minorUnits,
+          direction: movement.direction,
           categoryId: movement.categoryId,
           occurredOn: movement.occurredOn,
           attributedTo: movement.attributedTo,

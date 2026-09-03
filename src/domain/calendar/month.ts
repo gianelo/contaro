@@ -143,6 +143,59 @@ export function lastDayOf(month: Month): CalendarDate {
   return calendarDate(written(new Date(Date.UTC(year, index, 0))));
 }
 
+/** The month before this one: `2026-01` comes after `2025-12`. */
+export function previousMonth(of: Month): Month {
+  return stepped(of, -1);
+}
+
+/** The month after this one: `2026-12` is followed by `2027-01`. */
+export function nextMonth(of: Month): Month {
+  return stepped(of, 1);
+}
+
+/** Where a screen reading one month can go from it. */
+export type MonthsAround = {
+  previous: Month;
+  /** The month after, or nothing where there is nothing yet to read. */
+  next: Month | null;
+};
+
+/**
+ * The months either side of the one being read, as far as there is anything to
+ * read in them.
+ *
+ * Backwards is unbounded: a Space has a first month, this does not know which,
+ * and an empty month behind you is an honest answer to "what did I spend in
+ * March". Forwards stops at the month being lived in, because a Movement is
+ * money that has already moved (`recordMovement` refuses a day that has not
+ * happened) — so every month past this one is guaranteed empty, and offering
+ * them is offering a corridor of blank screens with month names on them.
+ *
+ * Written `YYYY-MM`, so `>=` compares months the way a calendar orders them.
+ */
+export function monthsAround(inView: Month, today: Month): MonthsAround {
+  return {
+    previous: previousMonth(inView),
+    next: inView >= today ? null : nextMonth(inView),
+  };
+}
+
+/**
+ * A month a given number of months away, which is only ever one either way.
+ *
+ * Arithmetic on a `Date` in UTC rather than on the two numbers, so December to
+ * January carries the year without this having to know that a year has twelve
+ * months. `Date.UTC(2026, 12, 1)` is January 2027 and `Date.UTC(2026, -1, 1)`
+ * is December 2025; the rollover is the platform's rule and not a second copy
+ * of it written here.
+ */
+function stepped(of: Month, by: number): Month {
+  const [year, index] = [Number(of.slice(0, 4)), Number(of.slice(5, 7))];
+  const at = new Date(Date.UTC(year, index - 1 + by, 1));
+
+  return month(written(at).slice(0, 7));
+}
+
 /** A `Date` written the way a calendar writes it, in UTC. */
 function written(date: Date): string {
   return date.toISOString().slice(0, 10);

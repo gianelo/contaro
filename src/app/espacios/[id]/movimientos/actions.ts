@@ -56,7 +56,14 @@ export async function recordMovementAction(
 
   const outcome = await handleRecordMovement(await ports(), {
     spaceId,
-    categoryId: answer(form, "categoryId"),
+    // Passed through raw, the way the day and the amount are: which way the
+    // money went is a claim the form makes, and `recordMovement` is where a
+    // claim becomes a fact. Repairing a missing one into "expense" here would
+    // file somebody's salary as a purchase and say nothing about it.
+    direction: answer(form, "direction"),
+    // Absent from the form when the money is coming in, and null is what the
+    // domain requires income to carry.
+    categoryId: answer(form, "categoryId") || null,
     // `Number("")` is 0 and `Number("x")` is NaN, and both are refused by the
     // domain by name. Repairing either here would hide the bug rather than the
     // typo, the way `isCurrencyCode` refuses to repair "ars".
@@ -95,10 +102,16 @@ export async function amendMovementAction(
     spaceId,
     answer(form, "movementId"),
     {
-      categoryId: answer(form, "categoryId"),
+      categoryId: answer(form, "categoryId") || null,
       amount: Number(answer(form, "amount")),
       occurredOn: answer(form, "occurredOn"),
       attributedTo: answer(form, "attributedTo"),
+      // Read and not ignored, so the rule that refuses it is reachable from
+      // the screen and not only from a test. The correction screen carries it
+      // back unchanged, so the ordinary correction passes; a form that carried
+      // the other one is refused by `DirectionIsImmutableError` rather than
+      // quietly saving the four answers it did understand.
+      direction: answer(form, "direction"),
     },
   );
 

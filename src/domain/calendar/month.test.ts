@@ -7,6 +7,9 @@ import {
   lastDayOf,
   month,
   monthOf,
+  monthsAround,
+  nextMonth,
+  previousMonth,
   UnreadableDateError,
   UnreadableMonthError,
 } from "./month";
@@ -103,5 +106,51 @@ describe("whether a string from outside names a month", () => {
   it("refuses to build a month out of something that is not one", () => {
     expect(() => month("septiembre")).toThrow(UnreadableMonthError);
     expect(() => month("2026-13")).toThrow(UnreadableMonthError);
+  });
+});
+
+describe("the month before and the month after", () => {
+  it("steps back a month", () => {
+    expect(previousMonth(month("2026-09"))).toBe("2026-08");
+  });
+
+  it("steps forward a month", () => {
+    expect(nextMonth(month("2026-09"))).toBe("2026-10");
+  });
+
+  it("steps back over the turn of the year", () => {
+    expect(previousMonth(month("2026-01"))).toBe("2025-12");
+  });
+
+  it("steps forward over the turn of the year", () => {
+    expect(nextMonth(month("2026-12"))).toBe("2027-01");
+  });
+
+  it("comes back to where it started", () => {
+    // Two steps that undo each other, which is what the control on the month's
+    // screen is: a thumb that goes back and forward lands on the month it left.
+    expect(nextMonth(previousMonth(month("2026-01")))).toBe("2026-01");
+  });
+});
+
+describe("the months a screen can move to", () => {
+  const SEPTEMBER = month("2026-09");
+
+  it("always offers the month before", () => {
+    expect(monthsAround(SEPTEMBER, SEPTEMBER).previous).toBe("2026-08");
+  });
+
+  it("offers the month after while there is one to read", () => {
+    expect(monthsAround(month("2026-07"), SEPTEMBER).next).toBe("2026-08");
+  });
+
+  it("offers no month after the one being lived in", () => {
+    // Nothing can have happened after today, so a later month is guaranteed
+    // empty. Offering it is offering a blank screen with a month's name on it.
+    expect(monthsAround(SEPTEMBER, SEPTEMBER).next).toBeNull();
+  });
+
+  it("offers no month after one already past the calendar", () => {
+    expect(monthsAround(month("2027-03"), SEPTEMBER).next).toBeNull();
   });
 });

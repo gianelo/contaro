@@ -162,13 +162,27 @@ export const movements = pgTable(
       .notNull()
       .references(() => spaces.id, { onDelete: "cascade" }),
     /**
-     * The Category it is filed under. Not cascaded and not nulled: money
-     * recorded against a Category outlives any tidying of the catalogue, and a
-     * Movement whose Category vanished is a figure nobody can explain.
+     * Which way the money went: `expense` or `income` (#8). Plain text with a
+     * check rather than a Postgres enum, for the reason `spaces.currency` is
+     * text: the set of directions is the domain's (`isMovementDirection`), and
+     * an enum type would make adding to it a migration on a type rather than a
+     * line in the module that owns the rule.
+     *
+     * No default. A row that arrives without one is a write that went round
+     * the domain, and defaulting it to `expense` would quietly file somebody's
+     * salary as a purchase.
      */
-    categoryId: uuid("category_id")
-      .notNull()
-      .references(() => categories.id),
+    direction: text("direction").notNull(),
+    /**
+     * The Category an expense is filed under. Not cascaded and not nulled by
+     * the catalogue: money recorded against a Category outlives any tidying of
+     * it, and a Movement whose Category vanished is a figure nobody can
+     * explain.
+     *
+     * Nullable only because income carries no Category at all (#8), and the
+     * check below is what keeps that the *only* reason it is ever null.
+     */
+    categoryId: uuid("category_id").references(() => categories.id),
     /**
      * Minor units, always in the Space's currency (ADR-0007). `bigint` and not
      * `integer`: 2.1 billion minor units is fifteen thousand dollars' worth of
@@ -199,6 +213,22 @@ export const movements = pgTable(
     // An expense of nothing is an expense nobody made, and which way the money
     // went is what kind of Movement this is rather than the sign of its amount.
     check("movements_amount_is_money_that_moved", sql`${table.amount} > 0`),
+    // The two kinds, and no third. `isMovementDirection` refuses the same set
+    // in the domain; this is what refuses it for every path that never goes
+    // through the domain, the way ADR-0001's trigger does for a currency.
+    check(
+      "movements_direction_is_one_of_two",
+      sql`${table.direction} IN ('expense', 'income')`,
+    ),
+    // The Category dimension exists to be measured against a Budget, and a
+    // Budget is a plan of expenses (CONTEXT.md). So an expense is filed and
+    // income is not -- and this is the floor under `filing` in the domain, so
+    // that "Alquiler" can never become a salary by a route nobody wrote.
+    check(
+      "movements_expense_is_filed_and_income_is_not",
+      sql`(${table.direction} = 'expense' AND ${table.categoryId} IS NOT NULL)
+        OR (${table.direction} = 'income' AND ${table.categoryId} IS NULL)`,
+    ),
     check(
       "movements_struck_or_standing",
       sql`(${table.struckBy} IS NULL AND ${table.struckAt} IS NULL)

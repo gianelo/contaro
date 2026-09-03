@@ -17,8 +17,12 @@ The Member an amount is being shown to, considered as the person reading it. The
 _Avoid_: Viewer, User, Audience
 
 **Movement**:
-A single entry of money leaving or entering a Space. An expense and an income are the two kinds of Movement.
+A single entry of money leaving or entering a Space. An expense and an income are the two kinds of Movement, and which one it is is its Direction.
 _Avoid_: Transaction, Entry, Record
+
+**Direction**:
+Which way the money went: an expense or an income. It is what kind of Movement one is and never the sign of its amount, it is fixed when the Movement is recorded and can never be corrected afterwards, and it decides what the Movement carries — an expense is filed under a Category and an income is filed nowhere (ADR-0016).
+_Avoid_: Kind, Type, Sign, Flow
 
 **Recorded by**:
 The Member who created a Movement. Set automatically from the signed-in Member and never changed afterwards; it exists to answer "who typed this in".
@@ -41,7 +45,7 @@ The single currency a Space is denominated in, chosen when the Space is created 
 _Avoid_: Base currency, Default currency
 
 **Category**:
-The bucket a Movement is classified under, such as food, rent or leisure. Categories come from a global catalogue that every Space sees, which a Space can extend with its own; a Category may hold subcategories.
+The bucket an *expense* is classified under, such as food, rent or leisure. Categories come from a global catalogue that every Space sees, which a Space can extend with its own; a Category may hold subcategories. Income carries none: the dimension exists to be measured against a Budget, and a Budget is a plan of expenses (ADR-0016).
 
 **Budget**:
 The plan of expenses a Space expects to make in a given month, made up of Budget items. It stays editable throughout its month, and real spending is measured against it; it never blocks a Movement from being recorded.

@@ -56,11 +56,33 @@ export const es = {
   "space.new.error.failed": "No pudimos crear el espacio. Probá de nuevo.",
 
   "space.month": "Este mes",
+  // Two screens, two words for one figure, on purpose. The Budget tab shows
+  // one number and reads "lo que va gastado"; the month's list shows two side
+  // by side and reads them as a pair of nouns.
   "space.month.spent": "Gastado",
+  "space.month.expenses": "Gastos",
+  "space.month.income": "Ingresos",
   "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
+  "space.month.choose": "Elegir el mes",
+  "space.month.previous": "Mes anterior",
+  "space.month.next": "Mes siguiente",
 
-  "movements.new": "Anotar un gasto",
-  "movements.new.title": "Nuevo gasto",
+  "movements.new": "Anotar un movimiento",
+  "movements.new.title": "Nuevo movimiento",
+  "movements.direction": "Qué anotás",
+  "movements.direction.expense": "Un gasto",
+  "movements.direction.income": "Un ingreso",
+  // What an income row is called on the month's list. It carries no Category
+  // (#8), so this is the whole of its name.
+  "movements.income": "Ingreso",
+  // The one mark that tells money coming in from money going out at a glance.
+  // A written sign and not a colour: a difference carried by colour alone is a
+  // difference somebody cannot see, and this product's one accent colour
+  // already means "this can be tapped".
+  "movements.amount.income": "+{amount}",
+  // Shown on a row only where the Space has somebody else in it. In a personal
+  // Space every Movement is yours, and saying so on every row says nothing.
+  "movements.attributed": "Plata de {member}",
   "movements.keypad": "Teclado del monto",
   "movements.keypad.erase": "Borrar el último número",
   "movements.category": "Categoría",
@@ -73,13 +95,13 @@ export const es = {
   "movements.recordedBy": "Anotado por {member}",
   "movements.submit": "Guardar",
   "movements.working": "Guardando\u2026",
-  "movements.edit.title": "Corregir el gasto",
+  "movements.edit.title": "Corregir el movimiento",
   "movements.edit.submit": "Guardar los cambios",
   // "Struck out" in the key and "borrar" in the words, deliberately: the
   // glossary's term is Struck out, because the row is never deleted, and what
   // a person calls the button is "borrar" (ADR-0015).
-  "movements.strike": "Borrar el gasto",
-  "movements.strike.title": "¿Borrar este gasto?",
+  "movements.strike": "Borrar el movimiento",
+  "movements.strike.title": "¿Borrar este movimiento?",
   "movements.strike.body":
     "Deja de contar en el mes. Queda anotado que lo borraste vos.",
   "movements.strike.confirm": "Sí, borralo",
@@ -88,10 +110,11 @@ export const es = {
   "movements.error.category": "Elegí una categoría de este espacio.",
   "movements.error.day": "Elegí un día que ya haya pasado.",
   "movements.error.attribution": "Elegí a alguien de este espacio.",
+  "movements.error.direction": "Elegí si es un gasto o un ingreso.",
   "movements.error.space": "No pudimos ver de qué espacio se trata.",
-  "movements.error.gone": "Ese gasto ya no está.",
+  "movements.error.gone": "Ese movimiento ya no está.",
   "movements.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
-  "movements.error.failed": "No pudimos guardar el gasto. Probá de nuevo.",
+  "movements.error.failed": "No pudimos guardar el movimiento. Probá de nuevo.",
 
   "categories.subtitle":
     "Vienen con contaro y las podés ampliar. Lo que agregues acá no sale de este espacio.",
