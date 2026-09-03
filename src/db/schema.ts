@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   check,
+  date,
   index,
   pgTable,
   primaryKey,
@@ -13,6 +15,11 @@ import {
 /**
  * The Drizzle schema. Tables arrive with the tickets that need them:
  * Movements with #7, Budgets with #10.
+ *
+ * Every table's shape is generated into `migrations/` by `pnpm db:generate`;
+ * the rules a column type cannot express are written into that SQL by hand as
+ * triggers, so they hold for every path into the table and not only the one
+ * that goes through the domain.
  */
 
 /**
@@ -126,5 +133,83 @@ export const categories = pgTable(
     // rows plus one Space's. Null space_ids are indexed too, so the global half
     // of that answer is a lookup rather than a scan of everyone's Categories.
     index("categories_space_id_idx").on(table.spaceId),
+  ],
+);
+
+/**
+ * A Movement: money that has already left or entered a Space (#7).
+ *
+ * There is no pending state and no column for one — a Movement means the money
+ * moved. What is due next week is a Fixed item on a Budget (#13), and marking
+ * it paid is what inserts a row here.
+ *
+ * The two Members are two different questions and so two columns. `recorded_by`
+ * answers "who typed this in" and is never updated; `attributed_to` answers
+ * "whose money was it" and is what every per-Member report reads.
+ *
+ * Neither foreign key cascades from `members`. A Member row disappearing must
+ * not take a shared Space's history with it — the other Member is still owed an
+ * honest ledger — so the reference simply refuses the delete. Both refer to the
+ * table with no action rather than `restrict`, which is checked at the end of
+ * the statement instead of immediately: deleting a Space cascades the Movements
+ * and the Categories together, and `restrict` would refuse its own cascade.
+ */
+export const movements = pgTable(
+  "movements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    /**
+     * The Category it is filed under. Not cascaded and not nulled: money
+     * recorded against a Category outlives any tidying of the catalogue, and a
+     * Movement whose Category vanished is a figure nobody can explain.
+     */
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    /**
+     * Minor units, always in the Space's currency (ADR-0007). `bigint` and not
+     * `integer`: 2.1 billion minor units is fifteen thousand dollars' worth of
+     * Argentine pesos, which is a month's rent rather than a ceiling.
+     */
+    amount: bigint("amount", { mode: "number" }).notNull(),
+    /** The day the money moved. A day, not an instant: see `CalendarDate`. */
+    occurredOn: date("occurred_on", { mode: "string" }).notNull(),
+    recordedBy: uuid("recorded_by")
+      .notNull()
+      .references(() => members.id),
+    attributedTo: uuid("attributed_to")
+      .notNull()
+      .references(() => members.id),
+    /**
+     * Who struck this Movement out, and when. A correction that removes an
+     * entry is itself an entry: a ledger that loses rows silently lies about
+     * every figure downstream, so a deletion writes down whose it was rather
+     * than leaving a gap. Set together and never unset.
+     */
+    struckBy: uuid("struck_by").references(() => members.id),
+    struckAt: timestamp("struck_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // An expense of nothing is an expense nobody made, and which way the money
+    // went is what kind of Movement this is rather than the sign of its amount.
+    check("movements_amount_is_money_that_moved", sql`${table.amount} > 0`),
+    check(
+      "movements_struck_or_standing",
+      sql`(${table.struckBy} IS NULL AND ${table.struckAt} IS NULL)
+        OR (${table.struckBy} IS NOT NULL AND ${table.struckAt} IS NOT NULL)`,
+    ),
+    // Every read is "this Space's Movements, in this month", which is exactly
+    // this pair. Struck rows are left in the index: they are a small minority
+    // and a partial index would have to be dropped the day #8 shows them.
+    index("movements_space_id_occurred_on_idx").on(
+      table.spaceId,
+      table.occurredOn,
+    ),
   ],
 );

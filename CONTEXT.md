@@ -28,6 +28,10 @@ _Avoid_: Author, Creator, Owner
 The Member whose money a Movement actually is, defaulting to the one recording it and changeable at entry time. It is what reports read to break down who spent and who earned, and it is empty on a Carry-over.
 _Avoid_: Owner, Belongs to, Payer
 
+**Struck out**:
+A Movement a Member has removed from the ledger. It stops counting towards every figure and can no longer be read, and the entry keeps who struck it out and when (ADR-0015).
+_Avoid_: Deleted, Removed, Voided, Cancelled
+
 **Origin**:
 Where a Movement came from: a Member, or the Carry-over of a named month. A report about Members reads only Movements whose origin is a Member.
 _Avoid_: Source, Kind, Type

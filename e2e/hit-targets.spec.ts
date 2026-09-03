@@ -6,7 +6,7 @@ const MIN = 44;
 /** Measures every element a finger can hit, in a real browser. */
 async function undersizedTargets(page: Page) {
   const interactive = page.locator(
-    "a:visible, button:visible, [role='button']:visible, input:visible, select:visible, textarea:visible",
+    "a:visible, button:visible, [role='button']:visible, input:visible, select:visible, textarea:visible, summary:visible",
   );
   const count = await interactive.count();
   const undersized: string[] = [];
@@ -104,5 +104,25 @@ test("every base component is at least 44px, sheet included", async ({
   // Four buttons, an actionable list row, a text field, a picker, the scrim,
   // and the two sheet actions. If a component stops rendering, this catches it.
   expect(count).toBe(10);
+  expect(undersized).toEqual([]);
+});
+
+test("every target on the screen an expense is recorded on is at least 44px", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const member = await createMember("Rita Toca");
+  const space = await createSpaceFor(member.id, "Casa", "ARS");
+  await startSession(context, baseURL!, member);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+
+  // Opened, so the day field is measured as well as the line that folds it
+  // away. Everything on this screen is hit with one thumb at a till.
+  await page.getByText("Cambiar").click();
+
+  const { undersized } = await undersizedTargets(page);
+
   expect(undersized).toEqual([]);
 });

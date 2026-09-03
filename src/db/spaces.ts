@@ -167,3 +167,27 @@ export async function listSpacesForMember(
 
   return spacesVisibleTo(memberId, listed);
 }
+
+/**
+ * Everyone in a Space, in the order they joined it.
+ *
+ * The membership rule is not asked here, because this is never the answer to
+ * "may this Member see it": every caller has already been handed a `Space` by
+ * `findSpaceForMember`, which is what proved it. This only says who is in the
+ * Space that was already proved to be theirs — which is what an attribution
+ * has to be held to (#7) and what an invitation will add to (#9).
+ */
+export async function membersOfSpace(
+  db: Database,
+  spaceId: string,
+): Promise<readonly SpaceMember[]> {
+  const rows = await db
+    .select({ id: members.id, name: members.name })
+    .from(spaceMembers)
+    .innerJoin(members, eq(members.id, spaceMembers.memberId))
+    .where(eq(spaceMembers.spaceId, spaceId))
+    // The creator first, then whoever was invited after them (#9).
+    .orderBy(spaceMembers.joinedAt, members.id);
+
+  return rows;
+}

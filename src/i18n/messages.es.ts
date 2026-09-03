@@ -59,6 +59,40 @@ export const es = {
   "space.month.spent": "Gastado",
   "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
 
+  "movements.new": "Anotar un gasto",
+  "movements.new.title": "Nuevo gasto",
+  "movements.keypad": "Teclado del monto",
+  "movements.keypad.erase": "Borrar el último número",
+  "movements.category": "Categoría",
+  "movements.category.none": "Elegí una categoría",
+  "movements.when": "{day} · {member}",
+  "movements.when.today": "Hoy",
+  "movements.change": "Cambiar",
+  "movements.day": "Día",
+  "movements.attributedTo": "Es plata de",
+  "movements.recordedBy": "Anotado por {member}",
+  "movements.submit": "Guardar",
+  "movements.working": "Guardando\u2026",
+  "movements.edit.title": "Corregir el gasto",
+  "movements.edit.submit": "Guardar los cambios",
+  // "Struck out" in the key and "borrar" in the words, deliberately: the
+  // glossary's term is Struck out, because the row is never deleted, and what
+  // a person calls the button is "borrar" (ADR-0015).
+  "movements.strike": "Borrar el gasto",
+  "movements.strike.title": "¿Borrar este gasto?",
+  "movements.strike.body":
+    "Deja de contar en el mes. Queda anotado que lo borraste vos.",
+  "movements.strike.confirm": "Sí, borralo",
+  "movements.strike.working": "Borrando\u2026",
+  "movements.error.amount": "Poné un monto mayor que cero.",
+  "movements.error.category": "Elegí una categoría de este espacio.",
+  "movements.error.day": "Elegí un día que ya haya pasado.",
+  "movements.error.attribution": "Elegí a alguien de este espacio.",
+  "movements.error.space": "No pudimos ver de qué espacio se trata.",
+  "movements.error.gone": "Ese gasto ya no está.",
+  "movements.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
+  "movements.error.failed": "No pudimos guardar el gasto. Probá de nuevo.",
+
   "categories.subtitle":
     "Vienen con contaro y las podés ampliar. Lo que agregues acá no sale de este espacio.",
   "categories.add": "Agregar una categoría",
