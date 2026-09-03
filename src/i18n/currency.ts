@@ -1,5 +1,10 @@
-import type { CurrencyCode } from "@/domain/money/currency";
-import { t } from "./index";
+import { currencyCodes, type CurrencyCode } from "@/domain/money/currency";
+import { inReadingOrder, t } from "./index";
+
+/** A currency's name on its own: "Peso argentino". */
+function currencyName(code: CurrencyCode): string {
+  return t(`currency.${code}`);
+}
 
 /**
  * How a currency is named to a person: "Peso argentino (ARS)".
@@ -9,5 +14,27 @@ import { t } from "./index";
  * when they are invited into it. One decision, one place.
  */
 export function currencyLabel(code: CurrencyCode): string {
-  return `${t(`currency.${code}`)} (${code})`;
+  return `${currencyName(code)} (${code})`;
+}
+
+/** A currency as a picker shows it: the code it is stored as, and its label. */
+export type ReadableCurrency = {
+  code: CurrencyCode;
+  label: string;
+};
+
+/**
+ * Every currency contaro offers, in the order a person reads them.
+ *
+ * The order lives here and not in the domain for the same reason
+ * `readableCatalogue` sorts Categories here: a currency's name is a
+ * translation, and `src/domain/` sees only codes. Alphabetical by the name and
+ * not by the label, so the code never reaches the comparator — a list that
+ * runs from Ottawa to Asunción is one a thumb can predict the position of, and
+ * "nearest home first" stopped describing it at ten.
+ */
+export function readableCurrencies(): readonly ReadableCurrency[] {
+  return [...currencyCodes]
+    .sort((a, b) => inReadingOrder(currencyName(a), currencyName(b)))
+    .map((code) => ({ code, label: currencyLabel(code) }));
 }

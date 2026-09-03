@@ -1,20 +1,19 @@
 "use client";
 
 import { useActionState } from "react";
-import { currencyCodes } from "@/domain/money/currency";
 import { MAX_SPACE_NAME_LENGTH } from "@/domain/space/space";
 import { Button } from "@/ui/button";
 import { SelectField, TextField } from "@/ui/field";
 import { Notice } from "@/ui/notice";
 import { t } from "@/i18n";
-import { currencyLabel } from "@/i18n/currency";
+import { readableCurrencies } from "@/i18n/currency";
 import { createSpaceAction } from "./actions";
 import { nothingWrongYet } from "./create";
 import styles from "./form.module.css";
 
-const choices = currencyCodes.map((code) => ({
-  value: code,
-  label: currencyLabel(code),
+const choices = readableCurrencies().map((currency) => ({
+  value: currency.code,
+  label: currency.label,
 }));
 
 export function NewSpaceForm() {
@@ -34,11 +33,17 @@ export function NewSpaceForm() {
         required
       />
 
+      {/*
+        No currency is offered until one is chosen. A default would answer, for
+        whoever does not look, a question that can never be asked again
+        (ADR-0001), and the browser refuses a submission that names none.
+      */}
       <SelectField
         name="currency"
         label={t("space.new.currency")}
         choices={choices}
-        defaultValue="ARS"
+        placeholder={t("space.new.currency.none")}
+        required
       />
 
       {/* ADR-0001, said before the choice is made rather than after. */}

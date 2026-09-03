@@ -90,6 +90,20 @@ describe("creating a Space", () => {
     expect(outcome).toEqual({ kind: "rejected", field: "currency" });
   });
 
+  it("refuses a form that names no currency at all", async () => {
+    const { saved, saveSpace } = store();
+
+    // What the picker really posts when nobody chooses: the unchosen option
+    // carries no value (ADR-0012), so this is the empty string and not "ARS".
+    const outcome = await handleCreateSpace(sessionFor(ana), saveSpace, {
+      name: "Casa",
+      currency: "",
+    });
+
+    expect(outcome).toEqual({ kind: "rejected", field: "currency" });
+    expect(saved).toEqual([]);
+  });
+
   it("does not treat a database that fell over as a bad answer from the person", async () => {
     const gone = new Error("the connection went away");
     const saveSpace = vi.fn(async () => {

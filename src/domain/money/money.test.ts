@@ -45,6 +45,25 @@ describe("formatting an amount", () => {
     expect(readable(formatMoney(money(1235, "CLP"), "es-AR"))).toBe("CLP 1.235");
   });
 
+  it("shows a Colombian peso without centavos, because nobody there types them", () => {
+    expect(readable(formatMoney(money(1_234_567, "COP"), "es-AR"))).toBe(
+      "COP 1.234.567",
+    );
+  });
+
+  it("shows a Mexican peso with its centavos", () => {
+    expect(readable(formatMoney(money(1234_50, "MXN"), "es-AR"))).toBe(
+      "MXN 1.234,50",
+    );
+  });
+
+  it("tells the two dollars apart without extra copy", () => {
+    const canadian = readable(formatMoney(money(1234_50, "CAD"), "es-AR"));
+
+    expect(canadian).toBe("CAD 1.234,50");
+    expect(canadian).not.toBe(readable(formatMoney(money(1234_50, "USD"), "es-AR")));
+  });
+
   it("shows nothing spent as nothing, rather than as an empty screen", () => {
     expect(readable(formatMoney(zero("ARS"), "es-AR"))).toBe("$ 0,00");
   });

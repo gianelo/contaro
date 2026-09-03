@@ -200,6 +200,34 @@ describe("SelectField", () => {
 
     expect(screen.getByRole("combobox", { name: "Moneda" })).toHaveValue("USD");
   });
+
+  it("starts on no choice at all when it is given a placeholder", () => {
+    render(
+      <SelectField
+        name="currency"
+        label="Moneda"
+        placeholder="Elegí una moneda"
+        choices={[
+          { value: "ARS", label: "Peso argentino (ARS)" },
+          { value: "USD", label: "Dólar estadounidense (USD)" },
+        ]}
+        required
+      />,
+    );
+
+    const picker = screen.getByRole("combobox", { name: "Moneda" });
+
+    expect(picker).toHaveValue("");
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual([
+      "Elegí una moneda",
+      "Peso argentino (ARS)",
+      "Dólar estadounidense (USD)",
+    ]);
+    // An empty selection is what makes `required` mean anything on a <select>.
+    expect(picker).toBeInvalid();
+  });
 });
 
 describe("Notice", () => {

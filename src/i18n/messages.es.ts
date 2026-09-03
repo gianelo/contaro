@@ -47,6 +47,7 @@ export const es = {
   "space.new.currency": "Moneda",
   "space.new.currency.forever":
     "La moneda no se puede cambiar nunca. Si te equivocás vas a tener que crear otro espacio y empezar de cero.",
+  "space.new.currency.none": "Elegí una moneda",
   "space.new.submit": "Crear el espacio",
   "space.new.working": "Creando\u2026",
   "space.new.error.name": "Ponele un nombre al espacio.",
@@ -113,6 +114,9 @@ export const es = {
   "currency.BRL": "Real brasileño",
   "currency.CLP": "Peso chileno",
   "currency.PYG": "Guaraní",
+  "currency.COP": "Peso colombiano",
+  "currency.MXN": "Peso mexicano",
+  "currency.CAD": "Dólar canadiense",
 
   "account.label": "Tu sesión",
   "account.signOut": "Salir",

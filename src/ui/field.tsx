@@ -83,7 +83,16 @@ export type SelectFieldProps = Omit<
   SelectHTMLAttributes<HTMLSelectElement>,
   "className" | "id" | "children"
 > &
-  Common & { choices: readonly Choice[] };
+  Common & {
+    choices: readonly Choice[];
+    /**
+     * Shown first and selected until a person picks something, for a question
+     * whose answer must be theirs. It carries no value, which is what gives
+     * `required` teeth on a <select>: a picker that starts on a real choice
+     * answers for whoever does not look.
+     */
+    placeholder?: string;
+  };
 
 /**
  * A labelled picker over a closed set. A native <select> on purpose: on a phone
@@ -94,6 +103,7 @@ export function SelectField({
   label,
   hint,
   choices,
+  placeholder,
   ...rest
 }: SelectFieldProps) {
   const { id, hintId, describedBy } = useFieldIds(hint);
@@ -106,6 +116,10 @@ export function SelectField({
         aria-describedby={describedBy}
         className={cx(hitTarget, styles.control, styles.select)}
       >
+        {/* First, so a browser with nothing else to go on starts here. */}
+        {placeholder === undefined ? null : (
+          <option value="">{placeholder}</option>
+        )}
         {choices.map((choice) => (
           <option key={choice.value} value={choice.value}>
             {choice.label}

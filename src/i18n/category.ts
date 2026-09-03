@@ -2,7 +2,7 @@ import type {
   CategoryBranch,
   CategoryLabel,
 } from "@/domain/category/category";
-import { locale, t } from "./index";
+import { inReadingOrder, t } from "./index";
 import { es, type SpanishMessages } from "./messages.es";
 
 /**
@@ -77,7 +77,5 @@ function readable(category: CategoryBranch["category"]): ReadableCategory {
   };
 }
 
-// The reader's language decides where the accents and the ñ fall, which plain
-// string comparison gets wrong in exactly the alphabet this product ships in.
 const byName = (a: ReadableCategory, b: ReadableCategory) =>
-  a.name.localeCompare(b.name, locale);
+  inReadingOrder(a.name, b.name);
