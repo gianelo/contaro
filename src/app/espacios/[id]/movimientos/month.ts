@@ -267,6 +267,11 @@ function readable(
     id: movement.id,
     direction: movement.direction,
     // Income is filed nowhere, so the word for it is the whole of its name.
+    // The empty string on the end is unreachable and is here for the type
+    // checker alone: `categoryId` is nullable because income makes it so, and
+    // an expense that reached this line has one (`filing`, plus the check in
+    // migration 0005). Written down rather than left as a mystery, because a
+    // fallback with no reason reads like a case somebody expected.
     category:
       movement.direction === "income"
         ? t("movements.income")
