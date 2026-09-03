@@ -2,7 +2,11 @@
 import { afterAll, expect, it } from "vitest";
 import { createDatabase, databaseUrl } from "./connection";
 import { memberFromGoogle } from "./members";
-import { createSpaceForMember, findSpaceForMember } from "./spaces";
+import {
+  createSpaceForMember,
+  findSpaceForMember,
+  listSpacesForMember,
+} from "./spaces";
 
 // Run with `pnpm test:db`, which starts Postgres first.
 const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
@@ -124,4 +128,97 @@ it("refuses to change a Space's currency, even from outside the domain", async (
   await expect(findSpaceForMember(db, space.id, juan.id)).resolves.toMatchObject(
     { currency: "ARS" },
   );
+});
+
+it("lists the Space a Member created, with themselves on it", async () => {
+  const kari = await aMember("Kari");
+  const space = await createSpaceForMember(db, kari.id, {
+    name: "Personal",
+    currency: "ARS",
+  });
+
+  await expect(listSpacesForMember(db, kari.id)).resolves.toEqual([
+    { space, members: [{ id: kari.id, name: "Kari" }] },
+  ]);
+});
+
+it("lists nothing for a Member who is in no Space", async () => {
+  const lea = await aMember("Lea");
+
+  await expect(listSpacesForMember(db, lea.id)).resolves.toEqual([]);
+});
+
+it("does not list a Space the Member is not in", async () => {
+  const mora = await aMember("Mora");
+  const nico = await aMember("Nico");
+  const hers = await createSpaceForMember(db, mora.id, {
+    name: "Casa de Mora",
+    currency: "ARS",
+  });
+  await createSpaceForMember(db, nico.id, {
+    name: "Casa de Nico",
+    currency: "USD",
+  });
+
+  await expect(listSpacesForMember(db, mora.id)).resolves.toEqual([
+    { space: hers, members: [{ id: mora.id, name: "Mora" }] },
+  ]);
+});
+
+it("names everyone in a Space on its row, not only the Member asking", async () => {
+  const olga = await aMember("Olga");
+  const pipo = await aMember("Pipo");
+  const space = await createSpaceForMember(db, olga.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+  // #9 brings the invitation; the row has to name a second Member before then,
+  // or the screen that tells the shared Space from the personal one is untested.
+  await sql`
+    INSERT INTO space_members (space_id, member_id) VALUES (${space.id}, ${pipo.id})
+  `;
+
+  const [row] = await listSpacesForMember(db, olga.id);
+
+  expect(row?.members).toEqual([
+    { id: olga.id, name: "Olga" },
+    { id: pipo.id, name: "Pipo" },
+  ]);
+});
+
+it("orders a Member's Spaces by when they joined them", async () => {
+  const rita = await aMember("Rita");
+  const first = await createSpaceForMember(db, rita.id, {
+    name: "Personal",
+    currency: "ARS",
+  });
+  const second = await createSpaceForMember(db, rita.id, {
+    name: "Casa",
+    currency: "USD",
+  });
+
+  const listed = await listSpacesForMember(db, rita.id);
+
+  // Not alphabetical: a list that reshuffles when a Space is renamed moves the
+  // row a person's thumb has learned to reach for.
+  expect(listed.map((row) => row.space.id)).toEqual([first.id, second.id]);
+});
+
+it("keeps two Spaces of the same Member apart, down to the currency", async () => {
+  const sofi = await aMember("Sofi");
+  const pesos = await createSpaceForMember(db, sofi.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+  const dolares = await createSpaceForMember(db, sofi.id, {
+    name: "Viaje",
+    currency: "USD",
+  });
+
+  const listed = await listSpacesForMember(db, sofi.id);
+
+  expect(listed.map((row) => row.space)).toEqual([
+    { id: pesos.id, name: "Casa", currency: "ARS" },
+    { id: dolares.id, name: "Viaje", currency: "USD" },
+  ]);
 });

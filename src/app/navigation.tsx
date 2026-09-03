@@ -5,15 +5,34 @@ import { t } from "@/i18n";
 export type TabId = "budget" | "movements" | "spaces";
 
 /**
- * The tabs the app ships with today. The shell takes navigation as a slot, so
- * replacing this with a drawer or a segmented control touches only this file.
+ * Navigation exists inside a Space, because every screen it reaches is about
+ * one Space's money (#5). The Space is carried in the URL and nowhere else: no
+ * cookie, no session field, nothing a person could be looking at without the
+ * address bar saying so.
+ *
+ * The Space list itself has no tab bar. It is what a Member lands on and what
+ * they come back to, and the two other tabs would have no Space to point at.
  */
-export const tabs: readonly Tab<TabId>[] = [
-  { id: "budget", href: "/", label: t("nav.budget") },
-  { id: "movements", href: "/movimientos", label: t("nav.movements") },
-  { id: "spaces", href: "/espacios", label: t("nav.spaces") },
-];
+function spaceTabs(spaceId: string): readonly Tab<TabId>[] {
+  const inside = `/espacios/${spaceId}`;
 
-export function MainNavigation({ activeId }: { activeId: TabId }) {
-  return <TabBar tabs={tabs} activeId={activeId} />;
+  return [
+    { id: "budget", href: inside, label: t("nav.budget") },
+    {
+      id: "movements",
+      href: `${inside}/movimientos`,
+      label: t("nav.movements"),
+    },
+    { id: "spaces", href: "/espacios", label: t("nav.spaces") },
+  ];
+}
+
+export function SpaceNavigation({
+  spaceId,
+  activeId,
+}: {
+  spaceId: string;
+  activeId: TabId;
+}) {
+  return <TabBar tabs={spaceTabs(spaceId)} activeId={activeId} />;
 }

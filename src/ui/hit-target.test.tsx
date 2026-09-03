@@ -38,6 +38,15 @@ describe("hit targets", () => {
     expect(screen.getByRole("button", { name: "Éxito" })).toHaveClass(hitTarget);
   });
 
+  it("a grouped list item that goes somewhere carries the hit target", () => {
+    render(
+      <GroupedList label="Espacios">
+        <GroupedListItem href="/espacios/casa">Casa</GroupedListItem>
+      </GroupedList>,
+    );
+    expect(screen.getByRole("link", { name: "Casa" })).toHaveClass(hitTarget);
+  });
+
   it("every tab in the tab bar carries the hit target", () => {
     render(
       <TabBar

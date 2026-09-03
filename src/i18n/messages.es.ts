@@ -5,17 +5,19 @@
  */
 export const es = {
   "app.name": "contaro",
+  "app.description":
+    "Planeá el mes y anotá lo que gastás, solo o con quien compartas la plata.",
 
   "nav.main": "Principal",
   "nav.budget": "Presupuesto",
   "nav.movements": "Movimientos",
   "nav.spaces": "Espacios",
 
-  "home.title": "Presupuesto",
-  "home.empty.title": "Todavía no hay nada acá",
-  "home.empty.body":
-    "Cuando crees tu primer espacio vas a ver acá el presupuesto del mes.",
-  "home.empty.action": "Crear un espacio",
+  "spaces.title": "Espacios",
+  "spaces.empty.title": "Todavía no tenés espacios",
+  "spaces.empty.body":
+    "Un espacio guarda los movimientos y el presupuesto de una sola moneda. Creá el primero para empezar.",
+  "spaces.new": "Crear un espacio",
 
   "gallery.title": "Componentes",
   "gallery.buttons": "Botones",
@@ -53,6 +55,7 @@ export const es = {
 
   "space.month": "Este mes",
   "space.month.spent": "Gastado",
+  "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
 
   "currency.ARS": "Peso argentino",
   "currency.USD": "Dólar estadounidense",

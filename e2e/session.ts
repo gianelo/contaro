@@ -2,6 +2,7 @@ import { encode } from "next-auth/jwt";
 import type { BrowserContext } from "@playwright/test";
 import { createDatabase, databaseUrl } from "../src/db/connection";
 import { memberFromGoogle } from "../src/db/members";
+import { createSpaceForMember } from "../src/db/spaces";
 import { authSecret } from "./secret";
 
 /**
@@ -58,3 +59,39 @@ export async function createMember(name: string) {
 }
 
 let nextAccount = 0;
+
+/**
+ * A second Member inside a Space, written straight into the table.
+ *
+ * #9 brings the invitation that puts them there; until it does, a row that
+ * names two people cannot be built through the product at all, and the screen
+ * that tells the shared Space from the personal one would go unmeasured.
+ */
+export async function joinSpace(spaceId: string, memberId: string) {
+  const { sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    await sql`
+      INSERT INTO space_members (space_id, member_id) VALUES (${spaceId}, ${memberId})
+    `;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * A Space belonging to a Member, made the way the product makes one. Building
+ * a list of Spaces through the form would spend a page load per row to prove
+ * something #4 already proves; these specs are about the list itself.
+ */
+export async function createSpaceFor(
+  memberId: string,
+  name: string,
+  currency: string,
+) {
+  const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    return await createSpaceForMember(db, memberId, { name, currency });
+  } finally {
+    await sql.end();
+  }
+}

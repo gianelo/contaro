@@ -1,9 +1,14 @@
-import { eq } from "drizzle-orm";
-import { spaceVisibleTo } from "@/domain/space/access";
+import { eq, inArray } from "drizzle-orm";
+import {
+  spaceVisibleTo,
+  spacesVisibleTo,
+  type SpaceMember,
+  type SpaceWithMembers,
+} from "@/domain/space/access";
 import { createSpace, type Space } from "@/domain/space/space";
 import { isCurrencyCode } from "@/domain/money/currency";
 import type { Connection } from "./connection";
-import { spaceMembers, spaces } from "./schema";
+import { members, spaceMembers, spaces } from "./schema";
 
 type Database = Connection["db"];
 
@@ -101,4 +106,64 @@ function asSpace(row: { id: string; name: string; currency: string }): Space {
   }
 
   return { id: row.id, name: row.name, currency: row.currency };
+}
+
+/**
+ * Every Space a Member may open, oldest membership first, each with everyone
+ * its row names.
+ *
+ * The membership rule is asked twice on purpose. The query narrows to the
+ * Spaces this Member has a row in — a list cannot read the whole table and
+ * filter afterwards — and the domain then decides, on Spaces whose Members were
+ * fetched in full, which of them are really theirs. A join that ever loosens
+ * is caught by the second gate rather than quietly handing over someone
+ * else's money.
+ */
+export async function listSpacesForMember(
+  db: Database,
+  memberId: string,
+): Promise<readonly SpaceWithMembers[]> {
+  const mine = await db
+    .select({ spaceId: spaceMembers.spaceId })
+    .from(spaceMembers)
+    .where(eq(spaceMembers.memberId, memberId))
+    // The order a person joined them, which is stable: alphabetical would move
+    // a row under their thumb the day a Space is renamed.
+    .orderBy(spaceMembers.joinedAt, spaceMembers.spaceId);
+
+  if (mine.length === 0) return [];
+
+  const ids = mine.map((row) => row.spaceId);
+
+  const [rows, memberships] = await Promise.all([
+    db.select(spaceColumns).from(spaces).where(inArray(spaces.id, ids)),
+    db
+      .select({
+        spaceId: spaceMembers.spaceId,
+        memberId: members.id,
+        name: members.name,
+      })
+      .from(spaceMembers)
+      .innerJoin(members, eq(members.id, spaceMembers.memberId))
+      .where(inArray(spaceMembers.spaceId, ids))
+      // The creator first, then whoever was invited after them (#9).
+      .orderBy(spaceMembers.joinedAt, members.id),
+  ]);
+
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const membersOf = new Map<string, SpaceMember[]>();
+  for (const entry of memberships) {
+    const group = membersOf.get(entry.spaceId) ?? [];
+    group.push({ id: entry.memberId, name: entry.name });
+    membersOf.set(entry.spaceId, group);
+  }
+
+  const listed = ids.flatMap((id) => {
+    const row = byId.get(id);
+    return row
+      ? [{ space: asSpace(row), members: membersOf.get(id) ?? [] }]
+      : [];
+  });
+
+  return spacesVisibleTo(memberId, listed);
 }
