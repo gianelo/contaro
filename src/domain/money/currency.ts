@@ -10,6 +10,9 @@
  * so removing an entry does not tidy the catalogue, it makes every Space
  * denominated in it unreadable. What admits a new one is a Member who keeps
  * their money in it.
+ *
+ * A new entry needs a name in `src/i18n/messages.es.ts` and a country in
+ * `./country.ts`; both are enforced by tests rather than remembered.
  */
 
 export const currencies = {

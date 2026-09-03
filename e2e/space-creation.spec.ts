@@ -103,7 +103,7 @@ test("the picker offers the currencies by name, in the order they are read", asy
     .allTextContents();
 
   // Derived and not written out, because ADR-0012 says the eleventh currency
-  // is two edits: a test that lists them all would quietly make it three.
+  // is three edits: a test that lists them all would quietly make it four.
   // What this proves is that the browser really shows what i18n decided —
   // the order itself is pinned in src/i18n/currency.test.ts.
   expect(options).toEqual([
@@ -150,4 +150,73 @@ test("amounts inside a Space are shown in that Space's currency", async ({
   await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
     "US$ 0,00",
   );
+});
+
+/**
+ * Where a request comes from only ever sorts the picker (ADR-0013). Vercel
+ * sets this header in production; Playwright sets it here, which is what makes
+ * "a person in Bogotá" testable without a VPN.
+ */
+test.describe("a request from Colombia", () => {
+  test.use({ extraHTTPHeaders: { "x-vercel-ip-country": "CO" } });
+
+  test("sees Colombian pesos first, with the rest still alphabetical", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await startSession(context, baseURL!, await createMember("Hugo Bogota"));
+
+    await page.goto("/espacios/nuevo");
+
+    const picker = page.getByLabel("Moneda");
+    const options = await picker.locator("option").allTextContents();
+
+    expect(options).toEqual([
+      t("space.new.currency.none"),
+      ...readableCurrencies("COP").map((currency) => currency.label),
+    ]);
+    // The code and not the name, so this says "COP is offered first" once
+    // rather than restating a label the suite already pins elsewhere.
+    await expect(picker.locator("option").nth(1)).toHaveAttribute(
+      "value",
+      "COP",
+    );
+  });
+
+  test("still chooses nothing on its own", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await startSession(context, baseURL!, await createMember("Ines Bogota"));
+
+    await page.goto("/espacios/nuevo");
+
+    // The whole point of the ticket: the list moved, the answer did not.
+    await expect(page.getByLabel("Moneda")).toHaveValue("");
+  });
+});
+
+test.describe("a request from a country whose currency contaro does not offer", () => {
+  test.use({ extraHTTPHeaders: { "x-vercel-ip-country": "JP" } });
+
+  test("gets the alphabetical list, and nothing fails", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await startSession(context, baseURL!, await createMember("Jime Tokio"));
+
+    await page.goto("/espacios/nuevo");
+
+    const picker = page.getByLabel("Moneda");
+    const options = await picker.locator("option").allTextContents();
+
+    expect(options).toEqual([
+      t("space.new.currency.none"),
+      ...readableCurrencies().map((currency) => currency.label),
+    ]);
+    await expect(picker).toHaveValue("");
+  });
 });

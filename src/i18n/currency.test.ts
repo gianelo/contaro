@@ -35,3 +35,39 @@ describe("the currencies a picker offers", () => {
     expect(shown.indexOf("EUR")).toBeLessThan(shown.indexOf("ARS"));
   });
 });
+
+describe("lifting the currency of the country a request came from", () => {
+  it("shows it first", () => {
+    const shown = readableCurrencies("COP").map((currency) => currency.code);
+
+    expect(shown[0]).toBe("COP");
+  });
+
+  it("leaves everything under it in the order a person reads", () => {
+    const rest = readableCurrencies("COP")
+      .slice(1)
+      .map((currency) => currency.label);
+
+    expect(rest).toEqual([...rest].sort((a, b) => a.localeCompare(b, locale)));
+  });
+
+  it("still offers all of them and nothing twice", () => {
+    const shown = readableCurrencies("COP").map((currency) => currency.code);
+
+    expect([...shown].sort()).toEqual([...currencyCodes].sort());
+  });
+
+  it("changes nothing when the country is unknown", () => {
+    // The header is missing, or names a country whose currency we do not
+    // offer. Both arrive here as nothing, and nothing is not a failure.
+    expect(readableCurrencies(null)).toEqual(readableCurrencies());
+  });
+
+  it("does not move a currency that already reads first", () => {
+    const alphabetical = readableCurrencies().map((currency) => currency.code);
+
+    expect(readableCurrencies(alphabetical[0]).map((c) => c.code)).toEqual(
+      alphabetical,
+    );
+  });
+});

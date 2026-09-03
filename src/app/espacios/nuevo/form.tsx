@@ -3,20 +3,19 @@
 import { useActionState } from "react";
 import { MAX_SPACE_NAME_LENGTH } from "@/domain/space/space";
 import { Button } from "@/ui/button";
-import { SelectField, TextField } from "@/ui/field";
+import { SelectField, TextField, type Choice } from "@/ui/field";
 import { Notice } from "@/ui/notice";
 import { t } from "@/i18n";
-import { readableCurrencies } from "@/i18n/currency";
 import { createSpaceAction } from "./actions";
 import { nothingWrongYet } from "./create";
 import styles from "./form.module.css";
 
-const choices = readableCurrencies().map((currency) => ({
-  value: currency.code,
-  label: currency.label,
-}));
-
-export function NewSpaceForm() {
+/**
+ * The currencies arrive from the screen rather than being read here, because
+ * their order depends on where the request came from and only the server sees
+ * that (see `currencyChoicesFor`).
+ */
+export function NewSpaceForm({ choices }: { choices: readonly Choice[] }) {
   const [state, submit, pending] = useActionState(
     createSpaceAction,
     nothingWrongYet,
@@ -36,7 +35,9 @@ export function NewSpaceForm() {
       {/*
         No currency is offered until one is chosen. A default would answer, for
         whoever does not look, a question that can never be asked again
-        (ADR-0001), and the browser refuses a submission that names none.
+        (ADR-0001), and the browser refuses a submission that names none. That
+        holds wherever the request came from: geolocation sorts this list and
+        never fills it in (ADR-0013).
       */}
       <SelectField
         name="currency"
