@@ -38,6 +38,36 @@ describe("GroupedList", () => {
     expect(screen.getByRole("group", { name: "Hoy" })).toBeInTheDocument();
   });
 
+  it("still names the group for a screen reader when the heading is hidden", () => {
+    render(
+      <GroupedList label="Espacios" labelHidden>
+        <GroupedListItem>Casa</GroupedListItem>
+      </GroupedList>,
+    );
+
+    // A screen whose own title already says "Espacios" should not print it a
+    // second time, but a group nobody can name is a group nobody can skip to.
+    // That it is really off the screen is measured in a browser, by
+    // e2e/space-list.spec.ts.
+    expect(screen.getByRole("group", { name: "Espacios" })).toBeInTheDocument();
+  });
+
+  it("renders an item with a destination as a link to it, not a button", () => {
+    render(
+      <GroupedList label="Espacios">
+        <GroupedListItem href="/espacios/casa">Casa</GroupedListItem>
+      </GroupedList>,
+    );
+
+    // A row that goes somewhere is a link, for the reason ButtonLink is one:
+    // it opens in a new tab and it works before any JavaScript has loaded.
+    expect(screen.getByRole("link", { name: "Casa" })).toHaveAttribute(
+      "href",
+      "/espacios/casa",
+    );
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("renders a non-actionable item as plain content, not a button", () => {
     render(
       <GroupedList label="Hoy">
@@ -45,6 +75,7 @@ describe("GroupedList", () => {
       </GroupedList>,
     );
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByText("Éxito")).toBeInTheDocument();
   });
 });
@@ -168,6 +199,34 @@ describe("SelectField", () => {
     );
 
     expect(screen.getByRole("combobox", { name: "Moneda" })).toHaveValue("USD");
+  });
+
+  it("starts on no choice at all when it is given a placeholder", () => {
+    render(
+      <SelectField
+        name="currency"
+        label="Moneda"
+        placeholder="Elegí una moneda"
+        choices={[
+          { value: "ARS", label: "Peso argentino (ARS)" },
+          { value: "USD", label: "Dólar estadounidense (USD)" },
+        ]}
+        required
+      />,
+    );
+
+    const picker = screen.getByRole("combobox", { name: "Moneda" });
+
+    expect(picker).toHaveValue("");
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual([
+      "Elegí una moneda",
+      "Peso argentino (ARS)",
+      "Dólar estadounidense (USD)",
+    ]);
+    // An empty selection is what makes `required` mean anything on a <select>.
+    expect(picker).toBeInvalid();
   });
 });
 

@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: t("app.name"),
-  description: t("home.empty.body"),
+  description: t("app.description"),
 };
 
 export const viewport: Viewport = {

@@ -25,3 +25,21 @@
   line-height: 1.5;
   color: var(--color-text-secondary);
 }
+
+.name {
+  font-weight: var(--weight-medium);
+}
+
+.members {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6) var(--space-8);
+}

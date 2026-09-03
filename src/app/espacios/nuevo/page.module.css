@@ -3,3 +3,9 @@
   font-weight: var(--weight-bold);
   padding: var(--space-4) 0 var(--space-10);
 }
+
+.back {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-6);
+}

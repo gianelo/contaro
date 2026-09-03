@@ -1,0 +1,12 @@
+.title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  padding: 0 0 var(--space-8);
+}
+
+.back {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-6);
+}

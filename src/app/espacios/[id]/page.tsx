@@ -1,23 +1,14 @@
-import { notFound } from "next/navigation";
-import { auth } from "@/auth";
-import { database } from "@/db/client";
-import { findSpaceForMember } from "@/db/spaces";
+import { headers } from "next/headers";
 import { formatMoney, zero } from "@/domain/money/money";
-import { AppShell } from "@/ui/app-shell";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
-import { MainNavigation } from "../../navigation";
-import { Account } from "../../account";
-import { numberLocale, t } from "@/i18n";
-import { currencyLabel } from "@/i18n/currency";
-import styles from "./page.module.css";
+import { t } from "@/i18n";
+import { numberLocalesFor } from "@/app/reader";
+import { SpaceScreen } from "./screen";
+import { currentSpace } from "./space";
 
 /**
- * Inside a Space: where creating one lands, and where #7 onwards will put its
- * Movements and its Budget.
- *
- * A Space someone is not in is not found rather than forbidden — saying it
- * exists is already saying something about it. #5 hardens that with the rest of
- * the switching rules.
+ * The Space's Budget: where picking a Space lands, and where #10 onwards will
+ * put the month's plan.
  */
 export default async function SpacePage({
   params,
@@ -25,27 +16,14 @@ export default async function SpacePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-
-  // The proxy keeps a signed-out request off every page but /ingresar. This is
-  // what happens if that ever stops being true.
-  const session = await auth();
-  if (!session) notFound();
-
-  const space = await findSpaceForMember(database(), id, session.user.id);
-  if (!space) notFound();
+  const space = await currentSpace(id);
+  // The Space's money, written the way whoever opened this reads numbers
+  // (ADR-0014). Two Members of one Space read one amount two ways; it is the
+  // same amount, and it is in the Space's currency for both of them.
+  const locales = numberLocalesFor(await headers());
 
   return (
-    <AppShell
-      navigation={<MainNavigation activeId="spaces" />}
-      account={<Account />}
-    >
-      <header className={styles.header}>
-        <h1 className={styles.title}>{space.name}</h1>
-        <p className={styles.currency}>
-          {currencyLabel(space.currency)}
-        </p>
-      </header>
-
+    <SpaceScreen space={space} tab="budget">
       <GroupedList label={t("space.month")}>
         {/*
           Nothing has been recorded yet, in any Space, until #7 brings Movements.
@@ -53,12 +31,10 @@ export default async function SpacePage({
           here now because what matters is that it is denominated in the Space's
           currency and never in the reader's.
         */}
-        <GroupedListItem
-          trailing={formatMoney(zero(space.currency), numberLocale)}
-        >
+        <GroupedListItem trailing={formatMoney(zero(space.currency), locales)}>
           {t("space.month.spent")}
         </GroupedListItem>
       </GroupedList>
-    </AppShell>
+    </SpaceScreen>
   );
 }

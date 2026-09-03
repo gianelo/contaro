@@ -45,11 +45,46 @@ describe("formatting an amount", () => {
     expect(readable(formatMoney(money(1235, "CLP"), "es-AR"))).toBe("CLP 1.235");
   });
 
+  it("shows a Colombian peso without centavos, because nobody there types them", () => {
+    expect(readable(formatMoney(money(1_234_567, "COP"), "es-AR"))).toBe(
+      "COP 1.234.567",
+    );
+  });
+
+  it("shows a Mexican peso with its centavos", () => {
+    expect(readable(formatMoney(money(1234_50, "MXN"), "es-AR"))).toBe(
+      "MXN 1.234,50",
+    );
+  });
+
+  it("tells the two dollars apart without extra copy", () => {
+    const canadian = readable(formatMoney(money(1234_50, "CAD"), "es-AR"));
+
+    expect(canadian).toBe("CAD 1.234,50");
+    expect(canadian).not.toBe(readable(formatMoney(money(1234_50, "USD"), "es-AR")));
+  });
+
   it("shows nothing spent as nothing, rather than as an empty screen", () => {
     expect(readable(formatMoney(zero("ARS"), "es-AR"))).toBe("$ 0,00");
   });
 
   it("keeps the sign of money that went the other way", () => {
     expect(readable(formatMoney(money(-500, "ARS"), "es-AR"))).toContain("-");
+  });
+});
+
+describe("formatting an amount for a reader who could be anywhere", () => {
+  it("takes the first of the reader's locales it knows how to write", () => {
+    // Intl walks the list, so an unknown locale costs nothing but a step.
+    expect(readable(formatMoney(money(1234_50, "MXN"), ["zz-ZZ", "es-MX"]))).toBe(
+      "$1,234.50",
+    );
+  });
+
+  it("writes one amount two ways for two readers, and never two amounts", () => {
+    const rent = money(1234_50, "MXN");
+
+    expect(readable(formatMoney(rent, ["es-MX"]))).toBe("$1,234.50");
+    expect(readable(formatMoney(rent, ["es-AR"]))).toBe("MXN 1.234,50");
   });
 });

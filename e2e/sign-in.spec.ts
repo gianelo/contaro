@@ -41,7 +41,7 @@ test("signing out ends the session", async ({ page, context, baseURL }) => {
   await expect(page).toHaveURL(/\/ingresar/);
 
   // And it is really gone: the app is out of reach again.
-  await page.goto("/movimientos");
+  await page.goto("/espacios");
   await expect(page).toHaveURL(/\/ingresar/);
 });
 
