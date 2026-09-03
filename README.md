@@ -71,6 +71,15 @@ https://dev.contaro.gianbarboza.com, each against its own Neon branch. The
 reasoning is in ADR-0008 (migrations run in CI, and never destroy) and ADR-0009
 (a preview never sees production data).
 
+The preview sits behind Vercel Authentication, and the scope it needs is
+Standard Protection. Vercel documents that scope as covering everything
+"except production domains" without saying which side a custom domain assigned
+to a branch falls on, so it was measured rather than assumed: the live host
+answers `302` to `vercel.com/sso-api`, signed out. It is covered. That is worth
+writing down because the scope that would obviously do it, All Deployments, is
+Pro-only, and the fallback would have been to give the preview back its
+generated `*.vercel.app` URL.
+
 CI cannot gate the deploy, because the migration Action and the Vercel deploy
 run in parallel — so it gates the merge instead, and nothing reaches `main`
 without a green `verify:all`. What makes the gap between them harmless is
