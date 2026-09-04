@@ -19,9 +19,10 @@ import {
 import type { SpaceMember } from "@/domain/space/access";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
+import type { ReadableBranch } from "@/i18n/category";
 import { dayLabel, monthLabel } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
-import type { Chip } from "@/ui/chip-field";
+import type { ChipBranch } from "@/ui/branching-chip-field";
 import {
   namesFrom,
   readableCatalogueFor,
@@ -129,28 +130,43 @@ export type ReadableMonth = {
 /**
  * The Categories a Movement can be filed under, as chips.
  *
- * The whole catalogue, flat: a Category has to be one tap from the amount
- * (story 19 in #1), and a heading that has to be opened before its
- * subcategories appear is a second tap on every expense a person records. It
- * is read in the order `readableCatalogue` puts it in, headings first and each
- * one followed by what it holds, so a thumb can predict where a chip is.
+ * The headings, each one holding what is under it. Which branch a chip belongs
+ * to has to survive the trip to the screen, because that is what the screen
+ * draws with: a heading is chosen in one tap and what it holds is offered next
+ * (`BranchingChipField`, #45). Flat, they were twenty-four identical chips
+ * with nothing saying which sat inside which.
+ *
+ * Read in the order `readableCatalogue` puts it in, so a thumb can predict
+ * where a chip is.
+ */
+export async function categoryChips(
+  spaceId: string,
+): Promise<readonly ChipBranch[]> {
+  return chipsFrom(await readableCatalogueFor(spaceId));
+}
+
+/**
+ * The catalogue as the picker offers it.
  *
  * A subcategory carries its heading as the qualifier, because two Spaces'
  * worth of naming can produce two Categories called the same thing under two
  * different headings, and a chip nobody can tell apart is a chip that files
- * money in the wrong place.
+ * money in the wrong place. The second group's legend asks for something more
+ * precise rather than naming the heading, so the qualifier is still the only
+ * thing saying which branch a child is heard in.
  */
-export async function categoryChips(spaceId: string): Promise<readonly Chip[]> {
-  const catalogue = await readableCatalogueFor(spaceId);
-
-  return catalogue.flatMap((branch) => [
-    { value: branch.id, label: branch.name },
-    ...branch.children.map((child) => ({
+export function chipsFrom(
+  catalogue: readonly ReadableBranch[],
+): readonly ChipBranch[] {
+  return catalogue.map((branch) => ({
+    value: branch.id,
+    label: branch.name,
+    children: branch.children.map((child) => ({
       value: child.id,
       label: child.name,
       qualifier: branch.name,
     })),
-  ]);
+  }));
 }
 
 export async function spaceMembers(

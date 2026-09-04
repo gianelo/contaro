@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import type { CurrencyCode } from "@/domain/money/currency";
 import { t } from "@/i18n";
 import { Button } from "@/ui/button";
-import { ChipField, type Chip } from "@/ui/chip-field";
+import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
 import { Keypad } from "@/ui/keypad";
 import { nothingWrongYet, type BudgetFormState } from "./plan";
 import styles from "./form.module.css";
@@ -15,7 +15,7 @@ export type BudgetItemFormProps = {
   itemId?: string;
   /** The month being planned. Carried, because an item is on one month. */
   month: string;
-  categories: readonly Chip[];
+  categories: readonly ChipBranch[];
   currency: CurrencyCode;
   locales: readonly string[];
   initial: {
@@ -35,8 +35,10 @@ export type BudgetItemFormProps = {
  *
  * Two questions and no more, in the order the entry screen asks its first two
  * (story 18 in #1): the amount on the keypad, then the Category one tap away
- * from a flat list. There is no day and no attribution, because a plan has
- * neither — it is about a month, and the money in a Space is one pot.
+ * from its headings — the same picker the entry screen uses, because asking
+ * for a Category is one question (#45). There is no day and no attribution,
+ * because a plan has neither — it is about a month, and the money in a Space
+ * is one pot.
  *
  * There is nothing to mark paid, and that is the shape of a Variable item
  * rather than a control left out: a Fixed item is a known amount on a known
@@ -91,10 +93,12 @@ export function BudgetItemForm({
         onChange={setAmount}
       />
 
-      <ChipField
+      <BranchingChipField
         name="categoryId"
         legend={t("budget.item.category")}
-        chips={categories}
+        more={t("chips.more")}
+        change={t("chips.change")}
+        branches={categories}
         defaultValue={initial.categoryId ?? undefined}
         required
       />

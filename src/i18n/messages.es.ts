@@ -255,6 +255,18 @@ export const es = {
   "action.cancel": "Cancelar",
   "action.save": "Guardar",
   "action.dismiss": "Descartar",
+
+  // The two steps of a chip picker over a catalogue that has headings (#45).
+  // One pair for every screen that asks, because picking a Category is one
+  // question: the Movement being recorded and the month's item being planned
+  // ask it in the same words or they stop being the same control.
+  //
+  // A question and not a label: what is under a heading is offered, and an
+  // offer that reads like a field asks to be filled in.
+  "chips.more": "¿Algo más preciso?",
+  // The way back to the whole list. Written and not "Volver", because it is
+  // the answer that changes and not the screen.
+  "chips.change": "Cambiar",
 } as const;
 
 export type SpanishMessages = typeof es;

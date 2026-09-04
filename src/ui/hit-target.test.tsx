@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
+import { BranchingChipField } from "./branching-chip-field";
 import { Button } from "./button";
 import { GroupedList, GroupedListItem } from "./grouped-list";
 import { BottomSheet } from "./bottom-sheet";
@@ -60,6 +62,30 @@ describe("hit targets", () => {
     for (const tab of screen.getAllByRole("link")) {
       expect(tab).toHaveClass(hitTarget);
     }
+  });
+
+  it("the way back out of a chosen heading carries the hit target", async () => {
+    render(
+      <BranchingChipField
+        name="categoryId"
+        legend="Categoría"
+        more="¿Algo más preciso?"
+        change="Cambiar"
+        branches={[
+          {
+            value: "food",
+            label: "Comida",
+            children: [{ value: "food.groceries", label: "Supermercado" }],
+          },
+        ]}
+      />,
+    );
+    // It is only on the screen once a heading with something under it is
+    // chosen, which is the whole of what it undoes.
+    await userEvent.click(screen.getByRole("radio", { name: "Comida" }));
+    expect(screen.getByRole("button", { name: "Cambiar" })).toHaveClass(
+      hitTarget,
+    );
   });
 
   it("the bottom sheet close control carries the hit target", () => {

@@ -1,0 +1,38 @@
+/*
+ * The two groups a chosen heading turns into. The gap is the form's own, so
+ * the offer under a heading sits at the same distance from it as any other
+ * question on the screen sits from the one above it.
+ */
+.branch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-9);
+}
+
+/*
+ * The chosen heading and the way back out of it, on one line. Aligned to the
+ * bottom because the legend sits above the chip: aligning to the top would
+ * put the way back beside the word "Categoría" rather than beside the answer
+ * it changes.
+ */
+.chosen {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-5);
+}
+
+/*
+ * Written and not drawn as a chip: it is not one of the answers, and a third
+ * pill beside the chosen one would read as one. The same plain accent
+ * treatment the entry form gives its other way in (`form.module.css`).
+ */
+.change {
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-accent);
+  cursor: pointer;
+}

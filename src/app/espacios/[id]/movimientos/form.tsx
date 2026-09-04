@@ -7,7 +7,8 @@ import type { MovementDirection } from "@/domain/movement/movement";
 import { t } from "@/i18n";
 import { dayLabel } from "@/i18n/day";
 import { Button } from "@/ui/button";
-import { ChipField, type Chip } from "@/ui/chip-field";
+import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
+import { ChipField } from "@/ui/chip-field";
 import { SelectField, TextField } from "@/ui/field";
 import { Keypad } from "@/ui/keypad";
 import { cx } from "@/ui/cx";
@@ -19,7 +20,7 @@ export type MovementFormProps = {
   spaceId: string;
   /** The Movement being corrected, or nothing at all for a new one. */
   movementId?: string;
-  categories: readonly Chip[];
+  categories: readonly ChipBranch[];
   members: readonly { value: string; label: string }[];
   currency: CurrencyCode;
   locales: readonly string[];
@@ -58,7 +59,8 @@ export type MovementFormProps = {
  *
  * The order down the page is the order a person answers in (story 18 in #1):
  * the amount first, because it is the only part they might forget on the way
- * home from the till; the Category next, one tap from a flat list; the day and
+ * home from the till; the Category next, one tap from its headings, with what
+ * a heading holds offered after it and demanded of nobody (#45); the day and
  * the attribution last and folded away, because in the ordinary case they are
  * already right and asking about them would be asking nothing.
  *
@@ -237,10 +239,12 @@ export function MovementForm({
         domain and the check in migration 0005 both require of income.
       */}
       {direction === "expense" ? (
-        <ChipField
+        <BranchingChipField
           name="categoryId"
           legend={t("movements.category")}
-          chips={categories}
+          more={t("chips.more")}
+          change={t("chips.change")}
+          branches={categories}
           defaultValue={initial.categoryId ?? undefined}
           empty={t("movements.category.none")}
           required
