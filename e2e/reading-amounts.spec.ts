@@ -72,8 +72,12 @@ test.describe("a Member whose browser asks for a language we cannot read", () =>
 
     await page.goto(`/espacios/${space.id}`);
 
+    // Argentine pesos, read by nobody in particular, so the fallback answers:
+    // Colombian, which spells a money that is not its own with the code. The
+    // separators are the same either way -- what moves is whose peso gets the
+    // bare symbol, and it is not this Space's.
     await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
-      "$ 0,00",
+      "ARS 0,00",
     );
   });
 });

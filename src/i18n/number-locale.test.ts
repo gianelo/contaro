@@ -22,7 +22,9 @@ describe("the locales a reader reads numbers under", () => {
       "*",
       "nonsense",
       "",
-      "es-AR,en",
+      // The reader naming the fallback themselves, which is the case the
+      // second half of the comment above is about. It is drilled into below.
+      "es-CO,en",
     ];
 
     for (const header of headers) {
@@ -32,7 +34,7 @@ describe("the locales a reader reads numbers under", () => {
     expect(numberLocalesFrom("en-US,en;q=0.9").at(-1)).toBe(
       fallbackNumberLocale,
     );
-    expect(numberLocalesFrom("es-AR,en")).toEqual(["es-AR", "en"]);
+    expect(numberLocalesFrom("es-CO,en")).toEqual(["es-CO", "en"]);
   });
 
   it("reads the browser's order of preference, not the order it wrote them in", () => {
@@ -53,9 +55,9 @@ describe("the locales a reader reads numbers under", () => {
   });
 
   it("keeps the header's own order between tags that want the same thing", () => {
-    expect(numberLocalesFrom("es-MX;q=0.8, es-CO;q=0.8, en;q=0.8")).toEqual([
+    expect(numberLocalesFrom("es-MX;q=0.8, es-AR;q=0.8, en;q=0.8")).toEqual([
       "es-MX",
-      "es-CO",
+      "es-AR",
       "en",
       fallbackNumberLocale,
     ]);
@@ -97,7 +99,7 @@ describe("the locales a reader reads numbers under", () => {
       "es-MX",
       fallbackNumberLocale,
     ]);
-    expect(numberLocalesFrom("es-AR")).toEqual([fallbackNumberLocale]);
+    expect(numberLocalesFrom("es-CO")).toEqual([fallbackNumberLocale]);
   });
 
   it("stops reading a header long enough to be an attack", () => {
@@ -125,9 +127,9 @@ describe("the locales a reader reads numbers under", () => {
 
     // And one outside the range it is allowed is pulled back into it rather
     // than let outrank a tag that asked properly.
-    expect(numberLocalesFrom("es-MX;q=1.5, es-CO")).toEqual([
+    expect(numberLocalesFrom("es-MX;q=1.5, es-AR")).toEqual([
       "es-MX",
-      "es-CO",
+      "es-AR",
       fallbackNumberLocale,
     ]);
   });
@@ -140,7 +142,7 @@ describe("the locales a reader reads numbers under", () => {
       "es-MX",
       fallbackNumberLocale,
     ]);
-    expect(numberLocalesFrom("es-AR-u-nu-hanidec")).toEqual([
+    expect(numberLocalesFrom("es-CO-u-nu-hanidec")).toEqual([
       fallbackNumberLocale,
     ]);
     expect(numberLocalesFrom("es-MX-x-whatever")).toEqual([
