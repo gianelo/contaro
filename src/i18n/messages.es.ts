@@ -84,6 +84,20 @@ export const es = {
   // The amount is written out and not only shown in red, so a person who
   // cannot see the colour is still told (#11).
   "budget.over": "Te pasaste {amount}",
+  // The pace of the month (#14), one line and not a second meter: a person
+  // reading two meters does not need a third figure to compare them against,
+  // they need telling in words whether they are early or late. Two halves
+  // because the canvas writes the second in heavier ink, split at a clause
+  // boundary so neither carries a space it could lose.
+  //
+  // The line names its own scope -- "en gastos variables" -- so nobody has to
+  // know why the rent is not in it.
+  "budget.pace.lead": "D\u00eda {day} de {days} \u00b7 en gastos variables vas",
+  "budget.pace.ahead": "{amount} arriba del ritmo",
+  "budget.pace.behind": "{amount} abajo del ritmo",
+  // Neither ahead nor behind by nothing: "vas $0 arriba del ritmo" is a figure
+  // written where there is no news.
+  "budget.pace.onPace": "justo en el ritmo",
   // The empty state says what to do, not that there is nothing: a month
   // nobody has planned yet is the ordinary state of every first of the month.
   "budget.empty": "Todav\u00eda no planeaste este mes.",

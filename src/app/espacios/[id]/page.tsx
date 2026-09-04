@@ -11,6 +11,7 @@ import { currentSpace, viewingMember } from "./space";
 import { monthInView, readableMonth, spaceMembers } from "./movimientos/month";
 import { readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
+import { Pace } from "./presupuesto/pace";
 import { Variables } from "./presupuesto/variables";
 import styles from "./page.module.css";
 
@@ -107,6 +108,13 @@ export default async function SpacePage({
         <GroupedListItem trailing={spent}>
           {t("space.month.spent")}
         </GroupedListItem>
+        {/*
+          How that spending is going against the calendar (#14), in the same
+          group and directly under the figure it is about — which is where the
+          canvas draws it. One line of words and never a second meter, and it
+          draws nothing at all on a month nobody is standing in.
+        */}
+        <Pace pace={plan.pace} />
       </GroupedList>
 
       {/*

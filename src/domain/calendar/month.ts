@@ -185,6 +185,37 @@ export function daysBetween(from: CalendarDate, to: CalendarDate): number {
   );
 }
 
+/**
+ * How far through a month a day is: the 18th of 30.
+ *
+ * Both halves inclusive, because both are read out loud. A person standing on
+ * the 1st is on day one and not on day zero, and September has thirty days
+ * rather than twenty-nine gaps between them -- and the two have to be counted
+ * the same way, or the last day of the month reads as `30 de 29`.
+ *
+ * Nothing at all for a month the day is not inside. A plan screen walks
+ * months in both directions (`monthsToPlan`), and "dia 18 de 30" said about a
+ * month already over, or one nobody has reached, is a sentence about a day
+ * nobody is standing on. The caller says nothing rather than saying that.
+ *
+ * The month is asked for rather than taken from the day, because which month
+ * is being read and which day is being lived in are two different questions
+ * here -- that they usually agree is what this checks.
+ */
+export function monthSoFar(of: Month, today: CalendarDate): MonthSoFar | null {
+  if (monthOf(today) !== of) return null;
+
+  const first = firstDayOf(of);
+
+  return {
+    day: daysBetween(first, today) + 1,
+    days: daysBetween(first, lastDayOf(of)) + 1,
+  };
+}
+
+/** Which day of a month is being lived in, of how many it has. */
+export type MonthSoFar = { day: number; days: number };
+
 /** The month before this one: `2026-01` comes after `2025-12`. */
 export function previousMonth(of: Month): Month {
   return stepped(of, -1);

@@ -336,3 +336,84 @@ test("a Member plans the rent and marks it paid", async ({
   await page.goto(`/espacios/${space.id}`);
   await expect(fijos.getByRole("button", { name: /Arriendo/ })).toHaveCount(0);
 });
+
+/**
+ * Which day of the month the run is standing in, in the zone the whole suite
+ * is pinned to (`playwright.config.ts` fixes the browser and the header
+ * together, so the screen and this agree). Calendar arithmetic and never the
+ * even-pace figure: reproducing that here would be the domain written twice,
+ * and a test that agrees with itself proves nothing.
+ */
+function today() {
+  const inBogota = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const [year, month, day] = inBogota.split("-").map(Number) as [
+    number,
+    number,
+    number,
+  ];
+
+  // Day zero of the next month is the last day of this one, whatever length
+  // it happens to be.
+  return { day, days: new Date(Date.UTC(year, month, 0)).getUTCDate() };
+}
+
+test("a Member reads whether the month is ahead of its pace", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Vera Ritmo", context, baseURL!);
+  const { day, days } = today();
+
+  await page.goto(`/espacios/${space.id}`);
+
+  const summary = page.getByRole("group", { name: "Este mes" });
+
+  // A month with nothing planned has no pace: there is nothing anybody meant
+  // to spread across it, and "vas justo en el ritmo" would be a reassurance
+  // nobody earned.
+  await expect(summary).not.toContainText("del ritmo");
+
+  await plan(page, space.id, "100000000");
+
+  // One line of words, and it names its own scope out loud so nobody has to
+  // know why the rent is not in it. Nothing spent yet, so the month is behind
+  // whatever an even pace expected by today — whichever day that is.
+  await expect(summary).toContainText(`Día ${day} de ${days}`);
+  await expect(summary).toContainText("en gastos variables");
+  await expect(summary).toContainText("abajo del ritmo");
+
+  // Three times the whole month's plan: ahead of the pace on any day of it.
+  await spend(page, space.id, "300000000");
+  await page.goto(`/espacios/${space.id}`);
+
+  await expect(summary).toContainText("arriba del ritmo");
+
+  // The pace as it stands, to be compared against itself across the payment
+  // below. Read off the screen rather than written out here, because what
+  // this asserts is that it does not move — not what it says.
+  const before = await summary.textContent();
+
+  // "Paying a Fixed item does not move the pace figure" (#14). Marking one
+  // paid creates a real Movement (ADR-0023), and the pace has to be blind to
+  // it: rent falls due on its own day rather than evenly across the month.
+  await planFixed(page, space.id, "Arriendo", "180000000", "1");
+  await page
+    .getByRole("group", { name: "Fijos" })
+    .getByRole("button", { name: /Arriendo/ })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Marcar pagado" })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/espacios/${space.id}\\?mes=`));
+
+  await expect(summary).toContainText("arriba del ritmo");
+  expect(await summary.textContent()).toBe(before);
+});

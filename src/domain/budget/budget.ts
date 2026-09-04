@@ -20,6 +20,7 @@ import {
   UnreadableDateError,
   type CalendarDate,
   type Month,
+  type MonthSoFar,
 } from "../calendar/month";
 import { categoriesVisibleTo, type Category } from "../category/category";
 import type { CurrencyCode } from "../money/currency";
@@ -570,6 +571,103 @@ function countsAgainst(
     movement.categoryId === categoryId ||
     headings.get(movement.categoryId) === categoryId
   );
+}
+
+/**
+ * Which side of the pace a month is on, and by how much.
+ *
+ * "On it" is its own answer rather than an amount of zero, for the reason
+ * `over` is null rather than zero: the sentence a person reads is "vas
+ * $620.000 arriba del ritmo", and a figure of nothing written into it would
+ * read as news about a month where there is none.
+ */
+export type PaceStanding =
+  | { kind: "ahead"; by: Money }
+  | { kind: "behind"; by: Money }
+  | { kind: "onPace" };
+
+/**
+ * How far through the month a Space is, and how its Variable spending compares
+ * with spreading that half of the plan evenly across it.
+ *
+ * The day travels with the standing and not only the difference, because "you
+ * are 620.000 over" answers nothing on its own: over what, by when. It is
+ * `MonthSoFar` itself rather than two fields of the same names -- which day of
+ * how many is one idea, and it is the calendar's.
+ */
+export type Pace = MonthSoFar & { standing: PaceStanding };
+
+/**
+ * The pace of the month: what an even spread of the Variable half of the plan
+ * would have spent by today, against what really went out (#14).
+ *
+ * Variable items on both sides of the comparison, and ADR-0024 is where that
+ * is argued -- including the case it costs, where a Category the plan covers
+ * both ways watches a Fixed item's payment move the line.
+ *
+ * The rollup is the catalogue's (ADR-0021), asked through `countsAgainst` so
+ * there is one walk and not a second copy of it. `some` and not a sum per
+ * planned Category, because unlike `comparedToPlan` this is a total: a Space
+ * that plans a heading and something under it has one shop inside two rows,
+ * and counting it twice here would be a figure nobody spent.
+ *
+ * Nothing at all for a month with no Variable item. A month planned with the
+ * rent alone has been planned (ADR-0019) and has no pace -- there is nothing
+ * anybody meant to spread across it, and "vas justo en el ritmo" about no plan
+ * is a reassurance nobody earned.
+ */
+export function paceOf(
+  items: readonly BudgetItem[],
+  movements: readonly Movement[],
+  categories: readonly Category[],
+  currency: CurrencyCode,
+  through: MonthSoFar,
+): Pace | null {
+  const variables = items.filter((item) => item.kind === "variable");
+
+  if (variables.length === 0) return null;
+
+  const headings = new Map(
+    categories.map((category) => [category.id, category.parentId]),
+  );
+
+  // The Categories a Variable amount was planned on, read once: the same
+  // membership asked per Movement below, and building it inside that filter
+  // would rebuild the whole plan for every shop of the month.
+  const measured = [...new Set(variables.map((item) => item.categoryId))];
+
+  // Asked through `spent` for the reason `comparedToPlan` asks through it:
+  // "income is not spending" and "two currencies are never added up" are that
+  // function's rules, and a second copy is a second place to stop being true.
+  const cost = spent(
+    movements.filter((movement) =>
+      measured.some((categoryId) =>
+        countsAgainst(movement, categoryId, headings),
+      ),
+    ),
+    currency,
+  );
+
+  // Rounded before it is money at all: `money` refuses anything but whole
+  // minor units (ADR-0007), and a thirtieth of a hundred pesos is not a
+  // number of centavos.
+  const byNow = money(
+    Math.round((expected(variables, currency).amount * through.day) /
+      through.days),
+    currency,
+  );
+
+  const difference = cost.amount - byNow.amount;
+
+  return {
+    ...through,
+    standing:
+      difference === 0
+        ? { kind: "onPace" }
+        : difference > 0
+          ? { kind: "ahead", by: money(difference, currency) }
+          : { kind: "behind", by: money(-difference, currency) },
+  };
 }
 
 /**

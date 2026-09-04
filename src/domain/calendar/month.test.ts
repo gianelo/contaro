@@ -10,6 +10,7 @@ import {
   month,
   monthOf,
   monthsAround,
+  monthSoFar,
   monthsToPlan,
   nextMonth,
   previousMonth,
@@ -228,5 +229,41 @@ describe("how many days apart two days are", () => {
     expect(daysBetween(calendarDate("2025-12-31"), calendarDate("2026-01-01"))).toBe(1);
     // February of a leap year, which nothing here is told about.
     expect(daysBetween(calendarDate("2024-02-28"), calendarDate("2024-03-01"))).toBe(2);
+  });
+});
+
+describe("how far through a month a day is", () => {
+  it("counts the day being stood in, and how many the month has", () => {
+    // Inclusive: the 18th is the 18th day of the month and not the 17th
+    // elapsed. What the sentence says is which day it is, and a person
+    // standing on the 1st is on day one.
+    expect(monthSoFar(month("2026-09"), calendarDate("2026-09-18"))).toEqual({
+      day: 18,
+      days: 30,
+    });
+  });
+
+  it("reaches the end of the month without knowing how long it is", () => {
+    expect(monthSoFar(month("2026-09"), calendarDate("2026-09-30"))).toEqual({
+      day: 30,
+      days: 30,
+    });
+    // February of a leap year, which nothing here is told about.
+    expect(monthSoFar(month("2024-02"), calendarDate("2024-02-29"))).toEqual({
+      day: 29,
+      days: 29,
+    });
+    expect(monthSoFar(month("2026-02"), calendarDate("2026-02-01"))).toEqual({
+      day: 1,
+      days: 28,
+    });
+  });
+
+  it("is nothing at all for a month the day is not inside", () => {
+    // Neither a month already over nor one nobody has reached is a month
+    // there is a way through: "day 18 of 30" said about August in September
+    // is a sentence about a day nobody is standing on.
+    expect(monthSoFar(month("2026-08"), calendarDate("2026-09-18"))).toBeNull();
+    expect(monthSoFar(month("2026-10"), calendarDate("2026-09-18"))).toBeNull();
   });
 });

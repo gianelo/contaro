@@ -7,17 +7,24 @@ import {
   dueNotice,
   expected,
   isPaid,
+  paceOf,
+  type BudgetItem,
   type DueNotice,
   type FixedItem,
+  type PaceStanding,
   type VariableItem,
 } from "@/domain/budget/budget";
 import {
   monthOf,
+  monthSoFar,
   monthsToPlan,
   type Month,
   type MonthsToPlan,
 } from "@/domain/calendar/month";
+import type { Category } from "@/domain/category/category";
+import type { CurrencyCode } from "@/domain/money/currency";
 import { formatAmount, formatMoney } from "@/domain/money/money";
+import type { Movement } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
 import { monthLabel, shortDayLabel } from "@/i18n/day";
@@ -82,6 +89,27 @@ export type ReadableComparison = {
    * draws. Past 1 on a Category that went over, which the meter clamps.
    */
   filled: number;
+};
+
+/**
+ * The pace of the month, already in words (#14).
+ *
+ * Two halves for one sentence, the way the payment confirmation is two: the
+ * canvas writes the standing in heavier ink than the day it is counted from,
+ * and a single interpolated string would render both the same. Split at a
+ * clause boundary, so neither half carries a space it could lose.
+ *
+ * `ahead` and not a `kind`: this is the whole of what the screen still has to
+ * decide, because past the pace is the only one of the three answers that is a
+ * warning. Behind it and on it are the same quiet line with different words.
+ */
+export type ReadablePace = {
+  /** "Día 18 de 30 · en gastos variables vas". */
+  lead: string;
+  /** "$620.000 arriba del ritmo", or "justo en el ritmo". */
+  standing: string;
+  /** Whether the month is spending faster than an even pace. */
+  ahead: boolean;
 };
 
 /**
@@ -161,6 +189,11 @@ export type ReadableBudget = {
    * together, because both are what the month expects to cost (#13).
    */
   expected: string;
+  /**
+   * Whether the month is ahead of or behind an even spread of its Variable
+   * items, or nothing where there is no such question to answer (#14).
+   */
+  pace: ReadablePace | null;
 };
 
 /**
@@ -218,7 +251,75 @@ export async function readableBudget(
     // is the total of exactly the rows beneath it and can never disagree with
     // them.
     expected: formatMoney(expected(planned, space.currency), reader.locales),
+    pace: readablePace(
+      planned,
+      spending,
+      categories,
+      space.currency,
+      month,
+      reader,
+    ),
   };
+}
+
+/**
+ * The pace of the month put into words, or nothing where there is none.
+ *
+ * Two ways there is none, and both of them are silence rather than a figure.
+ * A month the Reader is not standing in has no day to count from -- the plan
+ * walks months in both directions (`monthsToPlan`), and "Día 18 de 30" about
+ * October read in September is a sentence about a day nobody is on. A month
+ * with no Variable item has nothing anybody meant to spread across it.
+ *
+ * The day is the Reader's and never the server's (ADR-0018), which is what
+ * makes the first of those two answers come out right at nine at night on the
+ * 30th: the server is already in the next month, and this is not.
+ */
+function readablePace(
+  planned: readonly BudgetItem[],
+  spending: readonly Movement[],
+  categories: readonly Category[],
+  currency: CurrencyCode,
+  month: Month,
+  reader: Reader,
+): ReadablePace | null {
+  const through = monthSoFar(month, reader.today);
+
+  if (through === null) return null;
+
+  const pace = paceOf(planned, spending, categories, currency, through);
+
+  if (pace === null) return null;
+
+  return {
+    lead: t("budget.pace.lead", { day: pace.day, days: pace.days }),
+    standing: standingInWords(pace.standing, reader),
+    ahead: pace.standing.kind === "ahead",
+  };
+}
+
+/**
+ * The three things a standing can be, in the interface's language.
+ *
+ * Beside the reader that uses it rather than in the domain, for the reason
+ * `dueInWords` is here: which of the three it is, is a rule and is decided
+ * once in `paceOf`; what a person reads is copy, and copy is Spanish. The
+ * switch is exhaustive, so a fourth standing added upstream is a type error
+ * here rather than a blank sentence on somebody's plan.
+ */
+function standingInWords(standing: PaceStanding, reader: Reader): string {
+  switch (standing.kind) {
+    case "ahead":
+      return t("budget.pace.ahead", {
+        amount: formatMoney(standing.by, reader.locales),
+      });
+    case "behind":
+      return t("budget.pace.behind", {
+        amount: formatMoney(standing.by, reader.locales),
+      });
+    case "onPace":
+      return t("budget.pace.onPace");
+  }
 }
 
 /** One item of a Space's plan, as its correction screen shows it. */

@@ -70,7 +70,7 @@ A Budget item whose amount and due date are known, such as rent or a subscriptio
 A Budget item that sets an expected amount for its Category, such as food or leisure. Movements recorded in that Category count against it, and it is never marked paid. Several on one Category are how a month is planned in weeks, and they behave as a single item of their combined amount rather than as several comparisons.
 
 **Pace**:
-How much of a Budget's variable items a Space would have spent by today, were spending spread evenly across the month. Fixed items are excluded: they fall due on their own date rather than evenly, so measuring them against the calendar compares unlike things.
+How much of a Budget's variable items a Space would have spent by today, were spending spread evenly across the month, against what really went out. Fixed items are excluded from both halves: they fall due on their own date rather than evenly, so measuring them against the calendar compares unlike things (ADR-0024). What is measured against it is the spending on the Categories those items are on, headings included (ADR-0021), so paying a Fixed item leaves the figure where it was — except where a variable item covers the Category it was filed under, that one or the heading above it, and then the money really moved and the pace sees it (ADR-0024). It is read on the month being lived in and on no other, from the Reader's day (ADR-0018), and a month with no variable item has none at all.
 _Avoid_: Rhythm, Burn rate, Expected spend
 
 **Carry-over**:
