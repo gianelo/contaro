@@ -9,7 +9,7 @@ A container holding members, a single currency, its movements and its budgets. A
 _Avoid_: Wallet, Group, Account, Cartera, Grupo, Cuenta
 
 **Member**:
-A person with access to a Space. Members are added by email invitation.
+A person with access to a Space. Members are added by Invitation, addressed to an email address and never mailed to it (ADR-0017).
 _Avoid_: User, Partner, Participant
 
 **Reader**:
