@@ -36,6 +36,19 @@ async function type(page: Page, digits: string) {
   }
 }
 
+/**
+ * The Category, answered the way the picker asks (#45): the heading first,
+ * and what it holds only if something more precise is wanted.
+ */
+async function categorise(page: Page, heading: string, under?: string) {
+  // Exact, because a heading's name is the start of every name under it:
+  // "Comida" is a substring of "Supermercado, Comida".
+  await page.getByRole("radio", { name: heading, exact: true }).click();
+  if (under !== undefined) {
+    await page.getByRole("radio", { name: `${under}, ${heading}` }).click();
+  }
+}
+
 test("a Member records an expense in a few taps and finds it in the month", async ({
   page,
   context,
@@ -49,8 +62,9 @@ test("a Member records an expense in a few taps and finds it in the month", asyn
   // Story 18 in #1: the amount first, on a large keypad, because it is the
   // only part a person might forget on the way home from the till.
   await type(page, "128400");
-  // Story 19: the Category is one tap from a short list.
-  await page.getByRole("radio", { name: "Supermercado, Comida" }).click();
+  // Story 19: the Category is one tap from a short list of headings, and a
+  // second only for somebody who wants to say more than the heading (#45).
+  await categorise(page, "Comida", "Supermercado");
   await page.getByRole("button", { name: "Guardar" }).click();
 
   await expect(page).toHaveURL(
@@ -64,6 +78,115 @@ test("a Member records an expense in a few taps and finds it in the month", asyn
   // Intl chose, not about being vague: symbol, then that exact figure.
   await expect(movements).toContainText(/\$\s?1\.284,00/);
   await expect(movements).toContainText("Hoy");
+});
+
+test("a heading is an answer, and what is under it is the next offer", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Cata Elige", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "500000");
+
+  // Nine headings and not twenty-four chips: what a heading holds is not on
+  // the screen until the heading is chosen.
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toHaveCount(0);
+
+  await page.getByRole("radio", { name: "Comida", exact: true }).click();
+
+  // Chosen by that one tap, and what it holds offered under a question rather
+  // than demanded: nothing in the second group has to be answered.
+  await expect(
+    page.getByRole("radio", { name: "Comida", exact: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("group", { name: "¿Algo más preciso?" }),
+  ).toBeVisible();
+
+  // Choosing one moves the answer down to it, and choosing the heading again
+  // moves it back up.
+  await page.getByRole("radio", { name: "Supermercado, Comida" }).click();
+  await expect(
+    page.getByRole("radio", { name: "Comida", exact: true }),
+  ).not.toBeChecked();
+  await page.getByRole("radio", { name: "Comida", exact: true }).click();
+  await expect(
+    page.getByRole("radio", { name: "Comida", exact: true }),
+  ).toBeChecked();
+
+  // And the whole list is one tap away again.
+  await page.getByRole("button", { name: "Cambiar" }).click();
+  await expect(
+    page.getByRole("radio", { name: "Mascotas", exact: true }),
+  ).toBeVisible();
+
+  // The heading saves on its own, which is what makes it an answer: money
+  // filed on "Comida" counts against Comida's plan (ADR-0021).
+  await page.getByRole("radio", { name: "Comida", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  await expect(
+    page.getByRole("region", { name: "Movimientos" }),
+  ).toContainText("Comida");
+});
+
+test("a heading with nothing under it asks nothing further", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace(
+    "Dora Simplifica",
+    context,
+    baseURL!,
+  );
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "1000");
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
+
+  // Nothing to step into, so nothing steps: the other headings stay where
+  // they were and there is no second group to ignore.
+  await expect(
+    page.getByRole("radio", { name: "Otros", exact: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("radio", { name: "Comida", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: "¿Algo más preciso?" }),
+  ).toHaveCount(0);
+});
+
+test("correcting a Movement opens on the branch its Category sits in", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Emi Corrige", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "200000");
+  await categorise(page, "Comida", "Supermercado");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  await page.getByRole("link", { name: /Supermercado/ }).first().click();
+
+  // The correction screen opens where the saved Category is, and not at the
+  // top of the catalogue: a Member correcting an amount must not have to
+  // answer the Category again to keep it.
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("group", { name: "¿Algo más preciso?" }),
+  ).toBeVisible();
 });
 
 test("the amount reads as money while it is being typed", async ({
@@ -96,7 +219,7 @@ test("what the month has cost is the sum of what was recorded", async ({
   const record = async (digits: string) => {
     await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
     await type(page, digits);
-    await page.getByRole("radio", { name: "Otros" }).click();
+    await page.getByRole("radio", { name: "Otros", exact: true }).click();
     await page.getByRole("button", { name: "Guardar" }).click();
     await expect(page).toHaveURL(/\/movimientos\?mes=/);
   };
@@ -154,7 +277,7 @@ test("a Member records something their partner spent, and it says whose it was",
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "5000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
 
   // Story 21 in #1: the case a couple actually argues about.
   await page.getByText("Cambiar").click();
@@ -198,7 +321,7 @@ test("a Member corrects an expense they got wrong", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "1284000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
 
   // Story 27 in #1: a typo must not poison every figure downstream.
@@ -229,7 +352,7 @@ test("the recorder is on the correction screen, and is not a field", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "7700");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
   await page.getByRole("link", { name: /Otros/ }).click();
 
@@ -248,7 +371,7 @@ test("a Member deletes an expense, and is asked first", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "9999");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
   await page.getByRole("link", { name: /Otros/ }).click();
 
@@ -278,7 +401,7 @@ test("the list lands on the month the money is in, not the server's", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "6600");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   // A day in a month that is not this one, which is the same hole a reader
   // west of UTC falls into for a few hours at every month's end.
   const lastMonth = new Date();
@@ -399,7 +522,7 @@ test("the month's Movements are grouped by the day they happened on", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "1000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
   // Waited for, and not merely started: navigating away from a form whose
   // action is still in flight abandons it, and the row never appears.
@@ -407,7 +530,7 @@ test("the month's Movements are grouped by the day they happened on", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "2000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByText("Cambiar").click();
   await page.getByLabel("Día").fill(other);
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -437,7 +560,7 @@ test("the month shows what came in and what went out, side by side", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "120000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
 
   // Both figures and never their difference: a month where a salary arrived
@@ -460,7 +583,7 @@ test("in a shared Space every Movement says whose money it was", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "3000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByText("Cambiar").click();
   await page.getByLabel("Es plata de").selectOption({ label: "Ana Comparte" });
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -480,7 +603,7 @@ test("a personal Space does not say whose money it was on every row", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "4000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
 
   // Every Movement here is theirs, so a line saying so on every row says
@@ -499,7 +622,7 @@ test("the month in view can be changed, and stops at the one being lived in", as
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "7000");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
 
   const movements = page.getByRole("region", { name: "Movimientos" });
@@ -524,7 +647,7 @@ test("a correction cannot turn an expense into income", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "5500");
-  await page.getByRole("radio", { name: "Otros" }).click();
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(/\/movimientos\?mes=/);
 

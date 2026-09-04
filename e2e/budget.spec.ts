@@ -29,11 +29,26 @@ async function type(page: Page, digits: string) {
   }
 }
 
+/**
+ * The Category, answered the way the picker asks (#45): the heading first,
+ * and what it holds only if something more precise is wanted.
+ */
+async function categorise(page: Page, heading: string, under?: string) {
+  // Exact, because a heading's name is the start of every name under it:
+  // "Comida" is a substring of "Supermercado, Comida".
+  await page.getByRole("radio", { name: heading, exact: true }).click();
+  if (under !== undefined) {
+    await page.getByRole("radio", { name: `${under}, ${heading}` }).click();
+  }
+}
+
 /** One Variable item, planned the way a person plans one. */
 async function plan(page: Page, spaceId: string, digits: string) {
   await page.getByRole("link", { name: "Agregar un ítem" }).click();
   await type(page, digits);
-  await page.getByRole("radio", { name: "Supermercado, Comida" }).click();
+  // The same two steps the entry screen asks for, because it is the same
+  // question: picking a Category (#45).
+  await categorise(page, "Comida", "Supermercado");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
@@ -43,7 +58,7 @@ async function spend(page: Page, spaceId: string, digits: string) {
   await page.goto(`/espacios/${spaceId}/movimientos`);
   await page.getByRole("link", { name: "Anotar un movimiento" }).click();
   await type(page, digits);
-  await page.getByRole("radio", { name: "Supermercado, Comida" }).click();
+  await categorise(page, "Comida", "Supermercado");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(
     new RegExp(`/espacios/${spaceId}/movimientos\\?mes=`),
@@ -73,6 +88,29 @@ test("a Member plans the month and reads it back", async ({
   // The item, and the plan's total: the total of exactly the rows above it.
   await expect(budget).toContainText("Planeado");
   await expect(budget).toContainText("$ 240.000,00");
+});
+
+test("correcting an item opens on the branch its Category sits in", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Bruno Repasa", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+  await plan(page, space.id, "24000000");
+
+  const budget = page.getByRole("group", { name: "El plan del mes" });
+  await budget.getByRole("link", { name: /Supermercado/ }).click();
+
+  // The same picker the entry screen asks with, opened the same way: on the
+  // branch the saved Category sits in, with the Category itself chosen.
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("group", { name: "¿Algo más preciso?" }),
+  ).toBeVisible();
 });
 
 test("several items on one Category are read as one of their combined amount", async ({
