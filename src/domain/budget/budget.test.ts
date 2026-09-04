@@ -233,6 +233,103 @@ describe("spending measured against the plan", () => {
       },
     ]);
   });
+
+  // The heading is a Category a Movement may be filed on directly, not only a
+  // box holding others, so its plan answers for both (ADR-0021). A rollup that
+  // read only the children would drop the shop nobody bothered to file deeper.
+  it("adds a shop on the heading itself to the shops filed under it", () => {
+    expect(
+      comparedToPlan(
+        [item({ categoryId: COMIDA.id, amount: money(400_000_00, "ARS") })],
+        [
+          expense({
+            id: "m1",
+            categoryId: COMIDA.id,
+            amount: money(90_000_00, "ARS"),
+          }),
+          expense({
+            id: "m2",
+            categoryId: SUPER.id,
+            amount: money(210_000_00, "ARS"),
+          }),
+        ],
+        [COMIDA, SUPER, MATE],
+        "ARS",
+      ),
+    ).toEqual([
+      {
+        categoryId: COMIDA.id,
+        expected: money(400_000_00, "ARS"),
+        spent: money(300_000_00, "ARS"),
+        over: null,
+        share: 0.75,
+      },
+    ]);
+  });
+
+  // A plan on a heading and a plan on one of its Categories are a cap and a
+  // sub-limit inside it, not two readings of the same thing. One shop counts
+  // against both, and neither row is lying (ADR-0021): "Comida" is what the
+  // whole of it may cost, "Comida · Súper" is how much of that this one may
+  // take.
+  it("counts one shop against both its own plan and its heading's", () => {
+    expect(
+      comparedToPlan(
+        [
+          item({
+            id: "item-comida",
+            categoryId: COMIDA.id,
+            amount: money(400_000_00, "ARS"),
+          }),
+          item({
+            id: "item-super",
+            categoryId: SUPER.id,
+            amount: money(300_000_00, "ARS"),
+          }),
+        ],
+        [expense({ categoryId: SUPER.id, amount: money(210_000_00, "ARS") })],
+        [COMIDA, SUPER, MATE],
+        "ARS",
+      ),
+    ).toEqual([
+      {
+        categoryId: COMIDA.id,
+        expected: money(400_000_00, "ARS"),
+        spent: money(210_000_00, "ARS"),
+        over: null,
+        share: 0.525,
+      },
+      {
+        categoryId: SUPER.id,
+        expected: money(300_000_00, "ARS"),
+        spent: money(210_000_00, "ARS"),
+        over: null,
+        share: 0.7,
+      },
+    ]);
+  });
+
+  // The sub-limit only ever narrows. A shop filed on the heading itself is
+  // spending "Comida" has to answer for and "Comida · Súper" has not, so the
+  // subtree is read upwards and never down.
+  it("leaves out a shop on the heading, for the plan on a Category under it", () => {
+    expect(
+      comparedToPlan(
+        [item({ categoryId: SUPER.id, amount: money(400_000_00, "ARS") })],
+        [expense({ categoryId: COMIDA.id, amount: money(210_000_00, "ARS") })],
+        [COMIDA, SUPER, MATE],
+        "ARS",
+      ),
+    ).toEqual([
+      {
+        categoryId: SUPER.id,
+        expected: money(400_000_00, "ARS"),
+        spent: money(0, "ARS"),
+        over: null,
+        share: 0,
+      },
+    ]);
+  });
 });
 
 describe("passing what a Category expected", () => {
