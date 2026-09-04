@@ -1,13 +1,35 @@
+/*
+ * The one place in the app that says how wide anything is (#36). Before this,
+ * nothing did: a card ran edge to edge on a phone, and on a 27-inch monitor
+ * the phone column stretched across it.
+ */
 .shell {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  /*
+   * The ceiling goes on the shell rather than on .content so that the tab bar,
+   * which is a sibling of the content and not inside it, stops at the edge of
+   * the column too. Its border-top is the line that shows how wide the app is;
+   * run across the whole monitor it would draw a rule under a phone.
+   *
+   * No overflow rule belongs here: it would make this a scroll container and
+   * the tab bar's `position: sticky` would stop sticking.
+   */
+  max-width: var(--column);
+  margin-inline: auto;
   background: var(--color-background);
   color: var(--color-text);
 }
 
+/*
+ * The gutter goes on what the shell wraps, never on the shell itself, for the
+ * same reason the ceiling does not: padding here would inset the tab bar and
+ * leave its top line short of both ends.
+ */
 .content {
   flex-grow: 1;
+  padding-inline: var(--gutter);
   padding-bottom: var(--space-8);
 }
 
@@ -19,4 +41,5 @@
 
 .account {
   flex-shrink: 0;
+  padding-inline: var(--gutter);
 }

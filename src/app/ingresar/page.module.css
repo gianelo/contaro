@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
-  padding: var(--space-8);
+  padding: var(--gutter);
   background: var(--color-background);
   color: var(--color-text);
 }
