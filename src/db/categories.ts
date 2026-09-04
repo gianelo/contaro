@@ -7,10 +7,10 @@ import {
   type CategoryBranch,
   type NewCategory,
 } from "@/domain/category/category";
-import type { Connection } from "./connection";
+import type { Queries } from "./connection";
 import { categories } from "./schema";
 
-type Database = Connection["db"];
+type Database = Queries;
 
 /** Exactly the columns a domain `Category` is made of. */
 const categoryColumns = {

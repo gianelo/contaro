@@ -1,21 +1,28 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import {
   amendItem,
+  FixedItemAlreadyPaidError,
+  paymentFor,
+  planFixedItem,
   planItem,
   type BudgetItem,
   type BudgetItemAmendment,
   type BudgetItemDraft,
+  type FixedItem,
+  type FixedItemDraft,
   type Planning,
 } from "@/domain/budget/budget";
-import { isMonth, type Month } from "@/domain/calendar/month";
+import { isCalendarDate, isMonth, type Month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
+import type { Movement, Recorder } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { categoriesTheSpaceCanSee } from "./categories";
-import type { Connection } from "./connection";
+import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
+import { recordMovementInSpace } from "./movements";
 import { budgetItems } from "./schema";
 
-type Database = Connection["db"];
+type Database = Queries;
 
 /** Exactly the columns a domain `BudgetItem` is made of. */
 const budgetItemColumns = {
@@ -24,6 +31,10 @@ const budgetItemColumns = {
   month: budgetItems.month,
   categoryId: budgetItems.categoryId,
   amount: budgetItems.amount,
+  kind: budgetItems.kind,
+  name: budgetItems.name,
+  dueOn: budgetItems.dueOn,
+  movementId: budgetItems.movementId,
 };
 
 type BudgetItemRow = {
@@ -32,6 +43,10 @@ type BudgetItemRow = {
   month: string;
   categoryId: string;
   amount: number;
+  kind: string;
+  name: string | null;
+  dueOn: string | null;
+  movementId: string | null;
 };
 
 /**
@@ -60,6 +75,7 @@ export async function planBudgetItemInSpace(
       month: checked.month,
       categoryId: checked.categoryId,
       amount: checked.amount.amount,
+      kind: checked.kind,
     })
     .returning(budgetItemColumns);
 
@@ -68,6 +84,109 @@ export async function planBudgetItemInSpace(
   }
 
   return asBudgetItem(created, space);
+}
+
+/**
+ * Plans one Fixed item, if the Space can hold it.
+ *
+ * The same shape as planning a Variable one, and deliberately: the two kinds
+ * are one plan, and a second way of getting a row into `budget_items` that
+ * decided its own rules would be a second place for them to stop being true.
+ * What differs is only which domain function checks the answers.
+ *
+ * It is written pending. There is no answer on the entry screen that could
+ * make it anything else: money comes into existence when somebody says it
+ * moved (`payFixedItemInSpace`), not when they wrote down that it would.
+ */
+export async function planFixedItemInSpace(
+  db: Database,
+  space: Space,
+  draft: FixedItemDraft,
+): Promise<FixedItem> {
+  const checked = planFixedItem(draft, await asPlanning(db, space));
+
+  const [created] = await db
+    .insert(budgetItems)
+    .values({
+      spaceId: checked.spaceId,
+      month: checked.month,
+      categoryId: checked.categoryId,
+      amount: checked.amount.amount,
+      kind: checked.kind,
+      name: checked.name,
+      dueOn: checked.dueOn,
+    })
+    .returning(budgetItemColumns);
+
+  if (!created) {
+    throw new Error("Inserting the Fixed item returned no row.");
+  }
+
+  return asFixedItem(created, space);
+}
+
+/**
+ * Marks a Fixed item paid: records its Movement and hangs it on the item, or
+ * answers that this Space has no such pending item.
+ *
+ * Both writes or neither. A Movement recorded with nothing pointing at it is
+ * money in the ledger that the plan still calls pending -- the row a Member
+ * would then pay a second time -- so the transaction is not a nicety here, it
+ * is the whole of "exactly one Movement" (#13).
+ *
+ * The pending condition is in the UPDATE's WHERE and never in a read before
+ * it. Reading and then writing leaves a gap two taps fit inside; asked this
+ * way, the database decides which of them wins and the loser's Movement is
+ * rolled back with it. `movement_id` being UNIQUE is the same rule again, one
+ * layer down.
+ *
+ * Not found rather than forbidden: an item in a Space the asker is not in and
+ * one that never existed read the same from here. Already paid is a different
+ * answer, and stays one, because a person is owed the difference -- one is a
+ * row that is not theirs, the other is the row in front of them, settled. The
+ * lost race is told exactly what the second tap on one thumb is told, because
+ * it is the same truth.
+ */
+export async function payFixedItemInSpace(
+  db: Database,
+  context: Recorder,
+  itemId: string,
+): Promise<Movement | null> {
+  if (!isIdentifier(itemId)) return null;
+
+  return db.transaction(async (tx) => {
+    const item = await findBudgetItemInSpace(tx, context.space, itemId);
+    if (!item || item.kind !== "fixed") return null;
+
+    // Throws if the item is already paid, which this then never gets to
+    // write. The WHERE below is what covers the tap that arrives between
+    // this read and that write.
+    const draft = paymentFor(item, context);
+    const movement = await recordMovementInSpace(tx, context, draft);
+
+    const [paid] = await tx
+      .update(budgetItems)
+      .set({ movementId: movement.id })
+      .where(
+        and(
+          eq(budgetItems.id, itemId),
+          eq(budgetItems.spaceId, context.space.id),
+          isNull(budgetItems.movementId),
+        ),
+      )
+      .returning({ id: budgetItems.id });
+
+    // Somebody else paid it in the moment between the read and here. Thrown
+    // rather than rolled back by hand, and the difference is what a person
+    // reads: `tx.rollback()` raises drizzle's own `TransactionRollbackError`,
+    // which is nothing any layer above knows, so the loser would be told to
+    // try again -- about a payment that has already gone through. Any throw
+    // rolls the transaction back just the same (`client.begin` re-raises), so
+    // this undoes the Movement *and* says why.
+    if (!paid) throw new FixedItemAlreadyPaidError(item);
+
+    return movement;
+  });
 }
 
 /**
@@ -186,23 +305,74 @@ async function asPlanning(db: Database, space: Space): Promise<Planning> {
 }
 
 /**
- * A row is an item only if its month is one. A month the domain cannot read
- * can only come from a write that went round it and past the check in
- * migration 0008, and it would land on a screen that goes on to build days out
- * of it.
+ * A row read as the kind of item it says it is.
+ *
+ * `kind` is the only thing consulted, and never the presence of a name or a
+ * due day: the column is what the check constraint holds the other three to,
+ * so guessing from them would be a second, quieter answer to a question the
+ * row already answers.
  */
 function asBudgetItem(row: BudgetItemRow, space: Space): BudgetItem {
+  return row.kind === "fixed"
+    ? asFixedItem(row, space)
+    : {
+        kind: "variable",
+        id: row.id,
+        spaceId: row.spaceId,
+        month: whichMonth(row),
+        categoryId: row.categoryId,
+        amount: money(row.amount, space.currency),
+      };
+}
+
+/**
+ * The Fixed half of the same reading, and the same refusal to guess.
+ *
+ * A row that says it is fixed and carries no name or no due day is a row the
+ * check constraint cannot have written (`budget_items_carries_what_its_kind_carries`),
+ * so reaching here means the constraint is gone rather than that the item is
+ * incomplete. Filling either in would put a plan on the screen that nobody
+ * planned; throwing says which row is wrong and stops.
+ */
+function asFixedItem(row: BudgetItemRow, space: Space): FixedItem {
+  if (row.name === null || row.dueOn === null) {
+    throw new Error(
+      `Fixed item ${row.id} carries no ${row.name === null ? "name" : "due day"}.`,
+    );
+  }
+  if (!isCalendarDate(row.dueOn)) {
+    throw new Error(
+      `Fixed item ${row.id} falls due on "${row.dueOn}", which is not a day on any calendar.`,
+    );
+  }
+
+  return {
+    kind: "fixed",
+    id: row.id,
+    spaceId: row.spaceId,
+    month: whichMonth(row),
+    categoryId: row.categoryId,
+    amount: money(row.amount, space.currency),
+    name: row.name,
+    dueOn: row.dueOn,
+    movementId: row.movementId,
+  };
+}
+
+/**
+ * The month a row is planned for, or a refusal.
+ *
+ * Asked once for both kinds. `month` is text so that it sorts the way a
+ * calendar orders months, and text is a column any migration could put a
+ * thirteenth month in; a screen is better off with a stack trace naming the
+ * row than with a plan quietly filed under a month nobody has.
+ */
+function whichMonth(row: BudgetItemRow): Month {
   if (!isMonth(row.month)) {
     throw new Error(
       `Budget item ${row.id} is planned for "${row.month}", which is not a month on any calendar.`,
     );
   }
 
-  return {
-    id: row.id,
-    spaceId: row.spaceId,
-    month: row.month,
-    categoryId: row.categoryId,
-    amount: money(row.amount, space.currency),
-  };
+  return row.month;
 }

@@ -1,0 +1,100 @@
+/* The name of a Fixed item: what the row is actually called. */
+.name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/* The Category and the day, quiet under the name. */
+.beneath {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The same line once the day is near, or already past. Amber, and the words in
+ * it say so too (`due`): the colour is the second way of saying it and never
+ * the only one.
+ */
+.near {
+  composes: beneath;
+  color: var(--color-warning);
+}
+
+/* The amount over its badge, at the end of the row. */
+.end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.amount {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* The same shape a struck Movement's refusal takes, for the same reason: a
+ * sentence in destructive ink on a plain ground is a sentence a thumb scrolls
+ * past. */
+.error {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive-text);
+  font-size: var(--text-md);
+}
+
+/* The sentence naming what will be created, with the amount bolded into it. */
+.body {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/* The figure being confirmed, lifted out of the sentence's grey. */
+.figure {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/*
+ * The recap: which Space the money lands in, who is recording it and whose it
+ * will be. A description list, because that is what three labels and their
+ * three values are — and it is what a screen reader reads as pairs.
+ */
+.recap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: 0;
+  padding: var(--space-6) var(--space-7);
+  background: var(--color-fill);
+  border-radius: var(--radius-lg);
+}
+
+.recapRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  font-size: var(--text-base);
+}
+
+.recapRow dt {
+  color: var(--color-text-secondary);
+}
+
+.recapRow dd {
+  margin: 0;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

@@ -4,10 +4,10 @@ import {
   type GoogleIdentity,
   type Member,
 } from "@/domain/identity/resolve-member";
-import type { Connection } from "./connection";
+import type { Queries } from "./connection";
 import { members } from "./schema";
 
-type Database = Connection["db"];
+type Database = Queries;
 
 /** Exactly the columns a domain `Member` is made of — `createdAt` is not one. */
 const memberColumns = {

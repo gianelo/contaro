@@ -66,10 +66,12 @@ test("every interactive element inside a Space is at least 44px", async ({
   const inside = await undersizedTargets(page);
 
   // The way out, the four tabs, the two steps of the month the plan is read
-  // in, the way to plan an item (#10), and the row to who shares this Space
-  // (#9). The plan itself is empty on a Space this new, and an empty state is
-  // a line of words rather than something to tap.
-  expect(inside.count).toBe(9);
+  // in, the two ways to plan an item -- a Variable one (#10) and a Fixed one
+  // (#13) -- and the row to who shares this Space (#9). The plan itself is
+  // empty on a Space this new, and an empty state is a line of words rather
+  // than something to tap; so is a month with no Fixed items, which draws no
+  // Fijos section at all.
+  expect(inside.count).toBe(10);
   expect(inside.undersized).toEqual([]);
 });
 

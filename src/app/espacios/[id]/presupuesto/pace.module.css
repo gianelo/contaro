@@ -1,0 +1,39 @@
+/* The circle and the sentence on one line, aligned to the top of the words
+   rather than to the middle of the block: the sentence wraps on a phone —
+   "Día 18 de 30 · en gastos variables vas $620.000 arriba del ritmo" is more
+   than a screen wide at any readable size — and centring would leave the mark
+   floating between two lines instead of sitting on the first. */
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+
+/* The mark keeps its size while the sentence takes the rest of the width, and
+   sits on the optical centre of the first line rather than on its box top. */
+.mark {
+  display: flex;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+/* Past the pace the whole line turns, and the colour is the second way of
+   saying it: the words already read "arriba del ritmo". Amber and not the
+   destructive red, because being early in the month is a warning and not a
+   Category that has gone over its plan.
+
+   Compounded onto `.line` rather than left beside it: two single-class rules
+   on one element are decided by source order alone, and a rule whose winner
+   depends on where it was written is a rule waiting to be moved. */
+.line.past {
+  color: var(--color-warning);
+}
+
+/* The standing in heavier ink, the way the canvas writes it: the day it is
+   counted from is the setting, and this is the news. */
+.standing {
+  font-weight: var(--weight-semibold);
+}

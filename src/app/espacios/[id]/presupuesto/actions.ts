@@ -6,7 +6,9 @@ import { auth } from "@/auth";
 import { database } from "@/db/client";
 import {
   amendBudgetItemInSpace,
+  payFixedItemInSpace,
   planBudgetItemInSpace,
+  planFixedItemInSpace,
   removeBudgetItemFromSpace,
 } from "@/db/budget-items";
 import { findSpaceForMember } from "@/db/spaces";
@@ -15,7 +17,9 @@ import { todayFor } from "@/app/reader";
 import { report } from "@/app/report";
 import {
   handleAmendBudgetItem,
+  handlePayFixedItem,
   handlePlanBudgetItem,
+  handlePlanFixedItem,
   handleRemoveBudgetItem,
   refusalMessage,
   type BudgetFormState,
@@ -32,18 +36,94 @@ import { monthInView } from "../movimientos/month";
  * things done here, and the other two belong to `[itemId]/`.
  */
 async function ports(): Promise<BudgetPorts> {
+  const asked = await headers();
+
   return {
     readSession: async () => {
       const session = await auth();
       return session ? { memberId: session.user.id } : null;
     },
     findSpace: (id, memberId) => findSpaceForMember(database(), id, memberId),
+    // The Reader's own day, which is what they mean by "hoy" (ADR-0018), and
+    // deliberately *not* the server's blunter answer that a hand-typed
+    // Movement is bounded by. That one guards a day somebody typed; nobody
+    // types a day here, so this is the date the money is recorded on -- and at
+    // nine at night on the 30th in Bogota the server is already in the next
+    // month, which would file September's rent as an October expense that
+    // September's own plan could never see.
+    //
+    // It is not a clock a tap can set: it comes from the zone the request
+    // arrived with, which the edge states and the browser does not.
+    today: () => todayFor(asked),
     plan: (space, draft) => planBudgetItemInSpace(database(), space, draft),
+    planFixed: (space, draft) => planFixedItemInSpace(database(), space, draft),
     amend: (space, itemId, changes) =>
       amendBudgetItemInSpace(database(), space, itemId, changes),
     remove: (spaceId, itemId) =>
       removeBudgetItemFromSpace(database(), spaceId, itemId),
+    pay: (recorder, itemId) =>
+      payFixedItemInSpace(database(), recorder, itemId),
   };
+}
+
+export async function planFixedItemAction(
+  _previous: BudgetFormState,
+  form: FormData,
+): Promise<BudgetFormState> {
+  const spaceId = answer(form, "spaceId");
+
+  const outcome = await handlePlanFixedItem(await ports(), {
+    spaceId,
+    month: answer(form, "mes"),
+    categoryId: answer(form, "categoryId"),
+    amount: Number(answer(form, "amount")),
+    name: answer(form, "name"),
+    // Passed through raw, the way the amount is. `Number("")` is 0 and
+    // `Number("x")` is NaN, and `planFixedItem` refuses both by name --
+    // repairing either here would file a due date the person never chose.
+    dueDay: Number(answer(form, "dueDay")),
+  });
+
+  report("Planning a Fixed item", outcome);
+
+  if (outcome.kind === "planned") {
+    redirect(budgetScreen(spaceId, outcome.item.month));
+  }
+
+  return { error: refusalMessage(outcome) };
+}
+
+/**
+ * Marking a Fixed item paid, which is what creates its Movement.
+ *
+ * The month comes off the form rather than the clock, for the reason removing
+ * an item's does: the plan being read may be next month's, and landing back on
+ * "this month" would take somebody off the screen they were working on.
+ */
+export async function payFixedItemAction(
+  _previous: BudgetFormState,
+  form: FormData,
+): Promise<BudgetFormState> {
+  const spaceId = answer(form, "spaceId");
+
+  const outcome = await handlePayFixedItem(
+    await ports(),
+    spaceId,
+    answer(form, "itemId"),
+  );
+
+  report("Marking a Fixed item paid", outcome);
+
+  if (outcome.kind === "paid") {
+    redirect(
+      budgetScreen(
+        spaceId,
+        monthInView(answer(form, "mes"), todayFor(await headers())),
+      ),
+    );
+  }
+
+  return { error: refusalMessage(outcome) };
 }
 
 export async function planBudgetItemAction(
@@ -137,7 +217,7 @@ export async function removeBudgetItemAction(
   return { error: refusalMessage(outcome) };
 }
 
-/** The month's plan, said in one place so three redirects cannot drift. */
+/** The month's plan, said in one place so four redirects cannot drift. */
 function budgetScreen(spaceId: string, month: string): string {
   return `/espacios/${spaceId}?mes=${month}`;
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   calendarDate,
+  dayOf,
+  daysBetween,
   firstDayOf,
   isCalendarDate,
   isMonth,
@@ -8,6 +10,7 @@ import {
   month,
   monthOf,
   monthsAround,
+  monthSoFar,
   monthsToPlan,
   nextMonth,
   previousMonth,
@@ -170,5 +173,97 @@ describe("the months a plan can walk to", () => {
   it("crosses a year in both directions", () => {
     expect(monthsToPlan(month("2026-01")).previous).toBe("2025-12");
     expect(monthsToPlan(month("2026-12")).next).toBe("2027-01");
+  });
+});
+
+describe("a day named by which of a month's days it is", () => {
+  it("builds the day a Fixed item falls due on", () => {
+    expect(dayOf(month("2026-09"), 1)).toBe("2026-09-01");
+    expect(dayOf(month("2026-09"), 22)).toBe("2026-09-22");
+  });
+
+  it("writes a single digit with its leading zero", () => {
+    // The same shape everything else is written in, so two days a day apart
+    // still sort as two days a day apart.
+    expect(dayOf(month("2026-09"), 5)).toBe("2026-09-05");
+  });
+
+  it("refuses a day the month does not have", () => {
+    // February is the case this exists for: a plan whose due day is the 30th
+    // is a plan for a day that will not arrive, and rounding it back to the
+    // 28th would move a due date behind somebody's back.
+    expect(() => dayOf(month("2026-02"), 30)).toThrow(UnreadableDateError);
+    expect(() => dayOf(month("2026-09"), 31)).toThrow(UnreadableDateError);
+  });
+
+  it("has the last day of every month it does have", () => {
+    expect(dayOf(month("2026-02"), 28)).toBe("2026-02-28");
+    expect(dayOf(month("2024-02"), 29)).toBe("2024-02-29");
+    expect(dayOf(month("2026-01"), 31)).toBe("2026-01-31");
+  });
+
+  it("refuses a day no month has at all", () => {
+    expect(() => dayOf(month("2026-09"), 0)).toThrow(UnreadableDateError);
+    expect(() => dayOf(month("2026-09"), -1)).toThrow(UnreadableDateError);
+    expect(() => dayOf(month("2026-09"), 1.5)).toThrow(UnreadableDateError);
+  });
+});
+
+describe("how many days apart two days are", () => {
+  it("counts forwards", () => {
+    expect(daysBetween(calendarDate("2026-09-18"), calendarDate("2026-09-22"))).toBe(4);
+  });
+
+  it("counts backwards as a negative", () => {
+    // What makes an unpaid item past its day answerable at all: the same
+    // subtraction, and the sign is the whole of the difference.
+    expect(daysBetween(calendarDate("2026-09-22"), calendarDate("2026-09-18"))).toBe(-4);
+  });
+
+  it("counts the same day as none", () => {
+    expect(daysBetween(calendarDate("2026-09-18"), calendarDate("2026-09-18"))).toBe(0);
+  });
+
+  it("crosses a month and a year without knowing how long either is", () => {
+    expect(daysBetween(calendarDate("2026-01-30"), calendarDate("2026-02-02"))).toBe(3);
+    expect(daysBetween(calendarDate("2025-12-31"), calendarDate("2026-01-01"))).toBe(1);
+    // February of a leap year, which nothing here is told about.
+    expect(daysBetween(calendarDate("2024-02-28"), calendarDate("2024-03-01"))).toBe(2);
+  });
+});
+
+describe("how far through a month a day is", () => {
+  it("counts the day being stood in, and how many the month has", () => {
+    // Inclusive: the 18th is the 18th day of the month and not the 17th
+    // elapsed. What the sentence says is which day it is, and a person
+    // standing on the 1st is on day one.
+    expect(monthSoFar(month("2026-09"), calendarDate("2026-09-18"))).toEqual({
+      day: 18,
+      days: 30,
+    });
+  });
+
+  it("reaches the end of the month without knowing how long it is", () => {
+    expect(monthSoFar(month("2026-09"), calendarDate("2026-09-30"))).toEqual({
+      day: 30,
+      days: 30,
+    });
+    // February of a leap year, which nothing here is told about.
+    expect(monthSoFar(month("2024-02"), calendarDate("2024-02-29"))).toEqual({
+      day: 29,
+      days: 29,
+    });
+    expect(monthSoFar(month("2026-02"), calendarDate("2026-02-01"))).toEqual({
+      day: 1,
+      days: 28,
+    });
+  });
+
+  it("is nothing at all for a month the day is not inside", () => {
+    // Neither a month already over nor one nobody has reached is a month
+    // there is a way through: "day 18 of 30" said about August in September
+    // is a sentence about a day nobody is standing on.
+    expect(monthSoFar(month("2026-08"), calendarDate("2026-09-18"))).toBeNull();
+    expect(monthSoFar(month("2026-10"), calendarDate("2026-09-18"))).toBeNull();
   });
 });

@@ -7,9 +7,11 @@ import { hitTarget } from "@/ui/hit-target";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
 import { SpaceScreen } from "./screen";
-import { currentSpace } from "./space";
+import { currentSpace, viewingMember } from "./space";
 import { monthInView, readableMonth, spaceMembers } from "./movimientos/month";
 import { readableBudget } from "./presupuesto/budget";
+import { FixedItems } from "./presupuesto/fixed";
+import { Pace } from "./presupuesto/pace";
 import { Variables } from "./presupuesto/variables";
 import styles from "./page.module.css";
 
@@ -44,13 +46,37 @@ export default async function SpacePage({
   // against it, and two figures in one group is that comparison made by eye
   // before anybody decided what "over" means. The plan's total sits with the
   // plan, as the total of the rows above it.
-  const [{ spent }, plan, members] = await Promise.all([
+  const [{ spent }, plan, members, memberId] = await Promise.all([
     readableMonth(space, month, reader),
     readableBudget(space, month, reader),
     spaceMembers(space.id),
+    // Who is reading, so the confirmation on a Fixed item can say who will be
+    // recorded as having marked it paid before anything is created (#13).
+    viewingMember(),
   ]);
 
+  // Named from the Space's own rows rather than from the session, so the recap
+  // says what the ledger will say: `recordedBy` is a Member of this Space, and
+  // it is that Member's name a Movement is read under everywhere else.
+  const reading = members.find((member) => member.id === memberId);
+
+  // `currentSpace` has already refused a Member who is not in this Space, so
+  // the Space and its own membership rows have to disagree for this to happen.
+  // It throws rather than falling back, because the fallback a name has is an
+  // empty one -- and a recap whose "Registrado por" is blank is the confirmation
+  // failing silently at the one thing it exists to do.
+  if (!reading) {
+    throw new Error(
+      `Member ${memberId} is in Space ${space.id} but is not one of its Members.`,
+    );
+  }
+
   const at = (asked: string) => `/espacios/${space.id}?mes=${asked}`;
+
+  // A Budget is its items, of either kind (CONTEXT.md). A month with the rent
+  // on it and nothing else has been planned, so the empty state is about the
+  // whole plan rather than about the Variable half of it.
+  const nothingPlanned = plan.items.length === 0 && plan.fixed.length === 0;
 
   return (
     <SpaceScreen space={space} tab="budget">
@@ -82,17 +108,37 @@ export default async function SpacePage({
         <GroupedListItem trailing={spent}>
           {t("space.month.spent")}
         </GroupedListItem>
+        {/*
+          How that spending is going against the calendar (#14), in the same
+          group and directly under the figure it is about — which is where the
+          canvas draws it. One line of words and never a second meter, and it
+          draws nothing at all on a month nobody is standing in.
+        */}
+        <Pace pace={plan.pace} />
       </GroupedList>
 
       {/*
-        The plan itself: one row per item, in the order they were planned.
+        What the month already owes on days it knows about, and what has been
+        paid (#13). Above the Variables, because it is read first and for a
+        different question: not "how much is left" but "have I paid it".
+      */}
+      <FixedItems
+        spaceId={space.id}
+        month={month}
+        items={plan.fixed}
+        spaceName={space.name}
+        memberName={reading.name}
+      />
+
+      {/*
+        The Variable items: one row per item, in the order they were planned.
         Several items on one Category stay several rows, because they are how a
         person thinks in weeks — sixty thousand of groceries a week rather than
         two hundred and forty a month — and collapsing them here would take
         away the four rows they meant to be able to edit.
       */}
       <GroupedList label={t("budget.title")}>
-        {plan.items.length === 0 ? (
+        {nothingPlanned ? (
           <GroupedListItem>{t("budget.empty")}</GroupedListItem>
         ) : (
           plan.items.map((item) => (
@@ -115,15 +161,21 @@ export default async function SpacePage({
           ))
         )}
         {/*
-          The total of exactly the rows above it, and only where there are
-          rows: a plan of nothing adds up to nothing, which the empty state
-          has already said in words.
+          What the whole month's plan adds up to — the Fijos above as well as
+          the rows beside it, because both are what the month expects to cost
+          (#13). It stopped being "the total of exactly the rows above it" the
+          moment the other kind existed, and saying so is better than a figure
+          nobody can add up by eye: what it totals is the plan, and the plan is
+          both sections. #40 moves it into the summary card the canvas draws.
+
+          Only where something is planned: a plan of nothing adds up to
+          nothing, which the empty state has already said in words.
         */}
-        {plan.items.length > 0 ? (
+        {nothingPlanned ? null : (
           <GroupedListItem trailing={plan.expected}>
             {t("budget.planned")}
           </GroupedListItem>
-        ) : null}
+        )}
       </GroupedList>
 
       {/*
@@ -138,6 +190,18 @@ export default async function SpacePage({
       <div className={styles.plan}>
         <ButtonLink href={`/espacios/${space.id}/presupuesto/nuevo?mes=${month}`}>
           {t("budget.item.new")}
+        </ButtonLink>
+        {/*
+          Its own way in, and not a choice inside the other one. The two kinds
+          are answered with different questions -- a Fixed item is asked for a
+          name and a day -- and a form that grew or shrank after a toggle is a
+          form whose shape a thumb cannot predict.
+        */}
+        <ButtonLink
+          variant="plain"
+          href={`/espacios/${space.id}/presupuesto/nuevo/fijo?mes=${month}`}
+        >
+          {t("budget.fixed.new")}
         </ButtonLink>
       </div>
 

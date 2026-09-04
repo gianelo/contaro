@@ -7,10 +7,10 @@ import {
 } from "@/domain/space/access";
 import { createSpace, type Space } from "@/domain/space/space";
 import { isCurrencyCode } from "@/domain/money/currency";
-import type { Connection } from "./connection";
+import type { Queries } from "./connection";
 import { members, spaceMembers, spaces } from "./schema";
 
-type Database = Connection["db"];
+type Database = Queries;
 
 /** Exactly the columns a domain `Space` is made of. */
 const spaceColumns = {

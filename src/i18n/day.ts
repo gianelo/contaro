@@ -41,6 +41,29 @@ export function dayLabel(date: CalendarDate, today: CalendarDate): string {
     : otherYear.format(at);
 }
 
+const shortDay = new Intl.DateTimeFormat(locale, {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+/**
+ * A day written short, for the second line of a Fixed item's row: "1 sep".
+ *
+ * Short because of where it sits. `dayLabel` writes the day a Movement
+ * happened on, which is a heading over a group and has room for "3 de
+ * septiembre"; this shares one line with the Category and, when the day is
+ * near, with what that means -- "Suscripciones · 22 sep · vence en 4 días".
+ *
+ * No "hoy" and no year, unlike `dayLabel`. A Fixed item is always on the month
+ * being read, so the year is never in question, and "hoy" is said by the
+ * notice beside it rather than in place of the date -- the date is what a
+ * person is checking the row against.
+ */
+export function shortDayLabel(date: CalendarDate): string {
+  return shortDay.format(new Date(`${date}T00:00:00Z`));
+}
+
 const monthAlone = new Intl.DateTimeFormat(locale, {
   month: "long",
   timeZone: "UTC",

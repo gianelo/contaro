@@ -143,6 +143,79 @@ export function lastDayOf(month: Month): CalendarDate {
   return calendarDate(written(new Date(Date.UTC(year, index, 0))));
 }
 
+/**
+ * A given day of a month: the 22nd of `2026-09` is `2026-09-22`.
+ *
+ * The one way a Fixed item's due date comes into existence, and the reason it
+ * is held as a day of the month rather than as a date somebody typed. An item
+ * is planned *on* a month, so a date carrying its own month could disagree
+ * with the plan it sits on; a day of the month cannot, and this is where it
+ * becomes a day the rest of the code already trusts.
+ *
+ * It refuses a day the month does not have rather than rounding to the last
+ * one it does. February is the case: the 30th is not a late February, it is a
+ * day that will not arrive, and moving a due date back two days behind
+ * somebody's back is worse than telling them the plan cannot be written.
+ */
+export function dayOf(of: Month, dayOfMonth: number): CalendarDate {
+  if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1) {
+    throw new UnreadableDateError(`${of}-${dayOfMonth}`);
+  }
+
+  // Padded here rather than by the caller, so the one shape everything else is
+  // written in is not something each screen has to remember (`WRITTEN`).
+  // `calendarDate` is what refuses a 31st of September: it builds the day and
+  // asks whether it came back the same.
+  return calendarDate(`${of}-${String(dayOfMonth).padStart(2, "0")}`);
+}
+
+/**
+ * How many days it is from one day to another, negative going backwards.
+ *
+ * What lets a Fixed item say whether it falls due soon, and — by the sign
+ * alone — whether it is already past its day. Arithmetic in UTC on two days
+ * that are days rather than instants, so no zone ever shortens the answer by
+ * one: both ends parse as the same hour, and the difference divides exactly.
+ */
+export function daysBetween(from: CalendarDate, to: CalendarDate): number {
+  const A_DAY = 24 * 60 * 60 * 1000;
+
+  return (
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / A_DAY
+  );
+}
+
+/**
+ * How far through a month a day is: the 18th of 30.
+ *
+ * Both halves inclusive, because both are read out loud. A person standing on
+ * the 1st is on day one and not on day zero, and September has thirty days
+ * rather than twenty-nine gaps between them -- and the two have to be counted
+ * the same way, or the last day of the month reads as `30 de 29`.
+ *
+ * Nothing at all for a month the day is not inside. A plan screen walks
+ * months in both directions (`monthsToPlan`), and "dia 18 de 30" said about a
+ * month already over, or one nobody has reached, is a sentence about a day
+ * nobody is standing on. The caller says nothing rather than saying that.
+ *
+ * The month is asked for rather than taken from the day, because which month
+ * is being read and which day is being lived in are two different questions
+ * here -- that they usually agree is what this checks.
+ */
+export function monthSoFar(of: Month, today: CalendarDate): MonthSoFar | null {
+  if (monthOf(today) !== of) return null;
+
+  const first = firstDayOf(of);
+
+  return {
+    day: daysBetween(first, today) + 1,
+    days: daysBetween(first, lastDayOf(of)) + 1,
+  };
+}
+
+/** Which day of a month is being lived in, of how many it has. */
+export type MonthSoFar = { day: number; days: number };
+
 /** The month before this one: `2026-01` comes after `2025-12`. */
 export function previousMonth(of: Month): Month {
   return stepped(of, -1);
