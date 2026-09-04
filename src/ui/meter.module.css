@@ -1,0 +1,18 @@
+.track {
+  overflow: hidden;
+  background: var(--color-meter-track);
+  border-radius: var(--radius-pill);
+}
+
+.fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-pill);
+}
+
+/* Over the length it measures, the whole meter turns: the track keeps its own
+   colour and the fill runs the full width, so what a person sees is one solid
+   red bar rather than a green one that quietly stopped growing. */
+.over .fill {
+  background: var(--color-destructive);
+}

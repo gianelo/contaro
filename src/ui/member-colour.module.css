@@ -1,0 +1,13 @@
+/*
+ * The two colours a Member can wear. Which one is decided by member-colour.ts;
+ * this is only where the pair is put on.
+ */
+.first {
+  color: var(--color-member-first-ink);
+  background: var(--color-member-first-ground);
+}
+
+.second {
+  color: var(--color-member-second-ink);
+  background: var(--color-member-second-ground);
+}

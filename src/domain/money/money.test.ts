@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMoney, money, zero } from "./money";
+import { formatAmount, formatMoney, money, zero } from "./money";
 
 /**
  * Intl separates the symbol from the digits with a non-breaking space, which
@@ -86,5 +86,24 @@ describe("formatting an amount for a reader who could be anywhere", () => {
 
     expect(readable(formatMoney(rent, ["es-MX"]))).toBe("$1,234.50");
     expect(readable(formatMoney(rent, ["es-AR"]))).toBe("MXN 1.234,50");
+  });
+});
+
+describe("the half of a figure that carries no symbol", () => {
+  // "$210.000 / 400.000" is one figure and not two: the symbol in front of it
+  // says which money both halves are in, and repeating it would read as two
+  // separate amounts sitting next to each other.
+  it("writes the amount in the reader's separators and nothing else", () => {
+    expect(formatAmount(money(400_000_00, "ARS"), "es-AR")).toBe("400.000,00");
+  });
+
+  it("keeps the same number of minor units the figure beside it has", () => {
+    // Chilean pesos have none. A trailing ",00" here would be two decimals
+    // the amount in front of it does not have.
+    expect(formatAmount(money(400_000, "CLP"), "es-CL")).toBe("400.000");
+  });
+
+  it("is written the way its reader reads numbers, as every amount is", () => {
+    expect(formatAmount(money(400_000_00, "ARS"), "en-US")).toBe("400,000.00");
   });
 });

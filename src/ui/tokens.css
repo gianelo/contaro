@@ -25,8 +25,22 @@
 
   /* Lines */
   --color-separator: light-dark(#efeff2, #2c2c2e);
+  /* The line that has to hold a surface apart from what is under it, rather
+     than divide one surface into rows: the line above the tab bar. */
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
   --color-border: light-dark(#d8d8dc, #3a3a3c);
+  /* The outline of a place where something is not yet: the create-a-Space call
+     to action. Drawn dashed, which asks for a darker line to read as a line. */
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
   --color-grabber: light-dark(#d8d8dc, #48484a);
+
+  /* Nothing there yet. An amount nobody has typed, a button that cannot be
+     pressed. It is both ink and ground: the canvas draws the untyped amount in
+     it and fills the dead button with it. */
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+
+  /* The length a progress meter is measured against, which the bar runs in. */
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
 
   /* Brand */
   --color-accent: light-dark(#0e7c66, #2fa98c);
@@ -50,6 +64,25 @@
   /* Information */
   --color-info: light-dark(#2c5c8f, #6ba3e0);
   --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+
+  /*
+   * A Member's colour: the ink and the ground of their avatar. A Space holds
+   * at most two Members, so two pairs are the whole set, and which Member
+   * wears which is decided in member-colour.ts rather than at each call site.
+   *
+   * The canvas draws only the light pair of each. The dark set of the first is
+   * the informational one it shares a hue with; the second is the same shift
+   * applied to its own hue.
+   *
+   * The first pair is the same two hexes as --color-info and its soft ground,
+   * and is deliberately not written as var() of them. They agree today by
+   * coincidence of hue, not of meaning: restyling what a notice looks like
+   * must not repaint somebody's avatar.
+   */
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
 
   /* Scrim behind a bottom sheet */
   --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));

@@ -1,0 +1,47 @@
+/* The name and the figure on one line, sitting on the same baseline: the
+   Category is 15px and the figure 14px, and aligning their boxes instead
+   would leave the figure floating a pixel high. */
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.category {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+
+.figure {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* The expected half, quieter: it is the length being measured against and not
+   the news. It carries no currency symbol because the half in front of it
+   already said which money this is. */
+.expectation {
+  color: var(--color-text-tertiary);
+  font-weight: var(--weight-regular);
+}
+
+.meter {
+  margin-top: var(--space-5);
+}
+
+/* Over its expected amount the figure turns too, not only the meter. */
+.past .figure {
+  color: var(--color-destructive);
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  color: var(--color-destructive);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}

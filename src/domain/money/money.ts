@@ -40,14 +40,50 @@ export function zero(currency: CurrencyCode): Money {
  * locales already read and never the request they came in (ADR-0005).
  */
 export function formatMoney(
+  money: Money,
+  locales: string | readonly string[],
+): string {
+  return written(money, locales, { style: "currency", currency: money.currency });
+}
+
+/**
+ * The digits of an amount, without the symbol saying which money it is.
+ *
+ * Only ever for the second half of a figure whose first half already carries
+ * the symbol: "$210.000 / 400.000" is one figure a person reads as "two
+ * hundred and ten of four hundred", and a second "$" would make it two
+ * amounts standing next to each other. Never on its own — an amount that
+ * reaches a person without saying which money it is, is what ADR-0007 exists
+ * to prevent, and this narrow exception is written down in its amendment.
+ *
+ * The separators are the reader's and the minor units are the currency's, so
+ * the two halves of the figure are written to the same number of decimals and
+ * with the same separators. Anything else and they would not read as one.
+ */
+export function formatAmount(
+  money: Money,
+  locales: string | readonly string[],
+): string {
+  return written(money, locales, { style: "decimal" });
+}
+
+/**
+ * The one place minor units become the digits a person reads.
+ *
+ * Written once because the two above differ in exactly one thing — whether
+ * the symbol comes along — and a second copy of "the decimals are the
+ * currency's, the separators are the reader's" is a second place for the two
+ * halves of "$210.000 / 400.000" to start disagreeing about either.
+ */
+function written(
   { amount, currency }: Money,
   locales: string | readonly string[],
+  how: Intl.NumberFormatOptions,
 ): string {
   const digits = minorUnits(currency);
 
   return new Intl.NumberFormat(locales, {
-    style: "currency",
-    currency,
+    ...how,
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(amount / 10 ** digits);

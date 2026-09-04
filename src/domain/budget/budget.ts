@@ -17,6 +17,7 @@ import { isMonth, type Month } from "../calendar/month";
 import { categoriesVisibleTo, type Category } from "../category/category";
 import type { CurrencyCode } from "../money/currency";
 import { money, zero, type Money } from "../money/money";
+import { spent, type Movement } from "../movement/movement";
 import type { Space } from "../space/space";
 
 /**
@@ -207,6 +208,111 @@ export type CategoryExpectation = {
   categoryId: string;
   expected: Money;
 };
+
+/**
+ * One Category of a month's plan, what it expected, and what it really cost.
+ *
+ * `over` is the figure and not a flag, because the screen has to write it out:
+ * "Te pasaste $100.000" is what tells a person who cannot see the red that
+ * they are over, and a boolean would leave that sentence with nothing in it.
+ * It is null rather than zero when nothing has been overspent, so "not over"
+ * and "over by nothing" cannot be confused for one another.
+ */
+export type CategoryComparison = {
+  categoryId: string;
+  expected: Money;
+  spent: Money;
+  /** How far past its expected amount, or null while it is not past it. */
+  over: Money | null;
+  /**
+   * How much of what it expected has been spent, as a share of it: 0.52 is
+   * just over half. Past 1 on a Category that went over.
+   *
+   * Here and not in the reader that draws the meter, because it is the one
+   * arithmetic on these two amounts that is not formatting — and a screen
+   * doing sums on `Money.amount` is a screen that can disagree with the
+   * figures beside it.
+   */
+  share: number;
+};
+
+/**
+ * What each Category of a month's plan expected, and what it really cost.
+ *
+ * The rows are the plan's, not the spending's: a Category nobody planned for
+ * has nothing to be over or under, and a comparison against no expectation is
+ * a figure with one half missing rather than a line worth drawing.
+ *
+ * One comparison per Category, driven by the Category's monthly total. That is
+ * the same rule `expectedByCategory` states for the plan, asked of the
+ * spending too: four weekly items of sixty thousand are not four things to be
+ * over, and neither are the eleven Movements measured against them. A Member
+ * who is under on every single shop and over for the month is over, and this
+ * is the only place that can see it.
+ */
+export function comparedToPlan(
+  items: readonly BudgetItem[],
+  movements: readonly Movement[],
+  categories: readonly Category[],
+  currency: CurrencyCode,
+): readonly CategoryComparison[] {
+  // The headings each Category sits under, read once rather than searched per
+  // Movement per row: the same walk done inside a filter is the catalogue
+  // walked again for every line the screen ends up drawing.
+  const headings = new Map(
+    categories.map((category) => [category.id, category.parentId]),
+  );
+
+  return expectedByCategory(items, currency).map(({ categoryId, expected }) => {
+    // Asked through `spent` rather than summed here: "income is not spending"
+    // and "two currencies are never added up" are that function's rules, and
+    // a second copy of them is a second place for them to stop being true.
+    const cost = spent(
+      movements.filter((movement) =>
+        countsAgainst(movement, categoryId, headings),
+      ),
+      currency,
+    );
+
+    return {
+      categoryId,
+      expected,
+      spent: cost,
+      over:
+        cost.amount > expected.amount
+          ? money(cost.amount - expected.amount, currency)
+          : null,
+      // Never a division by nothing: the domain refuses an item that expects
+      // an amount of nothing, so a Category with a comparison has something
+      // to be measured against.
+      share: cost.amount / expected.amount,
+    };
+  });
+}
+
+/**
+ * Whether a Movement is spending this row of the plan measures.
+ *
+ * A plan on a heading covers everything filed under it, which is the rule
+ * `CategoryBranch` states and the only reading that makes a plan on "Comida"
+ * mean anything: nobody shops under a heading, they shop under "Súper", and a
+ * heading that counted only its own Movements would read zero all month.
+ *
+ * One step up and no further, because the catalogue is two levels and no more.
+ * Income never gets here: it carries no Category at all (ADR-0016).
+ */
+function countsAgainst(
+  movement: Movement,
+  categoryId: string,
+  headings: ReadonlyMap<string, string | null>,
+): boolean {
+  if (movement.categoryId === null) return false;
+
+  return (
+    movement.categoryId === categoryId ||
+    headings.get(movement.categoryId) === categoryId
+  );
+}
 
 /**
  * What the month's plan adds up to, in the Space's money.

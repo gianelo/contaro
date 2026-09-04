@@ -1,8 +1,10 @@
 import { database } from "@/db/client";
 import { budgetItemsInMonth, findBudgetItemInSpace } from "@/db/budget-items";
+import { categoriesTheSpaceCanSee } from "@/db/categories";
+import { movementsInMonth } from "@/db/movements";
 import {
+  comparedToPlan,
   expected,
-  expectedByCategory,
   type BudgetItem,
 } from "@/domain/budget/budget";
 import {
@@ -11,7 +13,7 @@ import {
   type Month,
   type MonthsToPlan,
 } from "@/domain/calendar/month";
-import { formatMoney } from "@/domain/money/money";
+import { formatAmount, formatMoney } from "@/domain/money/money";
 import type { Space } from "@/domain/space/space";
 import { monthLabel } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
@@ -49,11 +51,32 @@ export type ReadableBudgetItem = {
   categoryId: string;
 };
 
-/** One Category of the plan, and what the whole of it expects. */
-export type ReadableExpectation = {
+/**
+ * One Category of the plan, what it expected, and what it really cost (#11).
+ *
+ * Two strings for one figure: the screen writes "$210.000 / 400.000" as a
+ * single amount whose second half is quieter, so the symbol belongs to the
+ * first half only (`formatAmount`).
+ */
+export type ReadableComparison = {
   categoryId: string;
   category: string;
+  /** What the Category has cost so far, with the symbol on it. */
+  spent: string;
+  /** What the whole of it expected, without one: `spent` carries it. */
   expected: string;
+  /**
+   * How far past what it expected, written out. Null while it is inside the
+   * plan. A string and not a flag, because the sentence a person reads is
+   * "Te pasaste $100.000" and that is what tells somebody who cannot see the
+   * red that they are over.
+   */
+  over: string | null;
+  /**
+   * How much of the plan has been spent, as a fraction of it: what the meter
+   * draws. Past 1 on a Category that went over, which the meter clamps.
+   */
+  filled: number;
 };
 
 /** One Space's Budget for a month, as the screen showing it needs to know it. */
@@ -70,13 +93,16 @@ export type ReadableBudget = {
    */
   items: readonly ReadableBudgetItem[];
   /**
-   * The same items collapsed to one line per Category, which is what "several
-   * items on one Category behave as a single item of their combined amount"
-   * means once it reaches eyes. It is what #11 will measure spending against,
-   * and it is shown only where it says something the rows above do not — a
-   * Category with one item would repeat itself.
+   * The same items collapsed to one line per Category and measured against
+   * what really got spent (#11), which is what "several items on one Category
+   * behave as a single item of their combined amount" means once it reaches
+   * eyes.
+   *
+   * Every Category the month planned for, not only those with several items:
+   * #10 hid the single ones because the line only repeated the row above it,
+   * and now it carries what the row above cannot — the spending.
    */
-  byCategory: readonly ReadableExpectation[];
+  variables: readonly ReadableComparison[];
   /** What the whole month's plan adds up to, in the Space's money. */
   expected: string;
 };
@@ -94,33 +120,39 @@ export async function readableBudget(
   month: Month,
   reader: Reader,
 ): Promise<ReadableBudget> {
-  const [planned, catalogue] = await Promise.all([
+  const [planned, spending, categories, catalogue] = await Promise.all([
     budgetItemsInMonth(database(), space, month),
+    // Read here rather than handed in by the screen, so this stays one
+    // question anybody can ask: a reader that only works when another reader
+    // has already run is a reader with a screen baked into it.
+    movementsInMonth(database(), space, month),
+    // The headings, so a plan on "Comida" counts what was spent under
+    // "Comida · Súper". The catalogue below names Categories; this one says
+    // which sits under which, and `comparedToPlan` needs the second.
+    categoriesTheSpaceCanSee(database(), space.id),
     readableCatalogueFor(space.id),
   ]);
 
   const named = namesFrom(catalogue);
-  // Counted once rather than per Category: the same walk done inside a filter
-  // is the list walked once for every line it ends up keeping.
-  const howMany = new Map<string, number>();
-  for (const item of planned) {
-    howMany.set(item.categoryId, (howMany.get(item.categoryId) ?? 0) + 1);
-  }
 
   return {
     month,
     label: monthLabel(month, monthOf(reader.today)),
     around: monthsToPlan(month),
     items: planned.map((item) => readable(item, named, reader)),
-    byCategory: expectedByCategory(planned, space.currency)
-      // Only where a Category really has several: with one item the combined
-      // figure is the row above it said twice.
-      .filter(({ categoryId }) => (howMany.get(categoryId) ?? 0) > 1)
-      .map(({ categoryId, expected }) => ({
-        categoryId,
-        category: named.get(categoryId)?.name ?? categoryId,
-        expected: formatMoney(expected, reader.locales),
-      })),
+    variables: comparedToPlan(
+      planned,
+      spending,
+      categories,
+      space.currency,
+    ).map(({ categoryId, expected, spent, over, share }) => ({
+      categoryId,
+      category: named.get(categoryId)?.name ?? categoryId,
+      spent: formatMoney(spent, reader.locales),
+      expected: formatAmount(expected, reader.locales),
+      over: over === null ? null : formatMoney(over, reader.locales),
+      filled: share,
+    })),
     // Read off the items rather than summed in SQL, so what the screen shows
     // is the total of exactly the rows beneath it and can never disagree with
     // them.
