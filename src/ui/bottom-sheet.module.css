@@ -10,6 +10,14 @@
 .sheet {
   position: fixed;
   inset: auto 0 0 0;
+  /*
+   * Fixed to the viewport, so the shell's ceiling never reaches it: without
+   * this, a laptop gets a monitor-wide sheet sliding up under a phone-wide
+   * column (#36). The scrim above stays full-bleed on purpose -- it dims the
+   * screen, and a screen is as wide as it is.
+   */
+  max-width: var(--column);
+  margin-inline: auto;
   z-index: 101;
   display: flex;
   flex-direction: column;

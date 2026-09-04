@@ -140,6 +140,20 @@
    */
   --hit-target: 44px;
 
+  /*
+   * How wide the app is, and how far it holds itself off the glass. The canvas
+   * draws every artboard at 390px and puts 16px down both sides of every list,
+   * so neither is a choice made here (#36).
+   *
+   * Applied by app-shell.module.css, which is the only file that gets to
+   * answer "how wide is this?" for a screen the shell wraps. Two things it
+   * cannot reach say it for themselves and nothing else may: the bottom sheet,
+   * which is fixed to the viewport and so escapes the column, and the sign-in
+   * screen, which is rendered outside the shell entirely.
+   */
+  --column: 390px;
+  --gutter: var(--space-8);
+
   /* Shadows are not colours, so light-dark() cannot hold them. */
   --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
   --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);

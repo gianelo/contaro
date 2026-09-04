@@ -86,13 +86,11 @@ export default async function SpacesPage() {
       ) : null}
 
       {spaces.length === 0 ? (
-        <div className={styles.empty}>
-          <Card>
-            <h2 className={styles.emptyTitle}>{t("spaces.empty.title")}</h2>
-            <p className={styles.emptyBody}>{t("spaces.empty.body")}</p>
-            <ButtonLink href="/espacios/nuevo">{t("spaces.new")}</ButtonLink>
-          </Card>
-        </div>
+        <Card>
+          <h2 className={styles.emptyTitle}>{t("spaces.empty.title")}</h2>
+          <p className={styles.emptyBody}>{t("spaces.empty.body")}</p>
+          <ButtonLink href="/espacios/nuevo">{t("spaces.new")}</ButtonLink>
+        </Card>
       ) : (
         <>
           <GroupedList label={t("spaces.title")} labelHidden>

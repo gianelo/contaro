@@ -4,7 +4,7 @@
 }
 
 .label {
-  padding: 0 var(--space-8) var(--space-3);
+  padding: 0 0 var(--space-3);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.4px;
