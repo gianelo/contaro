@@ -36,7 +36,7 @@ export function numberLocalesFor(headers: Headers): readonly string[] {
  * ADR-0018 records why it does not: what ADR-0013 forbids is a guess making a
  * decision nobody can undo, and a heading is corrected by the next request.
  */
-export function timeZoneFor(headers: Headers): string {
+function timeZoneFor(headers: Headers): string {
   return timeZoneFrom(headers.get(TIME_ZONE_HEADER));
 }
 
@@ -51,4 +51,31 @@ export function timeZoneFor(headers: Headers): string {
  */
 export function todayFor(headers: Headers): CalendarDate {
   return dayIn(timeZoneFor(headers));
+}
+
+/**
+ * The person a screen is being written for, and the two things about them a
+ * screen needs to know.
+ *
+ * `CONTEXT.md` has named this since ADR-0014 and it named the day too once
+ * ADR-0018 landed; the code carried the two as unrelated arguments that
+ * happened to travel together everywhere. One term in the glossary and two
+ * parameters in the code is a gap that only ever widens, because the third
+ * thing that turns out to be the Reader's gets added as a third argument.
+ *
+ * What is deliberately *not* here: the currency, which is the Space's and
+ * never the Reader's (ADR-0001), and the bound on how late a day may be, which
+ * stays on the server's clock for the reason ADR-0018 gives. Both are about a
+ * screen and neither belongs to the person reading it.
+ */
+export type Reader = {
+  /** The separators an amount is written with, most wanted first. */
+  locales: readonly string[];
+  /** The day they are standing in, which is what they mean by "hoy". */
+  today: CalendarDate;
+};
+
+/** The Reader a request is being read by, from what the request says. */
+export function readerOf(headers: Headers): Reader {
+  return { locales: numberLocalesFor(headers), today: todayFor(headers) };
 }

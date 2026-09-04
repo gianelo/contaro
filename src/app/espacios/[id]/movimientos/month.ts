@@ -20,6 +20,7 @@ import type { SpaceMember } from "@/domain/space/access";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
 import { dayLabel, monthLabel } from "@/i18n/day";
+import type { Reader } from "@/app/reader";
 import type { Chip } from "@/ui/chip-field";
 import { readableCatalogueFor } from "../categorias/catalogue";
 
@@ -167,8 +168,7 @@ export async function spaceMembers(
 export async function readableMonth(
   space: Space,
   month: Month,
-  locales: readonly string[],
-  today: CalendarDate,
+  reader: Reader,
 ): Promise<ReadableMonth> {
   const [recorded, catalogue, members] = await Promise.all([
     movementsInMonth(database(), space, month),
@@ -179,22 +179,22 @@ export async function readableMonth(
   const named = namesFrom(catalogue);
   const attributions = attributionsFrom(members);
   const asRead = (movement: Movement) =>
-    readable(movement, named, attributions, locales, today);
+    readable(movement, named, attributions, reader);
 
   return {
     month,
-    label: monthLabel(month, monthOf(today)),
+    label: monthLabel(month, monthOf(reader.today)),
     days: movementsByDay(recorded).map((day) => ({
       day: day.day,
-      label: dayLabel(day.day, today),
+      label: dayLabel(day.day, reader.today),
       movements: day.movements.map(asRead),
     })),
     // Read off the Movements rather than summed in SQL, so what the screen
     // shows is the total of exactly the rows beneath it and can never disagree
     // with them.
-    spent: formatMoney(spent(recorded, space.currency), locales),
-    earned: formatMoney(earned(recorded, space.currency), locales),
-    around: monthsAround(month, monthOf(today)),
+    spent: formatMoney(spent(recorded, space.currency), reader.locales),
+    earned: formatMoney(earned(recorded, space.currency), reader.locales),
+    around: monthsAround(month, monthOf(reader.today)),
   };
 }
 
@@ -202,8 +202,7 @@ export async function readableMonth(
 export async function readableMovement(
   space: Space,
   movementId: string,
-  locales: readonly string[],
-  today: CalendarDate,
+  reader: Reader,
 ): Promise<ReadableMovement | null> {
   const movement = await findMovementInSpace(database(), space, movementId);
   if (!movement) return null;
@@ -217,8 +216,7 @@ export async function readableMovement(
     movement,
     namesFrom(await readableCatalogueFor(space.id)),
     new Map(),
-    locales,
-    today,
+    reader,
   );
 }
 
@@ -259,8 +257,7 @@ function readable(
   movement: Movement,
   named: Naming,
   attributions: ReadonlyMap<string, string>,
-  locales: readonly string[],
-  today: CalendarDate,
+  reader: Reader,
 ): ReadableMovement {
   // A Movement whose Category is not in the catalogue can only come from a
   // Category retired by a migration. The money stays on the screen with its
@@ -284,9 +281,9 @@ function readable(
         ? t("movements.income")
         : (category?.name ?? movement.categoryId ?? ""),
     heading: category?.heading ?? null,
-    amount: formatMoney(movement.amount, locales),
+    amount: formatMoney(movement.amount, reader.locales),
     minorUnits: movement.amount.amount,
-    day: dayLabel(movement.occurredOn, today),
+    day: dayLabel(movement.occurredOn, reader.today),
     occurredOn: movement.occurredOn,
     categoryId: movement.categoryId,
     attributedTo: movement.attributedTo,

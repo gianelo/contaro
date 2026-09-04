@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { formatMoney, money } from "@/domain/money/money";
 import { fallbackNumberLocale } from "@/i18n/number-locale";
-import { dayIn, fallbackTimeZone } from "@/i18n/time-zone";
-import { numberLocalesFor, timeZoneFor, todayFor } from "./reader";
+import { dayIn } from "@/i18n/time-zone";
+import { numberLocalesFor, readerOf, todayFor } from "./reader";
 
 const from = (acceptLanguage?: string) =>
   new Headers(acceptLanguage ? { "accept-language": acceptLanguage } : {});
@@ -70,46 +70,46 @@ describe("what two Members of one Space are shown", () => {
   });
 });
 
-describe("where a request says its Reader is standing", () => {
-  it("takes the zone the edge states", () => {
-    const fromBogota = new Headers({ "x-vercel-ip-timezone": "America/Bogota" });
-
-    expect(timeZoneFor(fromBogota)).toBe("America/Bogota");
-  });
-
-  it("falls back to where the Members are when a request says nothing", () => {
-    // The case the fallback exists for. A request with no zone on it is read
-    // as Colombian, which is the one answer that is right for the people
-    // actually using this (ADR-0018).
-    expect(timeZoneFor(new Headers())).toBe(fallbackTimeZone);
-    expect(timeZoneFor(new Headers())).toBe("America/Bogota");
-  });
-
-  it("still names the Reader's day, and not Greenwich's, with no header at all", () => {
-    // Ten at night in Bogota on the 3rd, which UTC already calls the 4th. The
-    // fallback has to carry that or it is a fallback in name only.
-    const atNight = new Date("2026-09-04T03:00:00Z");
-
-    expect(dayIn(timeZoneFor(new Headers()), atNight)).toBe("2026-09-03");
-  });
-
-  it("drops a zone no calendar has rather than failing to render", () => {
-    const junk = new Headers({ "x-vercel-ip-timezone": "Mars/Olympus_Mons" });
-
-    expect(timeZoneFor(junk)).toBe(fallbackTimeZone);
-  });
-
-  it("reads the zone and the separators as two separate questions", () => {
+describe("the Reader a request is being read by", () => {
+  it("carries both halves of them, and they are separate questions", () => {
     // A Member who reads numbers the Argentine way, sitting in Colombia. The
-    // header states how they read; the zone states where they are. ADR-0014
-    // answers the first and ADR-0018 the second, and neither answers both.
+    // language header states how they read; the zone states where they are.
+    // ADR-0014 answers the first and ADR-0018 the second, and neither answers
+    // both -- which is exactly why one Reader holds two things.
+    // Deliberately not Bogota, which is the zone a request with no header
+    // falls through to: an example that happens to equal the fallback proves
+    // the header was read only by accident.
     const there = new Headers({
       "accept-language": "es-AR",
-      "x-vercel-ip-timezone": "America/Bogota",
+      "x-vercel-ip-timezone": "Pacific/Kiritimati",
     });
+    const reader = readerOf(there);
 
-    expect(numberLocalesFor(there)[0]).toBe("es-AR");
-    expect(timeZoneFor(there)).toBe("America/Bogota");
+    expect(reader.locales[0]).toBe("es-AR");
+    expect(reader.today).toBe(dayIn("Pacific/Kiritimati"));
+  });
+
+  it("says the same as asking for each half on its own", () => {
+    const requested = new Headers({ "accept-language": "es-MX" });
+    const reader = readerOf(requested);
+
+    expect(reader.locales).toEqual(numberLocalesFor(requested));
+    expect(reader.today).toBe(todayFor(requested));
+  });
+
+  it("falls back on both halves when a request says nothing at all", () => {
+    // The case the fallbacks exist for: no language and no zone. The
+    // separators are Colombian and so is the day (ADR-0014, ADR-0018).
+    const reader = readerOf(new Headers());
+
+    expect(reader.locales).toEqual([fallbackNumberLocale]);
+    expect(reader.today).toBe(dayIn("America/Bogota"));
+  });
+
+  it("is read from a zone no calendar has without failing to render", () => {
+    const junk = new Headers({ "x-vercel-ip-timezone": "Mars/Olympus_Mons" });
+
+    expect(readerOf(junk).today).toBe(dayIn("America/Bogota"));
   });
 });
 
@@ -131,7 +131,10 @@ describe("the day a request's Reader is standing in", () => {
     expect(todayFor(new Headers())).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("is the fallback zone's day when a request carries no zone", () => {
-    expect(todayFor(new Headers())).toBe(dayIn(fallbackTimeZone));
+  it("is Bogota's day when a request carries no zone", () => {
+    // Written out rather than compared to `fallbackTimeZone`, which would be
+    // the constant measured against itself and true whatever it held. That the
+    // constant is Bogota, and why, is `time-zone.test.ts`.
+    expect(todayFor(new Headers())).toBe(dayIn("America/Bogota"));
   });
 });
