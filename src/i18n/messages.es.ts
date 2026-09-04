@@ -32,6 +32,8 @@ export const es = {
   "gallery.item.plain": "Fila que no se puede tocar",
   "gallery.destructive": "Cerrar septiembre",
   "gallery.plain": "Todavía no",
+  "gallery.icons": "Iconos",
+  "gallery.members": "Colores de miembro",
 
   "signin.title": "Entrar a contaro",
   "signin.body":

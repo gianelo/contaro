@@ -2,7 +2,9 @@
   display: flex;
   align-items: stretch;
   background: var(--color-surface);
-  border-top: 1px solid var(--color-separator);
+  /* The stronger of the two: this line holds the bar apart from the screen
+     scrolling under it, which --color-separator is too light to do. */
+  border-top: 1px solid var(--color-separator-strong);
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 

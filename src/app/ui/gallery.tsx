@@ -6,9 +6,20 @@ import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { BottomSheet } from "@/ui/bottom-sheet";
 import { SelectField, TextField } from "@/ui/field";
 import { Notice } from "@/ui/notice";
+import { Icon, iconNames } from "@/ui/icon";
+import { memberColour } from "@/ui/member-colour";
+import { cx } from "@/ui/cx";
 import { t } from "@/i18n";
 import { currencyLabel } from "@/i18n/currency";
 import styles from "./gallery.module.css";
+
+/** Two Members of one Space, invented here so the pair can be seen. */
+const GALLERY_MEMBERS = [
+  { id: "11111111-1111-4111-8111-111111111111", initial: "G" },
+  { id: "22222222-2222-4222-8222-222222222222", initial: "A" },
+] as const;
+
+const GALLERY_MEMBER_IDS = GALLERY_MEMBERS.map((member) => member.id);
 
 /**
  * Every base component on one screen. It exists so the 44px touch target is
@@ -57,6 +68,37 @@ export function Gallery() {
           ]}
         />
         <Notice variant="warning">{t("space.new.currency.forever")}</Notice>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.heading}>{t("gallery.icons")}</h2>
+        {/* Grey, because the row they sit in is: an icon that shows up in any
+            other colour here has stopped taking it from the text around it. */}
+        <ul className={styles.icons}>
+          {iconNames.map((name) => (
+            <li key={name} className={styles.icon}>
+              <Icon name={name} size={24} />
+              <span className={styles.iconName}>{name}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.heading}>{t("gallery.members")}</h2>
+        <div className={styles.avatars}>
+          {GALLERY_MEMBERS.map((member) => (
+            <span
+              key={member.id}
+              className={cx(
+                styles.avatar,
+                memberColour(member.id, GALLERY_MEMBER_IDS),
+              )}
+            >
+              {member.initial}
+            </span>
+          ))}
+        </div>
       </section>
 
       <section className={styles.section}>
