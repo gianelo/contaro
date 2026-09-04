@@ -1,12 +1,15 @@
 import { expect, test, type Page } from "./fixtures";
 import { createMember, createSpaceFor, startSession } from "./session";
+import { createDatabase, databaseUrl } from "../src/db/connection";
+import { inviteToSpaceByEmail } from "../src/db/invitations";
+import type { Space } from "../src/domain/space/space";
 
 const MIN = 44;
 
 /** Measures every element a finger can hit, in a real browser. */
 async function undersizedTargets(page: Page) {
   const interactive = page.locator(
-    "a:visible, button:visible, [role='button']:visible, input:visible, select:visible, textarea:visible",
+    "a:visible, button:visible, [role='button']:visible, input:visible, select:visible, textarea:visible, summary:visible",
   );
   const count = await interactive.count();
   const undersized: string[] = [];
@@ -62,7 +65,8 @@ test("every interactive element inside a Space is at least 44px", async ({
   await page.goto(`/espacios/${space.id}`);
   const inside = await undersizedTargets(page);
 
-  expect(inside.count).toBe(5); // the way out and the four tabs
+  // The way out, the four tabs, and the row to who shares this Space (#9).
+  expect(inside.count).toBe(6);
   expect(inside.undersized).toEqual([]);
 });
 
@@ -106,3 +110,83 @@ test("every base component is at least 44px, sheet included", async ({
   expect(count).toBe(10);
   expect(undersized).toEqual([]);
 });
+
+test("every target on the screen an expense is recorded on is at least 44px", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const member = await createMember("Rita Toca");
+  const space = await createSpaceFor(member.id, "Casa", "ARS");
+  await startSession(context, baseURL!, member);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+
+  // Opened, so the day field is measured as well as the line that folds it
+  // away. Everything on this screen is hit with one thumb at a till.
+  await page.getByText("Cambiar").click();
+
+  const { undersized } = await undersizedTargets(page);
+
+  expect(undersized).toEqual([]);
+});
+
+test("every target on the screen that shares a Space is at least 44px", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const member = await createMember("Sara Comparte");
+  const space = await createSpaceFor(member.id, "Casa", "ARS");
+  await startSession(context, baseURL!, member);
+
+  // The seat free: the form that offers it is on the screen.
+  await page.goto(`/espacios/${space.id}/miembros`);
+  const offering = await undersizedTargets(page);
+
+  // The way out, the four tabs, and the address field with the button under it.
+  expect(offering.count).toBe(7);
+  expect(offering.undersized).toEqual([]);
+
+  // The seat held: the form is gone and the way to free it is there instead.
+  await invite(space, member.id, "invitada@example.com");
+  await page.reload();
+  const holding = await undersizedTargets(page);
+
+  expect(holding.count).toBe(6); // the way out, the four tabs, and Cancelar
+  expect(holding.undersized).toEqual([]);
+});
+
+test("every target on an invitation waiting on the list is at least 44px", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const sender = await createMember("Tere Invita");
+  const invited = await createMember("Uli Espera");
+  const space = await createSpaceFor(sender.id, "Casa", "ARS");
+  await invite(space, sender.id, invited.email);
+
+  await startSession(context, baseURL!, invited);
+  await page.goto("/espacios");
+  const { undersized, count } = await undersizedTargets(page);
+
+  // The way out, the empty-state button -- Uli is in no Space yet -- and the
+  // two answers the invitation offers.
+  expect(count).toBe(4);
+  expect(undersized).toEqual([]);
+});
+
+/**
+ * A seat offered, written the way the product writes one. Building it through
+ * the form would spend a page load to prove something `invitations.spec.ts`
+ * already proves; this spec is about what a thumb can hit.
+ */
+async function invite(space: Space, invitedBy: string, email: string) {
+  const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    await inviteToSpaceByEmail(db, { space, invitedBy }, email);
+  } finally {
+    await sql.end();
+  }
+}

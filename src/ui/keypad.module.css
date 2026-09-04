@@ -1,0 +1,54 @@
+.keypad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/*
+ * The figure the whole screen is built around. It is the largest thing on the
+ * page because it is the only part a person might forget on the way home from
+ * the till (story 18 in #1).
+ */
+.amount {
+  text-align: center;
+  font-size: var(--text-amount);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  /* An amount runs from "$0" to twelve digits; it shrinks rather than wraps. */
+  overflow-wrap: anywhere;
+}
+
+/* Nothing typed yet reads as a placeholder rather than as an amount of zero. */
+.empty {
+  color: var(--color-text-tertiary);
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-regular);
+  cursor: pointer;
+}
+
+.key:active {
+  background: var(--color-fill-pressed);
+}
+
+.erase {
+  font-size: var(--text-2xl);
+}

@@ -56,8 +56,102 @@ export const es = {
   "space.new.error.failed": "No pudimos crear el espacio. Probá de nuevo.",
 
   "space.month": "Este mes",
+  // Two screens, two words for one figure, on purpose. The Budget tab shows
+  // one number and reads "lo que va gastado"; the month's list shows two side
+  // by side and reads them as a pair of nouns.
   "space.month.spent": "Gastado",
+  "space.month.expenses": "Gastos",
+  "space.month.income": "Ingresos",
+  "space.members": "Miembros",
   "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
+  "space.month.choose": "Elegir el mes",
+  "space.month.previous": "Mes anterior",
+  "space.month.next": "Mes siguiente",
+
+  "movements.new": "Anotar un movimiento",
+  "movements.new.title": "Nuevo movimiento",
+  "movements.direction": "Qué anotás",
+  "movements.direction.expense": "Un gasto",
+  "movements.direction.income": "Un ingreso",
+  // What an income row is called on the month's list. It carries no Category
+  // (#8), so this is the whole of its name.
+  "movements.income": "Ingreso",
+  // The one mark that tells money coming in from money going out at a glance.
+  // A written sign and not a colour: a difference carried by colour alone is a
+  // difference somebody cannot see, and this product's one accent colour
+  // already means "this can be tapped".
+  "movements.amount.income": "+{amount}",
+  // Shown on a row only where the Space has somebody else in it. In a personal
+  // Space every Movement is yours, and saying so on every row says nothing.
+  "movements.attributed": "Plata de {member}",
+  "movements.keypad": "Teclado del monto",
+  "movements.keypad.erase": "Borrar el último número",
+  "movements.category": "Categoría",
+  "movements.category.none": "Elegí una categoría",
+  "movements.when": "{day} · {member}",
+  "movements.when.today": "Hoy",
+  "movements.change": "Cambiar",
+  "movements.day": "Día",
+  "movements.attributedTo": "Es plata de",
+  "movements.recordedBy": "Anotado por {member}",
+  "movements.submit": "Guardar",
+  "movements.working": "Guardando\u2026",
+  "movements.edit.title": "Corregir el movimiento",
+  "movements.edit.submit": "Guardar los cambios",
+  // "Struck out" in the key and "borrar" in the words, deliberately: the
+  // glossary's term is Struck out, because the row is never deleted, and what
+  // a person calls the button is "borrar" (ADR-0015).
+  "movements.strike": "Borrar el movimiento",
+  "movements.strike.title": "¿Borrar este movimiento?",
+  "movements.strike.body":
+    "Deja de contar en el mes. Queda anotado que lo borraste vos.",
+  "movements.strike.confirm": "Sí, borralo",
+  "movements.strike.working": "Borrando\u2026",
+  "movements.error.amount": "Poné un monto mayor que cero.",
+  "movements.error.category": "Elegí una categoría de este espacio.",
+  "movements.error.day": "Elegí un día que ya haya pasado.",
+  "movements.error.attribution": "Elegí a alguien de este espacio.",
+  "movements.error.direction": "Elegí si es un gasto o un ingreso.",
+  "movements.error.space": "No pudimos ver de qué espacio se trata.",
+  "movements.error.gone": "Ese movimiento ya no está.",
+  "movements.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
+  "movements.error.failed": "No pudimos guardar el movimiento. Probá de nuevo.",
+
+  // Who shares a Space, and the one seat it has to offer (#9).
+  "members.title": "Miembros",
+  "members.you": "Vos",
+  "members.invite.title": "Invitar a alguien",
+  "members.invite.body":
+    "Un espacio lo comparten dos personas como máximo. Poné el correo de Google con el que entra y le va a aparecer la invitación cuando entre.",
+  "members.invite.email": "Correo",
+  "members.invite.email.hint": "nombre@gmail.com",
+  "members.invite.submit": "Invitar",
+  "members.invite.working": "Invitando\u2026",
+  "members.pending": "Invitación pendiente",
+  // Who sent it, said without gendering anybody: the Space knows a name and
+  // never which words go with it.
+  "members.pending.from": "La mandó {member}",
+  "members.pending.cancel": "Cancelar",
+  "members.pending.working": "Cancelando\u2026",
+  "members.full": "Este espacio ya lo comparten dos personas.",
+  "members.error.email": "Ese correo no parece un correo. Fijate cómo está escrito.",
+  "members.error.full":
+    "Este espacio ya está completo: lo comparten dos personas como máximo.",
+  "members.error.space": "No pudimos ver de qué espacio se trata.",
+  "members.error.gone": "Esa invitación ya no está.",
+  "members.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
+  // Four actions share this one line -- inviting, cancelling, accepting,
+  // turning down -- so it names none of them. "No pudimos mandar la
+  // invitación" shown to somebody who was accepting one is wrong about the
+  // act as well as about the cause.
+  "members.error.failed": "Algo se rompió de nuestro lado. Probá de nuevo.",
+
+  // What waits for the person who was invited, on the list they land on.
+  "invitations.title": "Te invitaron",
+  "invitations.from": "Te invitó {member}",
+  "invitations.accept": "Entrar",
+  "invitations.decline": "Rechazar",
+  "invitations.working": "Un momento\u2026",
 
   "categories.subtitle":
     "Vienen con contaro y las podés ampliar. Lo que agregues acá no sale de este espacio.",

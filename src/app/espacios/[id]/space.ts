@@ -24,3 +24,18 @@ export async function currentSpace(id: string): Promise<Space> {
 
   return space;
 }
+
+/**
+ * The Member looking at this screen.
+ *
+ * Beside `currentSpace` rather than inside it, because most screens under
+ * `/espacios/[id]` need the Space and not the person: the membership question
+ * is already answered by the Space coming back at all. The entry screen needs
+ * the person too, to fill "Es plata de" in with them — and `auth()` is
+ * deduplicated within a request, so asking twice costs nothing.
+ */
+export async function viewingMember(): Promise<string> {
+  const session = await auth();
+  if (!session) notFound();
+  return session.user.id;
+}

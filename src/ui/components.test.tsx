@@ -7,6 +7,7 @@ import { BottomSheet } from "./bottom-sheet";
 import { AppShell } from "./app-shell";
 import { SelectField, TextField } from "./field";
 import { Notice } from "./notice";
+import { ChipField } from "./chip-field";
 
 describe("Button", () => {
   it("calls its handler", async () => {
@@ -238,5 +239,117 @@ describe("Notice", () => {
       "La moneda no se puede cambiar.",
     );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+describe("ChipField", () => {
+  const chips = [
+    { value: "super", label: "Súper" },
+    { value: "pan", label: "Panadería", qualifier: "Comida" },
+  ];
+
+  it("is one choice and not a row of independent things", () => {
+    render(<ChipField name="categoryId" legend="Categoría" chips={chips} />);
+
+    expect(screen.getByRole("group", { name: "Categoría" })).toBeInTheDocument();
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+  });
+
+  it("names a choice by what is written on it", () => {
+    render(<ChipField name="categoryId" legend="Categoría" chips={chips} />);
+
+    expect(screen.getByRole("radio", { name: "Súper" })).toBeInTheDocument();
+  });
+
+  it("adds the qualifier to what is read out, for a name that is not unique", () => {
+    render(<ChipField name="categoryId" legend="Categoría" chips={chips} />);
+
+    // Two Categories can be called "Panadería" under two different headings.
+    // What is heard has to name one of them.
+    expect(
+      screen.getByRole("radio", { name: "Panadería, Comida" }),
+    ).toBeInTheDocument();
+  });
+
+  it("picks one when a thumb lands on it", async () => {
+    render(<ChipField name="categoryId" legend="Categoría" chips={chips} />);
+
+    await userEvent.click(screen.getByRole("radio", { name: "Súper" }));
+
+    expect(screen.getByRole("radio", { name: "Súper" })).toBeChecked();
+  });
+
+  it("gives every chip a touch target a thumb can hit", () => {
+    render(<ChipField name="categoryId" legend="Categoría" chips={chips} />);
+
+    for (const chip of screen.getAllByRole("radio")) {
+      // The label is what a thumb lands on, and what carries the 44px.
+      expect(chip.closest("label")?.className).toMatch(/hitTarget/);
+    }
+  });
+
+  it("says why there is nothing to pick, rather than showing an empty row", () => {
+    render(
+      <ChipField
+        name="categoryId"
+        legend="Categoría"
+        chips={[]}
+        empty="Elegí una categoría"
+      />,
+    );
+
+    expect(screen.getByText("Elegí una categoría")).toBeInTheDocument();
+  });
+
+  it("shows what something outside it says is chosen", () => {
+    render(
+      <ChipField
+        name="categoryId"
+        legend="Categoría"
+        chips={chips}
+        value="pan"
+        onChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("radio", { name: "Panadería, Comida" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Súper" })).not.toBeChecked();
+  });
+
+  it("tells whatever is holding the choice which one a thumb landed on", async () => {
+    const chosen = vi.fn();
+
+    render(
+      <ChipField
+        name="categoryId"
+        legend="Categoría"
+        chips={chips}
+        value="super"
+        onChange={chosen}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("radio", { name: "Panadería, Comida" }));
+
+    expect(chosen).toHaveBeenCalledWith("pan");
+  });
+
+  it("stays where it is told when nothing outside changes its mind", async () => {
+    // A controlled field shows what it is given and nothing else. Without
+    // this, a chip could look chosen while the form carries the other one --
+    // the screen saying one thing and the submission saying another.
+    render(
+      <ChipField
+        name="categoryId"
+        legend="Categoría"
+        chips={chips}
+        value="super"
+        onChange={() => {}}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("radio", { name: "Panadería, Comida" }));
+
+    expect(screen.getByRole("radio", { name: "Súper" })).toBeChecked();
   });
 });

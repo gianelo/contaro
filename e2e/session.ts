@@ -47,10 +47,15 @@ export async function startSession(
  */
 export async function createMember(name: string) {
   const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
+  // The database outlives a run, so the account has to be new every time --
+  // the address as much as the subject. #9 made that matter: an Invitation is
+  // addressed to a mailbox, so two runs' worth of "Uli" sharing one address
+  // means the second run reads the first run's invitations as its own.
+  const account = `e2e-${process.pid}-${Date.now()}-${nextAccount++}`;
   try {
     return await memberFromGoogle(db, {
-      subject: `e2e-${process.pid}-${Date.now()}-${nextAccount++}`,
-      email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+      subject: account,
+      email: `${account}@example.com`,
       name,
     });
   } finally {
@@ -63,9 +68,11 @@ let nextAccount = 0;
 /**
  * A second Member inside a Space, written straight into the table.
  *
- * #9 brings the invitation that puts them there; until it does, a row that
- * names two people cannot be built through the product at all, and the screen
- * that tells the shared Space from the personal one would go unmeasured.
+ * #9's Invitation is how this really happens, and `invitations.spec.ts` drives
+ * that whole path through the product. This stays as the shortcut for the
+ * specs that need a shared Space to already exist and are about something
+ * else: spending two sessions and four page loads to arrive at a fixture is
+ * time paid on every run to prove something another spec already proves.
  */
 export async function joinSpace(spaceId: string, memberId: string) {
   const { sql } = createDatabase(databaseUrl(), { max: 1 });

@@ -1,0 +1,49 @@
+.title {
+  margin: 0;
+  padding: var(--space-8) var(--space-8) var(--space-4);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+}
+
+.pending {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0 var(--space-8) var(--space-4);
+}
+
+.email {
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.from {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+}
+
+.invite {
+  margin: var(--space-6) var(--space-8) var(--space-10);
+}
+
+.inviteTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.inviteBody {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.full {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
