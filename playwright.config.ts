@@ -20,6 +20,23 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}`,
     trace: "on-first-retry",
+    // Both clocks in one zone. The entry form dates a Movement from the
+    // browser's own day; the month's list labels that day against the
+    // server's, which is UTC. Unpinned, the browser takes the machine's zone,
+    // and a machine west of Greenwich straddles a date boundary the server
+    // does not: from seven in the evening in UTC-05 a row recorded a minute
+    // ago is headed with its date instead of "Hoy". UTC because that is what
+    // the server computes, not because it is anybody's zone. This is a pin
+    // and not a frozen clock: the run still reads the real time.
+    //
+    // The stop-gap half, and written to be replaced. ADR-0018 gives the day a
+    // screen names to the Reader, and the run that drives that path pins
+    // "America/Bogota" here together with an `x-vercel-ip-timezone` to match
+    // (#30) — pinning only the zone would pass through the fallback and look
+    // like it worked by accident. Until that lands, a suite that fails by the
+    // hour is worth stopping on its own: one that cries wolf every evening
+    // teaches people to stop reading it.
+    timezoneId: "UTC",
   },
   // The product is mobile-first: the default project is a phone.
   projects: [{ name: "mobile", use: { ...devices["iPhone 13"] } }],
