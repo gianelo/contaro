@@ -484,6 +484,20 @@ it("refuses, in the database itself, a direction that is neither", async () => {
   ).rejects.toThrow(/movements_direction_is_one_of_two/);
 });
 
+it("refuses, in the database itself, a Movement that names no direction", async () => {
+  // The Category is real and the amount is fine, so 0005's `DEFAULT 'expense'`
+  // would have let this row in as an expense. 0007 dropped it (#26): the
+  // guess `recordMovement` refuses by name is refused here too.
+  const { member, space, categoryId } = await aSpaceWithACategory("Sin rumbo");
+
+  await expect(
+    sql`
+      INSERT INTO movements (space_id, category_id, amount, occurred_on, recorded_by, attributed_to)
+      VALUES (${space.id}, ${categoryId}, 500, '2026-09-03', ${member.id}, ${member.id})
+    `,
+  ).rejects.toThrow(/null value in column "direction"/);
+});
+
 it("refuses, in the database itself, any attempt to change a direction", async () => {
   // The same rule `movement_recorder_is_immutable` holds for the recorder, and
   // for the same reason: an entry that can change kind is not a record of what

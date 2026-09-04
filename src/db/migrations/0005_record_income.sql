@@ -7,9 +7,9 @@
 -- already in the table is an expense too, so the default backfills them with
 -- the truth rather than a guess.
 --
--- The contraction is `ALTER COLUMN "direction" DROP DEFAULT`, a deploy later,
--- once nothing that writes here is unaware of the column. Until then a default
--- is the price of a rollback that lands on a schema it can still write to.
+-- The contraction landed a deploy later, in 0007 (#26), once nothing writing
+-- here was unaware of the column. Until then a default was the price of a
+-- rollback that lands on a schema it can still write to.
 ALTER TABLE "movements" ADD COLUMN "direction" text DEFAULT 'expense' NOT NULL;--> statement-breakpoint
 ALTER TABLE "movements" ALTER COLUMN "category_id" DROP NOT NULL;--> statement-breakpoint
 -- The two kinds and no third, the same set `isMovementDirection` refuses in

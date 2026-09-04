@@ -247,11 +247,10 @@ export const movements = pgTable(
      * would quietly file somebody's salary as a purchase — the very rounding
      * `recordMovement` refuses by name.
      *
-     * The running column disagrees with that today. Migration 0005 added it
+     * The running column said otherwise for one deploy: 0005 added it
      * `DEFAULT 'expense'` as the expand step of ADR-0008, because the code of
-     * #7 was still inserting while the Action ran. That default is temporary
-     * and #26 drops it; until then this declaration is where the schema is
-     * going and `information_schema` is where it is.
+     * #7 was still inserting while the Action ran. 0007 dropped it (#26), so
+     * this declaration and the running column now say the same thing.
      */
     direction: text("direction").notNull(),
     /**

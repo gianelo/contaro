@@ -1,0 +1,19 @@
+-- The contraction half of the expand/contract in 0005 (#26).
+--
+-- `DEFAULT 'expense'` existed for one deploy and has served it: ADR-0008 runs
+-- migrations from an Action while Vercel deploys in parallel, so for a few
+-- minutes the code of #7 -- which had never heard of a direction -- was still
+-- inserting against the new schema. The default backfilled the rows already in
+-- the table with the truth and kept those writes working.
+--
+-- From the deploy after #8 nothing writing here is unaware of the column, and
+-- the default turns from a bridge into a disagreement: `recordMovement`
+-- refuses a direction that is neither of the two rather than rounding it to an
+-- expense, precisely so nothing quietly files somebody's salary as a purchase.
+-- A column default is that same rounding one layer down, for every write that
+-- goes round the domain.
+--
+-- The column stays NOT NULL, so a write that names no direction is now refused
+-- instead of guessed at. No row changes: dropping a default touches the rule
+-- for future inserts and never the rows already written.
+ALTER TABLE "movements" ALTER COLUMN "direction" DROP DEFAULT;
