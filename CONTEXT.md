@@ -59,6 +59,10 @@ _Avoid_: Limit, Cap, Allowance
 One expected expense inside a Budget, carrying its Category and amount. Every item is either fixed or variable.
 _Avoid_: Line, Entry, Row
 
+**Over**:
+A Category whose Movements for the month add up past what the Budget expected of it. It is a Category's state and never one item's or one Movement's: several items on one Category are a single expectation, and a Member under on every shop can still be over for the month. A plan written on a heading is over when everything filed under it adds up past it (ADR-0021). Being over is said in colour, in words and in an icon at once, never in colour alone.
+_Avoid_: Exceeded, Breached, Blown, Over budget
+
 **Fixed item**:
 A Budget item whose amount and due date are known, such as rent or a subscription. Marking it paid is what creates its Movement.
 

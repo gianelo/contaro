@@ -48,9 +48,10 @@ export function categoriesVisibleTo(
  * One Category and whatever it holds — a row of the browsable catalogue.
  *
  * Two levels and no more: "food" holds "groceries", and "groceries" holds
- * nothing. A Budget on a parent covers its whole subtree (#10), and a tree of
- * unbounded depth turns that into a walk nobody can picture while looking at
- * a phone. `addCategory` is what keeps the depth true.
+ * nothing. A Budget on a parent covers its whole subtree (ADR-0021, and
+ * `comparedToPlan` is where that is said), and a tree of unbounded depth
+ * turns that into a walk nobody can picture while looking at a phone.
+ * `addCategory` is what keeps the depth true.
  */
 export type CategoryBranch = {
   category: Category;

@@ -65,3 +65,19 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
 }
+
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meterLabel {
+  display: block;
+  margin-bottom: var(--space-3);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}

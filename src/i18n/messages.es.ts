@@ -32,6 +32,7 @@ export const es = {
   "gallery.item.plain": "Fila que no se puede tocar",
   "gallery.destructive": "Cerrar septiembre",
   "gallery.plain": "Todavía no",
+  "gallery.meters": "Medidores",
   "gallery.icons": "Iconos",
   "gallery.members": "Colores de miembro",
 
@@ -75,9 +76,14 @@ export const es = {
   // "Planeado" beside the "Gastado" above it rather than a second "Presupuesto".
   "budget.title": "El plan del mes",
   "budget.planned": "Planeado",
-  // Shown only where a Category really has several items, so the heading says
-  // what that block is for rather than repeating "El plan del mes".
-  "budget.byCategory": "Por categor\u00eda",
+  // The comparison, one line per Category (#11). Named for the kind of item
+  // it is about rather than for the grouping, which is what makes room for
+  // the Fijos beside it (#13), and it is what the canvas titles it.
+  // `GroupedList` puts it in capitals.
+  "budget.variables": "Variables",
+  // The amount is written out and not only shown in red, so a person who
+  // cannot see the colour is still told (#11).
+  "budget.over": "Te pasaste {amount}",
   // The empty state says what to do, not that there is nothing: a month
   // nobody has planned yet is the ordinary state of every first of the month.
   "budget.empty": "Todav\u00eda no planeaste este mes.",

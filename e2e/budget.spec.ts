@@ -38,6 +38,18 @@ async function plan(page: Page, spaceId: string, digits: string) {
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
 
+/** One expense, recorded the way a person records one on the way home. */
+async function spend(page: Page, spaceId: string, digits: string) {
+  await page.goto(`/espacios/${spaceId}/movimientos`);
+  await page.getByRole("link", { name: "Anotar un movimiento" }).click();
+  await type(page, digits);
+  await page.getByRole("radio", { name: "Supermercado, Comida" }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/espacios/${spaceId}/movimientos\\?mes=`),
+  );
+}
+
 test("a Member plans the month and reads it back", async ({
   page,
   context,
@@ -86,9 +98,65 @@ test("several items on one Category are read as one of their combined amount", a
 
   // And what the Category expects of the month is the four added up: one line
   // to be over or under, however many items make it.
-  await expect(page.getByRole("group", { name: "Por categoría" })).toContainText(
-    "$ 240.000,00",
+  await expect(page.getByRole("group", { name: "Variables" })).toContainText(
+    "/ 240.000,00",
   );
+});
+
+test("a Member is told when a Category has passed what it expected", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Euge Se Pasa", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+  await plan(page, space.id, "40000000");
+
+  const variables = page.getByRole("group", { name: "Variables" });
+  // Planned and nothing spent yet: the comparison is a figure, not a blank.
+  await expect(variables).toContainText("/ 400.000,00");
+
+  // Three shops, each of them comfortably inside a plan of four hundred
+  // thousand. Nothing here refuses any of them: the Budget measures what a
+  // month cost and never blocks a Movement from being recorded.
+  await spend(page, space.id, "15000000");
+  await spend(page, space.id, "15000000");
+  await spend(page, space.id, "15000000");
+
+  await page.goto(`/espacios/${space.id}`);
+
+  // And the month is fifty thousand over, which no single one of them was.
+  // Said in words as well as in red, so somebody who cannot see the colour
+  // is told too.
+  await expect(variables).toContainText("Te pasaste $ 50.000,00");
+
+  // Correcting the last one back down puts the Category inside its plan
+  // again: the comparison is read off the Movements every time and never
+  // carried along beside them.
+  await page.goto(`/espacios/${space.id}/movimientos`);
+  await page.getByRole("link", { name: /Supermercado/ }).first().click();
+  await page.getByRole("button", { name: "Borrar el último número" }).click();
+  await page.getByRole("button", { name: "Guardar los cambios" }).click();
+  // Waited for rather than navigated over: the correction lands on a server
+  // action, and leaving for another screen in the same breath abandons it.
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  await page.goto(`/espacios/${space.id}`);
+  await expect(variables).not.toContainText("Te pasaste");
+  await expect(variables).toContainText("$ 315.000,00 / 400.000,00");
+
+  // And deleting one takes its money back out of the comparison too. A
+  // struck Movement stops counting towards every figure (ADR-0015), and this
+  // is one of the figures.
+  await page.goto(`/espacios/${space.id}/movimientos`);
+  await page.getByRole("link", { name: /Supermercado/ }).first().click();
+  await page.getByRole("button", { name: "Borrar el movimiento" }).click();
+  await page.getByRole("button", { name: "Sí, borralo" }).click();
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  await page.goto(`/espacios/${space.id}`);
+  await expect(variables).toContainText("$ 300.000,00 / 400.000,00");
 });
 
 test("a Member plans next month before it starts", async ({

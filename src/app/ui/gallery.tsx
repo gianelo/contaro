@@ -7,11 +7,19 @@ import { BottomSheet } from "@/ui/bottom-sheet";
 import { SelectField, TextField } from "@/ui/field";
 import { Notice } from "@/ui/notice";
 import { Icon, iconNames } from "@/ui/icon";
+import { Meter } from "@/ui/meter";
 import { memberColour } from "@/ui/member-colour";
 import { cx } from "@/ui/cx";
 import { t } from "@/i18n";
 import { currencyLabel } from "@/i18n/currency";
 import styles from "./gallery.module.css";
+
+/** The three states a meter is ever in, named so each can be told apart. */
+const GALLERY_METERS = [
+  { label: "52%", filled: 0.52, over: false },
+  { label: "100%", filled: 1, over: false },
+  { label: "140%, over", filled: 1.4, over: true },
+] as const;
 
 /** Two Members of one Space, invented here so the pair can be seen. */
 const GALLERY_MEMBERS = [
@@ -68,6 +76,25 @@ export function Gallery() {
           ]}
         />
         <Notice variant="warning">{t("space.new.currency.forever")}</Notice>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.heading}>{t("gallery.meters")}</h2>
+        {/* The three states a meter is ever in: partway, exactly full, and
+            past the length it measures. The last two are the same width on
+            purpose — over is said in the colour and in the words beside it,
+            never by a bar growing out of its row.
+
+            Labelled here because this is the one place a meter stands with
+            no figure beside it, and a meter says nothing on its own. */}
+        <ul className={styles.meters}>
+          {GALLERY_METERS.map((meter) => (
+            <li key={meter.label}>
+              <span className={styles.meterLabel}>{meter.label}</span>
+              <Meter filled={meter.filled} over={meter.over} />
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className={styles.section}>

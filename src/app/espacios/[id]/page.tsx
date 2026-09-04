@@ -10,6 +10,7 @@ import { SpaceScreen } from "./screen";
 import { currentSpace } from "./space";
 import { monthInView, readableMonth, spaceMembers } from "./movimientos/month";
 import { readableBudget } from "./presupuesto/budget";
+import { Variables } from "./presupuesto/variables";
 import styles from "./page.module.css";
 
 /**
@@ -126,24 +127,13 @@ export default async function SpacePage({
       </GroupedList>
 
       {/*
-        What each Category expects once its several items are added up, which
-        is what "several items on one Category behave exactly like a single
-        item of their combined amount" looks like on a screen. Shown only for
-        the Categories that really have several: with one item it would be the
-        row above said twice, and it is what #11 measures spending against.
+        What each Category expected and what it really cost (#11). One line
+        per Category and never one per item: the four weekly rows above are
+        how a month is planned in weeks, and they are one thing to be over or
+        under. This is the only place that can see a Member who is under on
+        every single shop and over for the month.
       */}
-      {plan.byCategory.length > 0 ? (
-        <GroupedList label={t("budget.byCategory")}>
-          {plan.byCategory.map((expectation) => (
-            <GroupedListItem
-              key={expectation.categoryId}
-              trailing={expectation.expected}
-            >
-              {expectation.category}
-            </GroupedListItem>
-          ))}
-        </GroupedList>
-      ) : null}
+      <Variables comparisons={plan.variables} />
 
       <div className={styles.plan}>
         <ButtonLink href={`/espacios/${space.id}/presupuesto/nuevo?mes=${month}`}>
