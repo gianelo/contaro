@@ -5,7 +5,6 @@ import {
   lastDayOf,
   type Month,
 } from "@/domain/calendar/month";
-import { categoriesVisibleTo, type Category } from "@/domain/category/category";
 import { money } from "@/domain/money/money";
 import {
   amendMovement,
@@ -18,8 +17,10 @@ import {
   type Recording,
 } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
+import { categoriesTheSpaceCanSee } from "./categories";
 import type { Connection } from "./connection";
-import { categories, movements, spaceMembers } from "./schema";
+import { isIdentifier } from "./identifier";
+import { movements, spaceMembers } from "./schema";
 
 type Database = Connection["db"];
 
@@ -47,8 +48,6 @@ type MovementRow = {
   attributedTo: string;
   struckAt: Date | null;
 };
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Only rows that still stand. Said once and used by every reader, because a
@@ -155,7 +154,7 @@ export async function strikeMovementInSpace(
   movementId: string,
   struckBy: string,
 ): Promise<boolean> {
-  if (!UUID.test(movementId)) return false;
+  if (!isIdentifier(movementId)) return false;
 
   const struck = await db
     .update(movements)
@@ -185,10 +184,7 @@ export async function findMovementInSpace(
   space: Space,
   movementId: string,
 ): Promise<Movement | null> {
-  // An id from a URL is any string at all, and Postgres refuses a malformed
-  // uuid with an error rather than an empty result. No such Movement is the
-  // honest answer, and it is not the domain's business what a uuid looks like.
-  if (!UUID.test(movementId)) return null;
+  if (!isIdentifier(movementId)) return null;
 
   const [row] = await db
     .select(movementColumns)
@@ -241,28 +237,20 @@ export async function movementsInMonth(
  * Everything the domain decides a Movement over: the Space, who is asking, its
  * Members, and the catalogue it can see.
  *
- * The catalogue is narrowed in the query to the global rows plus this Space's,
- * and `recordMovement` decides again which of them are really this Space's —
+ * The catalogue is read through the one place that reads it, and
+ * `recordMovement` decides again which of those rows are really this Space's —
  * the same rule asked twice that `catalogueForSpace` asks, for the same reason.
  */
 async function asRecording(
   db: Database,
   context: Recorder,
 ): Promise<Recording> {
-  const [memberIds, visible] = await Promise.all([
+  const [memberIds, categories] = await Promise.all([
     db
       .select({ memberId: spaceMembers.memberId })
       .from(spaceMembers)
       .where(eq(spaceMembers.spaceId, context.space.id)),
-    db
-      .select({
-        id: categories.id,
-        spaceId: categories.spaceId,
-        parentId: categories.parentId,
-        slug: categories.slug,
-        name: categories.name,
-      })
-      .from(categories),
+    categoriesTheSpaceCanSee(db, context.space.id),
   ]);
 
   return {
@@ -270,32 +258,7 @@ async function asRecording(
     recordedBy: context.recordedBy,
     today: context.today,
     memberIds: memberIds.map((row) => row.memberId),
-    categories: categoriesVisibleTo(context.space.id, visible.map(asCategory)),
-  };
-}
-
-/**
- * The rows are read for their identifiers alone — whether a Category is one
- * this Space may file money under — so the label is built from whichever of the
- * two columns is set, without the throwing that `catalogueForSpace` does. A
- * contradictory row cannot be chosen here: it would fail the same visibility
- * test as any other row, and be shown by the catalogue's own reader instead.
- */
-function asCategory(row: {
-  id: string;
-  spaceId: string | null;
-  parentId: string | null;
-  slug: string | null;
-  name: string | null;
-}): Category {
-  return {
-    id: row.id,
-    spaceId: row.spaceId,
-    parentId: row.parentId,
-    label:
-      row.spaceId === null
-        ? { kind: "catalogue", slug: row.slug ?? "" }
-        : { kind: "own", name: row.name ?? "" },
+    categories,
   };
 }
 

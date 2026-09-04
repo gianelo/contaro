@@ -20,6 +20,24 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}`,
     trace: "on-first-retry",
+    // Both clocks in one zone, and the zone somebody is actually in. The entry
+    // form dates a Movement from the browser's own day; the month's list names
+    // that day against the Reader's, which is the zone the request arrived
+    // with (ADR-0018). Unpinned, the browser takes the machine's zone and the
+    // server falls through to its fallback, so a run west of Greenwich
+    // straddles a date boundary the server does not and every heading that
+    // should read "Hoy" reads a date instead.
+    //
+    // The two are pinned together on purpose. Pinning only the browser would
+    // leave the server on the fallback, which is Bogota anyway -- the suite
+    // would pass, and it would be passing by accident, proving nothing about
+    // the header production actually sends. With both, the run drives the
+    // route that is deployed.
+    //
+    // A pin and not a frozen clock: the run still reads the real time. A test
+    // that passes because it was told the wrong time proves nothing at all.
+    timezoneId: "America/Bogota",
+    extraHTTPHeaders: { "x-vercel-ip-timezone": "America/Bogota" },
   },
   // The product is mobile-first: the default project is a phone.
   projects: [{ name: "mobile", use: { ...devices["iPhone 13"] } }],

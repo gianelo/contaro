@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { database } from "@/db/client";
@@ -10,6 +11,7 @@ import {
 } from "@/db/movements";
 import { findSpaceForMember } from "@/db/spaces";
 import { answer } from "@/app/form";
+import { todayFor } from "@/app/reader";
 import { report } from "@/app/report";
 import { monthOf } from "@/domain/calendar/month";
 import {
@@ -82,10 +84,11 @@ export async function recordMovementAction(
     // catching around it would swallow the navigation.
     //
     // To the month the expense actually landed in, and not to whichever month
-    // the server happens to be in. They differ: the day was pre-filled from
-    // the browser's clock, so at ten at night on the 30th in Buenos Aires the
-    // expense is dated last month and the server is already in this one. A
-    // bare redirect would land on a list that does not contain it.
+    // is being lived in. This was written to work around the server and the
+    // browser disagreeing about the date, and ADR-0018 has since closed that
+    // gap -- but it survives it, because the two are not the same rule. A
+    // Movement dated three months back should be read where it belongs, and a
+    // redirect to "this month" would land on a list that does not contain it.
     redirect(monthsList(spaceId, monthOf(outcome.movement.occurredOn)));
   }
 
@@ -142,8 +145,15 @@ export async function strikeMovementAction(
 
   if (outcome.kind === "struck") {
     // The Movement is gone, so it cannot say which month it was in. The form
-    // carried it, which is why `StrikeMovement` takes one.
-    redirect(monthsList(spaceId, monthInView(answer(form, "mes"))));
+    // carried it, which is why `StrikeMovement` takes one. The Reader's day is
+    // what the fallback lands on for a form that somehow carried no month, and
+    // it is the same month their list is already open on (ADR-0018).
+    redirect(
+      monthsList(
+        spaceId,
+        monthInView(answer(form, "mes"), todayFor(await headers())),
+      ),
+    );
   }
 
   return { error: refusalMessage(outcome) };

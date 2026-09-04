@@ -1,0 +1,14 @@
+.remove {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.error {
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive-text);
+  font-size: var(--text-sm);
+}

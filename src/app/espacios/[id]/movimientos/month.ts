@@ -20,42 +20,53 @@ import type { SpaceMember } from "@/domain/space/access";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
 import { dayLabel, monthLabel } from "@/i18n/day";
+import type { Reader } from "@/app/reader";
 import type { Chip } from "@/ui/chip-field";
-import { readableCatalogueFor } from "../categorias/catalogue";
+import {
+  namesFrom,
+  readableCatalogueFor,
+  type Naming,
+} from "../categorias/catalogue";
 
 /**
  * The day it is, by the server's clock.
  *
- * UTC, and deliberately so: neither a Space nor a Member carries a timezone,
- * so there is no truer answer available to a server. It is used for two
- * things, and being a few hours out costs little in either — the month a list
- * opens on, which #8 makes choosable, and the bound on how late a day may be,
- * which already allows a day of slack for exactly this reason. What a person's
- * own day is, is a question the browser answers, and the entry screen asks it.
+ * UTC, and no longer the day any screen names. What a person calls "hoy" is
+ * the Reader's day, taken from the zone the request arrived with (ADR-0018);
+ * this is what remains once that moved out, and it is deliberately the blunter
+ * answer of the two.
+ *
+ * It is the bound on how late a day may be, with the twenty-four hours of
+ * slack `movement.ts` explains. That guard rail wants to be generous: it exists
+ * to catch a nonsense date, and tightening it to the Reader's day would start
+ * refusing real entries from a device whose clock is off — a worse outcome
+ * than admitting one dated tomorrow.
+ *
+ * It is also the day the entry form falls back to when the browser has not yet
+ * answered, which is a frame of server render and never what gets recorded:
+ * `form.tsx` prefers the browser's own day, because that is the person's.
  */
 export function todayOnTheServer(): CalendarDate {
   return calendarDate(new Date().toISOString().slice(0, 10));
 }
 
 /**
- * Which month a screen is showing.
+ * Which month a screen is showing: the one asked for, or the Reader's own.
  *
- * Asked rather than assumed, because the server's month and the reader's are
- * not always the same one. `todayOnTheServer` is UTC, so at ten at night on
- * the 30th in Buenos Aires it is already the 1st here — the expense that was
- * just recorded is dated the 30th, in last month, and a list that assumed the
- * server's month would open on the next one and not show it. So whoever writes
- * a Movement says which month it landed in, and a plain visit gets this one.
+ * The day is passed in rather than read here, because it is the Reader's and
+ * only a request knows where its Reader is (`timeZoneFor`). This used to fall
+ * back to the server's month, and at nine at night on the 30th in Bogota that
+ * is already the month after — so a plain visit opened on a month the expense
+ * just recorded was not in, and showed an empty list. The same skew as the day
+ * headings, in the place where the failure is silent rather than odd.
  *
  * A month off a URL is any string at all, and every reader of one builds days
  * out of it, which throws (`isMonth`). Something that is not a month is
  * treated as nothing asked for. There is no control that changes this yet: #8
  * brings the picker, and it will read exactly here.
  */
-export function monthInView(asked?: string): Month {
-  return asked !== undefined && isMonth(asked)
-    ? asked
-    : monthOf(todayOnTheServer());
+export function monthInView(asked: string | undefined, today: CalendarDate): Month {
+  return asked !== undefined && isMonth(asked) ? asked : monthOf(today);
 }
 
 /**
@@ -161,7 +172,7 @@ export async function spaceMembers(
 export async function readableMonth(
   space: Space,
   month: Month,
-  locales: readonly string[],
+  reader: Reader,
 ): Promise<ReadableMonth> {
   const [recorded, catalogue, members] = await Promise.all([
     movementsInMonth(database(), space, month),
@@ -170,25 +181,24 @@ export async function readableMonth(
   ]);
 
   const named = namesFrom(catalogue);
-  const today = todayOnTheServer();
   const attributions = attributionsFrom(members);
   const asRead = (movement: Movement) =>
-    readable(movement, named, attributions, locales, today);
+    readable(movement, named, attributions, reader);
 
   return {
     month,
-    label: monthLabel(month, monthOf(today)),
+    label: monthLabel(month, monthOf(reader.today)),
     days: movementsByDay(recorded).map((day) => ({
       day: day.day,
-      label: dayLabel(day.day, today),
+      label: dayLabel(day.day, reader.today),
       movements: day.movements.map(asRead),
     })),
     // Read off the Movements rather than summed in SQL, so what the screen
     // shows is the total of exactly the rows beneath it and can never disagree
     // with them.
-    spent: formatMoney(spent(recorded, space.currency), locales),
-    earned: formatMoney(earned(recorded, space.currency), locales),
-    around: monthsAround(month, monthOf(today)),
+    spent: formatMoney(spent(recorded, space.currency), reader.locales),
+    earned: formatMoney(earned(recorded, space.currency), reader.locales),
+    around: monthsAround(month, monthOf(reader.today)),
   };
 }
 
@@ -196,7 +206,7 @@ export async function readableMonth(
 export async function readableMovement(
   space: Space,
   movementId: string,
-  locales: readonly string[],
+  reader: Reader,
 ): Promise<ReadableMovement | null> {
   const movement = await findMovementInSpace(database(), space, movementId);
   if (!movement) return null;
@@ -210,26 +220,8 @@ export async function readableMovement(
     movement,
     namesFrom(await readableCatalogueFor(space.id)),
     new Map(),
-    locales,
-    todayOnTheServer(),
+    reader,
   );
-}
-
-type Naming = ReadonlyMap<string, { name: string; heading: string | null }>;
-
-function namesFrom(
-  catalogue: Awaited<ReturnType<typeof readableCatalogueFor>>,
-): Naming {
-  const named = new Map<string, { name: string; heading: string | null }>();
-
-  for (const branch of catalogue) {
-    named.set(branch.id, { name: branch.name, heading: null });
-    for (const child of branch.children) {
-      named.set(child.id, { name: child.name, heading: branch.name });
-    }
-  }
-
-  return named;
 }
 
 /**
@@ -252,8 +244,7 @@ function readable(
   movement: Movement,
   named: Naming,
   attributions: ReadonlyMap<string, string>,
-  locales: readonly string[],
-  today: CalendarDate,
+  reader: Reader,
 ): ReadableMovement {
   // A Movement whose Category is not in the catalogue can only come from a
   // Category retired by a migration. The money stays on the screen with its
@@ -277,9 +268,9 @@ function readable(
         ? t("movements.income")
         : (category?.name ?? movement.categoryId ?? ""),
     heading: category?.heading ?? null,
-    amount: formatMoney(movement.amount, locales),
+    amount: formatMoney(movement.amount, reader.locales),
     minorUnits: movement.amount.amount,
-    day: dayLabel(movement.occurredOn, today),
+    day: dayLabel(movement.occurredOn, reader.today),
     occurredOn: movement.occurredOn,
     categoryId: movement.categoryId,
     attributedTo: movement.attributedTo,

@@ -2,14 +2,21 @@
  * The conventions an amount is written under when nothing is known about who
  * is reading it.
  *
- * Argentine, because that is where contaro's Members were when it was written
- * and a fallback has to be somebody's. It is a last resort and not a default:
- * a request that says how its reader reads numbers is never formatted with
- * this. Plain "es" was rejected as the neutral-looking choice — it writes an
- * amount as "1234,50 MXN", with the code trailing and no thousands separator
- * below five digits, which is nobody's idea of a figure.
+ * Colombian, because that is where contaro's Members are and a fallback has to
+ * be somebody's. It is a last resort and not a default: a request that says
+ * how its reader reads numbers is never formatted with this. Plain "es" was
+ * rejected as the neutral-looking choice — it writes an amount as
+ * "1234,50 MXN", with the code trailing and no thousands separator below five
+ * digits, which is nobody's idea of a figure.
+ *
+ * It was Argentine until the Members moved (ADR-0014, amended). The move
+ * costs a figure nothing: the two write every separator the same way, so no
+ * amount is read differently under one than the other. What changes is which
+ * peso gets the bare "$" and which gets its code, and that is a clumsy line
+ * rather than a wrong one -- which is why the constant is here and correct
+ * rather than in the same commit as a decimal point.
  */
-export const fallbackNumberLocale = "es-AR";
+export const fallbackNumberLocale = "es-CO";
 
 /**
  * How many tags of an `Accept-Language` header are worth reading.

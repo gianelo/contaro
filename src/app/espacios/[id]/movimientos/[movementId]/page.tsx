@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ButtonLink } from "@/ui/button";
 import { t } from "@/i18n";
-import { numberLocalesFor } from "@/app/reader";
+import { readerOf } from "@/app/reader";
 import { SpaceScreen } from "../../screen";
 import { currentSpace } from "../../space";
 import { monthOf } from "@/domain/calendar/month";
@@ -33,9 +33,12 @@ export default async function MovementPage({
 }) {
   const { id, movementId } = await params;
   const space = await currentSpace(id);
-  const locales = numberLocalesFor(await headers());
+  // The `serverDay` below is deliberately not the Reader's: it is what the
+  // form falls back to before the browser has answered, and the bound on how
+  // late a day may be stays on the server's clock (ADR-0018).
+  const reader = readerOf(await headers());
 
-  const movement = await readableMovement(space, movementId, locales);
+  const movement = await readableMovement(space, movementId, reader);
   // Not found rather than forbidden, the way the Space itself refuses: one
   // struck out, one in somebody else's Space and one that never existed all
   // read the same from here.
@@ -72,7 +75,7 @@ export default async function MovementPage({
           label: member.name,
         }))}
         currency={space.currency}
-        locales={locales}
+        locales={reader.locales}
         serverDay={todayOnTheServer()}
         month={monthOf(movement.occurredOn)}
         initial={{

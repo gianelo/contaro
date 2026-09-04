@@ -247,11 +247,10 @@ export const movements = pgTable(
      * would quietly file somebody's salary as a purchase — the very rounding
      * `recordMovement` refuses by name.
      *
-     * The running column disagrees with that today. Migration 0005 added it
+     * The running column said otherwise for one deploy: 0005 added it
      * `DEFAULT 'expense'` as the expand step of ADR-0008, because the code of
-     * #7 was still inserting while the Action ran. That default is temporary
-     * and #26 drops it; until then this declaration is where the schema is
-     * going and `information_schema` is where it is.
+     * #7 was still inserting while the Action ran. 0007 dropped it (#26), so
+     * this declaration and the running column now say the same thing.
      */
     direction: text("direction").notNull(),
     /**
@@ -322,5 +321,65 @@ export const movements = pgTable(
       table.spaceId,
       table.occurredOn,
     ),
+  ],
+);
+
+/**
+ * One expected expense inside a month's Budget (#10).
+ *
+ * There is no `budgets` table above this one, and that is the shape of the
+ * thing rather than a shortcut: a Budget *is* the items a Space has for a
+ * month, so it comes into existence with the first one and there is no moment
+ * anybody creates an empty plan. What the close of a month freezes (ADR-0002)
+ * is the month -- its Movements as much as its plan -- so that will not hang
+ * here either.
+ *
+ * Nothing marks an item paid, and nothing here says which kind it is. Both
+ * arrive with Fixed items (#13), the way `direction` arrived with #8: a column
+ * added before the ticket that needs it is a rule nobody has written yet.
+ */
+export const budgetItems = pgTable(
+  "budget_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    /**
+     * The month planned for, written `YYYY-MM`. Text and not a `date`, because
+     * a month is the unit and the first of it is not a fact about the plan:
+     * see `Month` in `src/domain/calendar/month.ts`. Written this way it also
+     * sorts the way a calendar orders months.
+     */
+    month: text("month").notNull(),
+    /**
+     * The Category this item expects to spend on. Not nullable and not
+     * cascaded: an expectation of nothing in particular is not a plan, and a
+     * plan whose Category vanished is a figure nobody can explain -- the same
+     * reason `movements.category_id` outlives any tidying of the catalogue.
+     */
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    /** Minor units, always in the Space's currency (ADR-0007). */
+    amount: bigint("amount", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // Expecting nothing of a Category is the absence of a plan for it, which
+    // is what having no item already says.
+    check("budget_items_amount_is_money_expected", sql`${table.amount} > 0`),
+    // Twelve months and no thirteenth. `isMonth` refuses the same set in the
+    // domain; this refuses it for every path that never goes through it.
+    check(
+      "budget_items_month_is_a_month",
+      sql`${table.month} ~ '^\\d{4}-(0[1-9]|1[0-2])$'`,
+    ),
+    // Deliberately not unique on (space, month, category): several items on
+    // one Category are how a person plans a month in weeks, and they behave as
+    // a single item of their combined amount rather than as a duplicate.
+    index("budget_items_space_id_month_idx").on(table.spaceId, table.month),
   ],
 );

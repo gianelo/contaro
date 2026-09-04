@@ -50,6 +50,20 @@
       "when": 1788476906187,
       "tag": "0006_invite_a_second_member",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788484139203,
+      "tag": "0007_drop_direction_default",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788527136635,
+      "tag": "0008_plan_a_month",
+      "breakpoints": true
     }
   ]
 }

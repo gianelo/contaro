@@ -5,7 +5,7 @@ import { ButtonLink } from "@/ui/button";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { cx } from "@/ui/cx";
 import { hitTarget } from "@/ui/hit-target";
-import { numberLocalesFor } from "@/app/reader";
+import { readerOf } from "@/app/reader";
 import { SpaceScreen } from "../screen";
 import { currentSpace } from "../space";
 import { monthInView, readableMonth, type ReadableMovement } from "./month";
@@ -28,10 +28,15 @@ export default async function SpaceMovementsPage({
 }) {
   const [{ id }, { mes }] = await Promise.all([params, searchParams]);
   const space = await currentSpace(id);
-  // Every figure below is in the Space's currency and written with the
-  // separators of whoever opened this (ADR-0014).
-  const locales = numberLocalesFor(await headers());
-  const inView = await readableMonth(space, monthInView(mes), locales);
+  // Whoever opened this: every figure below is written with their separators
+  // (ADR-0014) and every day named against theirs (ADR-0018). The currency
+  // stays the Space's for both of them.
+  const reader = readerOf(await headers());
+  const inView = await readableMonth(
+    space,
+    monthInView(mes, reader.today),
+    reader,
+  );
 
   const at = (asked: string) => `/espacios/${space.id}/movimientos?mes=${asked}`;
 

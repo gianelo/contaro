@@ -23,3 +23,5 @@ The header is read at the edge, in `src/app/espacios/nuevo/currencies.ts`, which
 Reading the header opts `/espacios/nuevo` into per-request rendering. That screen is behind a session and renders a form, so there was nothing there worth caching.
 
 `CF-IPCountry` is deliberately not read. `gianbarboza.com` uses Cloudflare nameservers in DNS-only mode: it resolves the name and steps aside, nothing is proxied, and that header never arrives. Turning the proxy on to get it would add a hop in front of Vercel and another thing to break.
+
+ADR-0018 reads a second geolocation header, `x-vercel-ip-timezone`, and lets it *answer* which day a Reader is standing in. That is this decision applied and not reversed, so it is written here rather than left for a reader to reconcile. What made a guess unacceptable above is that the answer is permanent: a Space's currency can never be changed (ADR-0001), and nothing recovers a history denominated in the wrong money. A day named on a screen is corrected by the next request. The rule is that geolocation must not make a decision nobody can undo; it was never that geolocation may not answer at all.

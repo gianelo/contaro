@@ -65,8 +65,11 @@ test("every interactive element inside a Space is at least 44px", async ({
   await page.goto(`/espacios/${space.id}`);
   const inside = await undersizedTargets(page);
 
-  // The way out, the four tabs, and the row to who shares this Space (#9).
-  expect(inside.count).toBe(6);
+  // The way out, the four tabs, the two steps of the month the plan is read
+  // in, the way to plan an item (#10), and the row to who shares this Space
+  // (#9). The plan itself is empty on a Space this new, and an empty state is
+  // a line of words rather than something to tap.
+  expect(inside.count).toBe(9);
   expect(inside.undersized).toEqual([]);
 });
 

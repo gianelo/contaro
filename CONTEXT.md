@@ -13,7 +13,7 @@ A person with access to a Space. Members are added by email invitation.
 _Avoid_: User, Partner, Participant
 
 **Reader**:
-The Member an amount is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014).
+The Member a screen is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014). The day they are standing in is theirs too: "today" on any screen is their day, never the server's (ADR-0018). Both halves are the type `Reader` in `src/app/reader.ts`, built from a request by `readerOf` — so the word here and the code say the same thing, and whatever turns out to be theirs next has one place to go.
 _Avoid_: Viewer, User, Audience
 
 **Invitation**:
@@ -52,7 +52,7 @@ _Avoid_: Base currency, Default currency
 The bucket an *expense* is classified under, such as food, rent or leisure. Categories come from a global catalogue that every Space sees, which a Space can extend with its own; a Category may hold subcategories. Income carries none: the dimension exists to be measured against a Budget, and a Budget is a plan of expenses (ADR-0016).
 
 **Budget**:
-The plan of expenses a Space expects to make in a given month, made up of Budget items. It stays editable throughout its month, and real spending is measured against it; it never blocks a Movement from being recorded.
+The plan of expenses a Space expects to make in a given month, made up of Budget items. It is those items and nothing above them: it comes into existence with the first one and nobody creates an empty one first (ADR-0019). It stays editable throughout its month, and real spending is measured against it; it never blocks a Movement from being recorded.
 _Avoid_: Limit, Cap, Allowance
 
 **Budget item**:
@@ -63,7 +63,7 @@ _Avoid_: Line, Entry, Row
 A Budget item whose amount and due date are known, such as rent or a subscription. Marking it paid is what creates its Movement.
 
 **Variable item**:
-A Budget item that sets an expected amount for its Category, such as food or leisure. Movements recorded in that Category count against it, and it is never marked paid.
+A Budget item that sets an expected amount for its Category, such as food or leisure. Movements recorded in that Category count against it, and it is never marked paid. Several on one Category are how a month is planned in weeks, and they behave as a single item of their combined amount rather than as several comparisons.
 
 **Pace**:
 How much of a Budget's variable items a Space would have spent by today, were spending spread evenly across the month. Fixed items are excluded: they fall due on their own date rather than evenly, so measuring them against the calendar compares unlike things.

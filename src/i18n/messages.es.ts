@@ -68,6 +68,35 @@ export const es = {
   "space.month.previous": "Mes anterior",
   "space.month.next": "Mes siguiente",
 
+  // The month's plan (#10). "Presupuesto" is the tab; inside it the plan is
+  // read as what the month is expected to cost, which is why the total is
+  // "Planeado" beside the "Gastado" above it rather than a second "Presupuesto".
+  "budget.title": "El plan del mes",
+  "budget.planned": "Planeado",
+  // Shown only where a Category really has several items, so the heading says
+  // what that block is for rather than repeating "El plan del mes".
+  "budget.byCategory": "Por categor\u00eda",
+  // The empty state says what to do, not that there is nothing: a month
+  // nobody has planned yet is the ordinary state of every first of the month.
+  "budget.empty": "Todav\u00eda no planeaste este mes.",
+  "budget.item.new": "Agregar un \u00edtem",
+  "budget.item.new.title": "Nuevo \u00edtem",
+  "budget.item.edit.title": "Corregir el \u00edtem",
+  "budget.item.category": "Categor\u00eda",
+  "budget.item.amount": "Cu\u00e1nto esper\u00e1s gastar",
+  "budget.item.save": "Guardar",
+  "budget.item.save.working": "Guardando\u2026",
+  "budget.item.remove": "Sacar del plan",
+  "budget.item.remove.working": "Sacando\u2026",
+
+  "budget.error.amount": "Pon\u00e9 un monto mayor que cero.",
+  "budget.error.category": "Eleg\u00ed una categor\u00eda de este espacio.",
+  "budget.error.month": "No pudimos ver de qu\u00e9 mes se trata.",
+  "budget.error.space": "No pudimos ver de qu\u00e9 espacio se trata.",
+  "budget.error.gone": "Ese \u00edtem ya no est\u00e1.",
+  "budget.error.signedOut": "Se cerr\u00f3 tu sesi\u00f3n. Entr\u00e1 de nuevo.",
+  "budget.error.failed": "No pudimos guardar el \u00edtem. Prob\u00e1 de nuevo.",
+
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",
   "movements.direction": "Qué anotás",

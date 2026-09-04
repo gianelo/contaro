@@ -1,6 +1,7 @@
 import { eq, isNull, or } from "drizzle-orm";
 import {
   addCategory,
+  categoriesVisibleTo,
   catalogueFor,
   type Category,
   type CategoryBranch,
@@ -132,5 +133,61 @@ function asCategory(row: CategoryRow): Category {
     spaceId: row.spaceId,
     parentId: row.parentId,
     label: { kind: "own", name: row.name },
+  };
+}
+
+/**
+ * Every Category a Space may file or plan money against.
+ *
+ * Read whole and narrowed by `categoriesVisibleTo`, so "a Category added in
+ * one Space is invisible from another" is answered here exactly as the domain
+ * answers it -- and the domain is handed the rows to decide over rather than a
+ * query it has to trust.
+ *
+ * One place because both writers need the same answer: a Movement is filed
+ * under one of these (#7) and a Budget item plans against one of these (#10),
+ * and two readings of "what can this Space see" would eventually disagree.
+ */
+export async function categoriesTheSpaceCanSee(
+  db: Database,
+  spaceId: string,
+): Promise<readonly Category[]> {
+  const rows = await db
+    .select({
+      id: categories.id,
+      spaceId: categories.spaceId,
+      parentId: categories.parentId,
+      slug: categories.slug,
+      name: categories.name,
+    })
+    .from(categories);
+
+  return categoriesVisibleTo(spaceId, rows.map(asVisibleCategory));
+}
+
+/**
+ * The same row, read for its identifier alone rather than for its name.
+ *
+ * Deliberately without the throwing `asCategory` above does: these rows answer
+ * "may this Space put money against this Category", and a contradictory one
+ * cannot be chosen anyway -- it fails the same visibility test as any other,
+ * and the catalogue's own reader is where it is refused loudly. Throwing here
+ * would take a Movement screen down over a row nobody was going to pick.
+ */
+function asVisibleCategory(row: {
+  id: string;
+  spaceId: string | null;
+  parentId: string | null;
+  slug: string | null;
+  name: string | null;
+}): Category {
+  return {
+    id: row.id,
+    spaceId: row.spaceId,
+    parentId: row.parentId,
+    label:
+      row.spaceId === null
+        ? { kind: "catalogue", slug: row.slug ?? "" }
+        : { kind: "own", name: row.name ?? "" },
   };
 }

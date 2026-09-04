@@ -8,6 +8,7 @@ import {
   month,
   monthOf,
   monthsAround,
+  monthsToPlan,
   nextMonth,
   previousMonth,
   UnreadableDateError,
@@ -152,5 +153,22 @@ describe("the months a screen can move to", () => {
 
   it("offers no month after one already past the calendar", () => {
     expect(monthsAround(month("2027-03"), SEPTEMBER).next).toBeNull();
+  });
+});
+
+describe("the months a plan can walk to", () => {
+  // The opposite of `monthsAround`, and on purpose: a Movement is money that
+  // has already moved, so forwards is a corridor of blank screens. A Budget is
+  // a plan, and the month after this one is exactly the month a person plans.
+  it("goes forwards from the month being lived in", () => {
+    expect(monthsToPlan(month("2026-09"))).toEqual({
+      previous: month("2026-08"),
+      next: month("2026-10"),
+    });
+  });
+
+  it("crosses a year in both directions", () => {
+    expect(monthsToPlan(month("2026-01")).previous).toBe("2025-12");
+    expect(monthsToPlan(month("2026-12")).next).toBe("2027-01");
   });
 });
