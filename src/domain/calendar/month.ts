@@ -181,6 +181,34 @@ export function monthsAround(inView: Month, today: Month): MonthsAround {
 }
 
 /**
+ * The months either side of the one a plan is being read in — both of them,
+ * always.
+ *
+ * The mirror image of `monthsAround`, and the difference is the whole point.
+ * That one stops at the month being lived in because a Movement is money that
+ * has already moved, so every month past this one is guaranteed empty. A
+ * Budget is the opposite kind of thing: it is what a Space expects to spend,
+ * the month after this one is exactly the month a person plans on the 28th,
+ * and a plan screen that could not go forwards would be a plan screen you can
+ * only use for the month you are already inside.
+ *
+ * Backwards is unbounded for the same reason it is there: a Space has a first
+ * month, this does not know which, and an empty plan behind you is an honest
+ * answer to "what did I mean to spend in March".
+ */
+export function monthsToPlan(inView: Month): MonthsToPlan {
+  return { previous: previousMonth(inView), next: nextMonth(inView) };
+}
+
+/**
+ * Where a screen reading one month's plan can go. Its own type and not
+ * `MonthsAround`, because `next` is never nothing here — and a screen made to
+ * check for a null that cannot happen is a screen carrying a branch nobody can
+ * ever reach or test.
+ */
+export type MonthsToPlan = { previous: Month; next: Month };
+
+/**
  * A month a given number of months away, which is only ever one either way.
  *
  * Arithmetic on a `Date` in UTC rather than on the two numbers, so December to

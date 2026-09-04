@@ -22,7 +22,11 @@ import { t } from "@/i18n";
 import { dayLabel, monthLabel } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
 import type { Chip } from "@/ui/chip-field";
-import { readableCatalogueFor } from "../categorias/catalogue";
+import {
+  namesFrom,
+  readableCatalogueFor,
+  type Naming,
+} from "../categorias/catalogue";
 
 /**
  * The day it is, by the server's clock.
@@ -218,23 +222,6 @@ export async function readableMovement(
     new Map(),
     reader,
   );
-}
-
-type Naming = ReadonlyMap<string, { name: string; heading: string | null }>;
-
-function namesFrom(
-  catalogue: Awaited<ReturnType<typeof readableCatalogueFor>>,
-): Naming {
-  const named = new Map<string, { name: string; heading: string | null }>();
-
-  for (const branch of catalogue) {
-    named.set(branch.id, { name: branch.name, heading: null });
-    for (const child of branch.children) {
-      named.set(child.id, { name: child.name, heading: branch.name });
-    }
-  }
-
-  return named;
 }
 
 /**
