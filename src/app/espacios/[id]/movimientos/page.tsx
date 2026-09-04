@@ -5,7 +5,7 @@ import { ButtonLink } from "@/ui/button";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { cx } from "@/ui/cx";
 import { hitTarget } from "@/ui/hit-target";
-import { numberLocalesFor } from "@/app/reader";
+import { numberLocalesFor, todayFor } from "@/app/reader";
 import { SpaceScreen } from "../screen";
 import { currentSpace } from "../space";
 import { monthInView, readableMonth, type ReadableMovement } from "./month";
@@ -28,10 +28,15 @@ export default async function SpaceMovementsPage({
 }) {
   const [{ id }, { mes }] = await Promise.all([params, searchParams]);
   const space = await currentSpace(id);
+  const requested = await headers();
   // Every figure below is in the Space's currency and written with the
   // separators of whoever opened this (ADR-0014).
-  const locales = numberLocalesFor(await headers());
-  const inView = await readableMonth(space, monthInView(mes), locales);
+  const locales = numberLocalesFor(requested);
+  // And every day below is named against theirs, which is the day where they
+  // are standing rather than the one at Greenwich (ADR-0018). Both come off
+  // the same `Headers`: this screen already rendered per request.
+  const today = todayFor(requested);
+  const inView = await readableMonth(space, monthInView(mes, today), locales, today);
 
   const at = (asked: string) => `/espacios/${space.id}/movimientos?mes=${asked}`;
 

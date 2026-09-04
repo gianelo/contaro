@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { t } from "@/i18n";
-import { numberLocalesFor } from "@/app/reader";
+import { numberLocalesFor, todayFor } from "@/app/reader";
 import { SpaceScreen } from "./screen";
 import { currentSpace } from "./space";
 import { monthInView, readableMonth, spaceMembers } from "./movimientos/month";
@@ -20,11 +20,16 @@ export default async function SpacePage({
   // The Space's money, written the way whoever opened this reads numbers
   // (ADR-0014). Two Members of one Space read one amount two ways; it is the
   // same amount, and it is in the Space's currency for both of them.
-  const locales = numberLocalesFor(await headers());
+  const requested = await headers();
+  const locales = numberLocalesFor(requested);
+  // Which month "this month" is, is the Reader's question too (ADR-0018): at
+  // nine at night on the 30th the server is already in the next one, and this
+  // figure would be the cost of a month nobody has started spending in.
+  const today = todayFor(requested);
   // What the month has actually cost. Nothing spent is still a figure, and it
   // is what #10's plan will be measured against.
   const [{ spent }, members] = await Promise.all([
-    readableMonth(space, monthInView(), locales),
+    readableMonth(space, monthInView(undefined, today), locales, today),
     spaceMembers(space.id),
   ]);
 
