@@ -13,7 +13,7 @@ A person with access to a Space. Members are added by email invitation.
 _Avoid_: User, Partner, Participant
 
 **Reader**:
-The Member an amount is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014).
+The Member a screen is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014). The day they are standing in is theirs too: "today" on any screen is their day, never the server's (ADR-0018).
 _Avoid_: Viewer, User, Audience
 
 **Invitation**:
