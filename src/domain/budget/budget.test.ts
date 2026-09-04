@@ -7,12 +7,19 @@ import type { Space } from "../space/space";
 import {
   amendItem,
   comparedToPlan,
+  dueNotice,
   expected,
   expectedByCategory,
+  FixedItemAlreadyPaidError,
+  isPaid,
+  MAX_FIXED_ITEM_NAME_LENGTH,
+  paymentFor,
+  planFixedItem,
   planItem,
   UnplannableBudgetItemError,
-  type BudgetItem,
+  type FixedItem,
   type Planning,
+  type VariableItem,
 } from "./budget";
 
 const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
@@ -66,6 +73,7 @@ describe("planning a Variable item", () => {
   // never marked paid" lives: an item that grew a paid state would fail here.
   it("sets an expected amount for a Category in a month", () => {
     expect(planItem(draft(), planning())).toEqual({
+      kind: "variable",
       spaceId: CASA.id,
       month: SEPTEMBER,
       categoryId: SUPER.id,
@@ -89,12 +97,26 @@ describe("planning a Variable item", () => {
   });
 });
 
-const item = (changes: Partial<BudgetItem> = {}): BudgetItem => ({
+const item = (changes: Partial<VariableItem> = {}): VariableItem => ({
+  kind: "variable",
   id: "item-1",
   spaceId: CASA.id,
   month: SEPTEMBER,
   categoryId: SUPER.id,
   amount: money(240_000_00, "ARS"),
+  ...changes,
+});
+
+const fixed = (changes: Partial<FixedItem> = {}): FixedItem => ({
+  kind: "fixed",
+  id: "fixed-1",
+  spaceId: CASA.id,
+  month: SEPTEMBER,
+  categoryId: MATE.id,
+  amount: money(180_000_00, "ARS"),
+  name: "Arriendo",
+  dueOn: calendarDate("2026-09-01"),
+  movementId: null,
   ...changes,
 });
 
@@ -443,5 +465,262 @@ describe("a plan and its spending in two different currencies", () => {
         "ARS",
       ),
     ).toThrow();
+  });
+});
+
+const fixedDraft = (
+  changes: Partial<Parameters<typeof planFixedItem>[0]> = {},
+) => ({
+  spaceId: CASA.id,
+  month: "2026-09",
+  categoryId: MATE.id,
+  amount: 180_000_00,
+  name: "Arriendo",
+  dueDay: 1,
+  ...changes,
+});
+
+describe("planning a Fixed item", () => {
+  // `toEqual` is exact about the keys, which is where the whole difference
+  // between the two kinds lives: a name, a day it falls due on, and the
+  // Movement that marking it paid will create.
+  it("is an amount on a Category, called something, due on a day", () => {
+    expect(planFixedItem(fixedDraft(), planning())).toEqual({
+      kind: "fixed",
+      spaceId: CASA.id,
+      month: SEPTEMBER,
+      categoryId: MATE.id,
+      amount: money(180_000_00, "ARS"),
+      name: "Arriendo",
+      dueOn: calendarDate("2026-09-01"),
+      movementId: null,
+    });
+  });
+
+  // The day is a day *of the plan's month* and never a date somebody typed,
+  // so an item can never fall due outside the month it is planned on.
+  it("puts the due day inside the month being planned", () => {
+    expect(
+      planFixedItem(fixedDraft({ month: "2026-02", dueDay: 22 }), planning())
+        .dueOn,
+    ).toBe("2026-02-22");
+  });
+
+  it("refuses a day the month being planned does not have", () => {
+    expect(() =>
+      planFixedItem(fixedDraft({ month: "2026-02", dueDay: 30 }), planning()),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  it("refuses a day no month has at all", () => {
+    expect(() => planFixedItem(fixedDraft({ dueDay: 0 }), planning())).toThrow(
+      UnplannableBudgetItemError,
+    );
+    expect(() => planFixedItem(fixedDraft({ dueDay: 32 }), planning())).toThrow(
+      UnplannableBudgetItemError,
+    );
+  });
+
+  it("trims the name", () => {
+    expect(planFixedItem(fixedDraft({ name: "  Netflix  " }), planning()).name)
+      .toBe("Netflix");
+  });
+
+  // The name is the whole of what the row is called: a Fixed item is read by
+  // it, not by its Category, and a blank one is a row nobody can tell from
+  // the next one.
+  it("refuses a name that is not one", () => {
+    expect(() => planFixedItem(fixedDraft({ name: "   " }), planning()))
+      .toThrow(UnplannableBudgetItemError);
+    expect(() =>
+      planFixedItem(
+        fixedDraft({ name: "a".repeat(MAX_FIXED_ITEM_NAME_LENGTH + 1) }),
+        planning(),
+      ),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  // Every rule a Variable item is held to is one rule, asked here too.
+  it("is held to every rule the other kind is held to", () => {
+    expect(() =>
+      planFixedItem(fixedDraft({ categoryId: ELSEWHERE.id }), planning()),
+    ).toThrow(UnplannableBudgetItemError);
+    expect(() => planFixedItem(fixedDraft({ amount: 0 }), planning())).toThrow(
+      UnplannableBudgetItemError,
+    );
+    expect(() =>
+      planFixedItem(fixedDraft({ month: "septiembre" }), planning()),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  it("is planned pending, because nothing has been paid yet", () => {
+    expect(isPaid(planFixedItem(fixedDraft(), planning()))).toBe(false);
+  });
+});
+
+describe("whether a Fixed item is paid", () => {
+  // Paid is not a flag beside the Movement, it *is* the Movement. Two facts
+  // that have to agree are two facts that eventually will not.
+  it("is the Movement marking it paid created, and nothing else", () => {
+    expect(isPaid(fixed({ movementId: null }))).toBe(false);
+    expect(isPaid(fixed({ movementId: "mov-1" }))).toBe(true);
+  });
+});
+
+describe("marking a Fixed item paid", () => {
+  const paying = { space: CASA, today: calendarDate("2026-09-18") };
+
+  it("asks for one expense, for its amount and its Category", () => {
+    expect(paymentFor(fixed(), paying)).toEqual({
+      spaceId: CASA.id,
+      direction: "expense",
+      categoryId: MATE.id,
+      amount: 180_000_00,
+      occurredOn: "2026-09-18",
+      attributedTo: null,
+    });
+  });
+
+  // The day the money moved is the day somebody said it did, which is today
+  // — not the day the plan expected it to. A subscription charged late is an
+  // expense of the day it was charged.
+  it("dates it today and never on the day it fell due", () => {
+    expect(
+      paymentFor(fixed({ dueOn: calendarDate("2026-09-01") }), paying)
+        .occurredOn,
+    ).toBe("2026-09-18");
+  });
+
+  // Null, which `recordMovement` reads as the Member doing the recording.
+  // Written down here rather than guessed at, so the recap on the
+  // confirmation and the Movement that lands cannot disagree.
+  it("attributes it to whoever is marking it paid", () => {
+    expect(paymentFor(fixed(), paying).attributedTo).toBeNull();
+  });
+
+  it("refuses an item that is already paid", () => {
+    expect(() => paymentFor(fixed({ movementId: "mov-1" }), paying)).toThrow(
+      FixedItemAlreadyPaidError,
+    );
+  });
+
+  it("refuses an item planned in another Space", () => {
+    expect(() =>
+      paymentFor(fixed({ spaceId: "space-de-otro" }), paying),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+});
+
+describe("a Fixed item falling due", () => {
+  const on = (day: string) => calendarDate(`2026-09-${day}`);
+
+  it("says nothing while its day is still far off", () => {
+    expect(dueNotice(fixed({ dueOn: on("25") }), on("18"))).toBeNull();
+  });
+
+  it("counts the days once it is close", () => {
+    expect(dueNotice(fixed({ dueOn: on("22") }), on("18"))).toEqual({
+      kind: "soon",
+      days: 4,
+    });
+  });
+
+  // Two days a person actually has a word for. "Vence en 1 días" is a
+  // sentence nobody says.
+  it("names tomorrow and today rather than counting them", () => {
+    expect(dueNotice(fixed({ dueOn: on("19") }), on("18"))).toEqual({
+      kind: "tomorrow",
+    });
+    expect(dueNotice(fixed({ dueOn: on("18") }), on("18"))).toEqual({
+      kind: "today",
+    });
+  });
+
+  // The day passing is not the notice going quiet. An unpaid item behind its
+  // day is the one a person most needs to be told about, and turning the line
+  // grey again on the 23rd would hide exactly that.
+  it("says an unpaid item is past its day", () => {
+    expect(dueNotice(fixed({ dueOn: on("17") }), on("18"))).toEqual({
+      kind: "overdue",
+    });
+  });
+
+  // A paid item has nothing left to fall due. It says "Pagado", and a second
+  // line counting down to a day that no longer matters is noise.
+  it("says nothing at all once it is paid", () => {
+    expect(
+      dueNotice(fixed({ dueOn: on("17"), movementId: "mov-1" }), on("18")),
+    ).toBeNull();
+    expect(
+      dueNotice(fixed({ dueOn: on("19"), movementId: "mov-1" }), on("18")),
+    ).toBeNull();
+  });
+});
+
+describe("a month planned with both kinds of item", () => {
+  // "Fixed and Variable items appear together in the month's Budget and sum
+  // into its total" (#13). The total is the whole plan or it is not a total.
+  it("adds both kinds into what the month expects to cost", () => {
+    expect(
+      expected(
+        [
+          item({ amount: money(240_000_00, "ARS") }),
+          fixed({ amount: money(180_000_00, "ARS") }),
+        ],
+        "ARS",
+      ),
+    ).toEqual(money(420_000_00, "ARS"));
+  });
+
+  // A Category planned only with Fixed items has one question — did it get
+  // paid — and the Fijos row answers it. A meter beside it would read
+  // "$180.000 / 180.000" the moment it was paid, which is a bar drawn to say
+  // what the badge already said.
+  it("draws no comparison for a Category planned only with Fixed items", () => {
+    expect(
+      comparedToPlan(
+        [fixed({ categoryId: MATE.id })],
+        [expense({ categoryId: MATE.id })],
+        [SUPER, MATE],
+        "ARS",
+      ),
+    ).toEqual([]);
+  });
+
+  // The other half of the same rule, and the one that would be a lie if it
+  // went the other way: the Movement a Fixed item creates is spending in its
+  // Category like any other, so a denominator that left the Fixed item out
+  // would report somebody over on a plan they kept to the peso.
+  it("measures a Category against the whole of what was planned for it", () => {
+    expect(
+      comparedToPlan(
+        [
+          item({ categoryId: MATE.id, amount: money(50_000_00, "ARS") }),
+          fixed({ categoryId: MATE.id, amount: money(89_000_00, "ARS") }),
+        ],
+        [expense({ categoryId: MATE.id, amount: money(89_000_00, "ARS") })],
+        [SUPER, MATE],
+        "ARS",
+      ),
+    ).toEqual([
+      {
+        categoryId: MATE.id,
+        expected: money(139_000_00, "ARS"),
+        spent: money(89_000_00, "ARS"),
+        over: null,
+        share: 89 / 139,
+      },
+    ]);
+  });
+});
+
+describe("correcting an item", () => {
+  // There is no correction screen for a Fixed item yet, and this is what
+  // makes that a gap rather than a hole: the Variable item's correction
+  // cannot quietly strip a name, a due day and a payment off one.
+  it("refuses a Fixed item outright", () => {
+    expect(() => amendItem(fixed(), { amount: 1 }, planning())).toThrow(
+      UnplannableBudgetItemError,
+    );
   });
 });

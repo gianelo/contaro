@@ -334,9 +334,11 @@ export const movements = pgTable(
  * is the month -- its Movements as much as its plan -- so that will not hang
  * here either.
  *
- * Nothing marks an item paid, and nothing here says which kind it is. Both
- * arrive with Fixed items (#13), the way `direction` arrived with #8: a column
- * added before the ticket that needs it is a rule nobody has written yet.
+ * `kind` says which of the two an item is, and the three columns after it are
+ * what only a Fixed one carries (#13). They are nullable and held together by
+ * a check rather than split into a second table: the two kinds are one plan,
+ * they add up into one total, and a month's items read as one list -- which a
+ * union of two tables would turn into two queries agreeing by hand.
  */
 export const budgetItems = pgTable(
   "budget_items",
@@ -363,6 +365,52 @@ export const budgetItems = pgTable(
       .references(() => categories.id),
     /** Minor units, always in the Space's currency (ADR-0007). */
     amount: bigint("amount", { mode: "number" }).notNull(),
+    /**
+     * Which kind of item this is: `variable` or `fixed` (#13).
+     *
+     * The default is the expand half of an expand/contract, exactly as
+     * `direction` had one for a deploy (#26, ADR-0008): migrations run from an
+     * Action while Vercel deploys in parallel, so for a few minutes the code
+     * of #10 -- which has never heard of this column -- is still inserting
+     * here. Every row it wrote and every row already in the table is a
+     * Variable item, so `variable` backfills the truth and keeps those writes
+     * working.
+     *
+     * It is a bridge and not a rule: the two kinds are not variations of one
+     * thing, and once nothing writing here is unaware of the column the
+     * default turns into a guess for every insert that forgot to say. Dropping
+     * it is the contraction half, and its own ticket.
+     */
+    kind: text("kind").notNull().default("variable"),
+    /**
+     * What a Fixed item is called: "Arriendo", "Netflix". Null on a Variable
+     * item, which is named by its Category and has nothing else to be called.
+     */
+    name: text("name"),
+    /**
+     * The day a Fixed item falls due. A `date` like `movements.occurred_on`,
+     * and held to being inside `month` by a check below -- the domain builds
+     * it out of the month (`dayOf`), and this is that same rule for every path
+     * that never goes through the domain.
+     */
+    dueOn: date("due_on", { mode: "string" }),
+    /**
+     * The Movement marking this item paid created. Null while it is pending,
+     * and null forever on a Variable item, which is never marked paid.
+     *
+     * Unique, and that is where "marking an already-paid item paid does not
+     * create a second Movement" (#13) is actually enforced. Paid is not a flag
+     * beside the Movement, it *is* the Movement; a flag and a row are two
+     * facts that have to agree, and this way two taps racing each other can
+     * only ever leave one of them here.
+     *
+     * Not cascaded, for the reason `category_id` is not: a Movement struck out
+     * is still an entry (ADR-0015), and an item whose payment vanished from
+     * under it would read as pending with the money still spent.
+     */
+    movementId: uuid("movement_id")
+      .references(() => movements.id)
+      .unique("budget_items_movement_pays_one_item"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -371,6 +419,34 @@ export const budgetItems = pgTable(
     // Expecting nothing of a Category is the absence of a plan for it, which
     // is what having no item already says.
     check("budget_items_amount_is_money_expected", sql`${table.amount} > 0`),
+    // Two kinds and no third. `BudgetItem` is a union of exactly these in the
+    // domain; this refuses the rest for every path that never goes through it.
+    check(
+      "budget_items_kind_is_one_of_two",
+      sql`${table.kind} in ('variable', 'fixed')`,
+    ),
+    // What each kind carries, and by its absence what it may not. A Variable
+    // item with a due date would be a row the domain has no type for, and a
+    // Fixed item without one is a plan for a day nobody named.
+    check(
+      "budget_items_carries_what_its_kind_carries",
+      sql`(
+        ${table.kind} = 'variable'
+        and ${table.name} is null
+        and ${table.dueOn} is null
+        and ${table.movementId} is null
+      ) or (
+        ${table.kind} = 'fixed'
+        and char_length(btrim(${table.name})) > 0
+        and ${table.dueOn} is not null
+      )`,
+    ),
+    // A Fixed item falls due inside the month it is planned on, or the plan
+    // holds a date belonging to a month it is not about.
+    check(
+      "budget_items_due_on_is_in_its_month",
+      sql`${table.dueOn} is null or to_char(${table.dueOn}, 'YYYY-MM') = ${table.month}`,
+    ),
     // Twelve months and no thirteenth. `isMonth` refuses the same set in the
     // domain; this refuses it for every path that never goes through it.
     check(

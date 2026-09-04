@@ -9,6 +9,12 @@ import { t } from "@/i18n";
 export type BottomSheetProps = {
   open: boolean;
   title: string;
+  /**
+   * Where the title sits. Centred by default, which is what a short label over
+   * a warning wants; `start` is for a sheet whose title is a sentence the body
+   * under it continues (#13).
+   */
+  align?: "center" | "start";
   onClose: () => void;
   /** Buttons pinned to the bottom of the sheet. */
   actions?: ReactNode;
@@ -19,6 +25,7 @@ export type BottomSheetProps = {
 export function BottomSheet({
   open,
   title,
+  align = "center",
   onClose,
   actions,
   children,
@@ -52,7 +59,10 @@ export function BottomSheet({
         className={styles.sheet}
       >
         <span className={styles.grabber} aria-hidden="true" />
-        <h2 id={titleId} className={styles.title}>
+        <h2
+          id={titleId}
+          className={cx(styles.title, align === "start" && styles.start)}
+        >
           {title}
         </h2>
         <div className={styles.body}>{children}</div>

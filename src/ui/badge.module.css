@@ -1,0 +1,32 @@
+/*
+ * The badge on a Fixed item's row: "Pagado" or "Pendiente" (#13).
+ *
+ * Small, and small on purpose -- it sits under an amount at the end of a row
+ * and must not compete with it. It carries its state in words as well as in
+ * its two grounds, so nothing here is the only thing saying which state it is.
+ */
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* Something that happened: the accent, on the soft accent ground. */
+.accent {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+/*
+ * Something still to happen. Grey and not amber: pending is the ordinary state
+ * of a Fixed item for most of its month, and a row of amber badges all month
+ * is a row nobody reads by the time the day actually matters. What is near its
+ * day says so in the line under the name instead.
+ */
+.muted {
+  color: var(--color-text-secondary);
+  background: var(--color-separator);
+}

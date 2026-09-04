@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calendarDate, month } from "@/domain/calendar/month";
-import { dayLabel, monthLabel } from "./day";
+import { dayLabel, monthLabel, shortDayLabel } from "./day";
 
 const TODAY = calendarDate("2026-09-03");
 
@@ -53,5 +53,20 @@ describe("how a month is named to a person", () => {
 
     expect(new Set(named).size).toBe(12);
     expect(named.every((name) => /^[A-ZÁÉÍÓÚ]/.test(name))).toBe(true);
+  });
+});
+
+describe("a day written short, beside a Fixed item's name", () => {
+  it("names the day and the month and nothing else", () => {
+    // Short because it shares a line with the Category and, when the day is
+    // near, with what that means: "Suscripciones · 22 sep · vence en 4 días".
+    expect(shortDayLabel(calendarDate("2026-09-01"))).toBe("1 sept");
+    expect(shortDayLabel(calendarDate("2026-01-22"))).toBe("22 ene");
+  });
+
+  it("says the same thing whatever year is being lived in", () => {
+    // A Fixed item is always on the month being read, so there is no year to
+    // disambiguate and nothing to measure "today" against.
+    expect(shortDayLabel(calendarDate("2024-12-31"))).toBe("31 dic");
   });
 });

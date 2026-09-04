@@ -90,6 +90,11 @@
   /* Type scale */
   --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
     "Segoe UI", Roboto, sans-serif;
+  /* The badge on a Fixed item's row, which is the smallest type in the app
+   * (#13). Never load-bearing on its own: the badge says "Pagado" or
+   * "Pendiente" in words, so nothing depends on reading eleven pixels of
+   * colour. */
+  --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;
@@ -119,6 +124,9 @@
   --space-10: 24px;
 
   /* Radii */
+  /* A badge's corners: small enough to read as a chip on a row rather than as
+   * a card of its own (#13). */
+  --radius-xs: 5px;
   --radius-sm: 9px;
   --radius-md: 11px;
   --radius-lg: 13px;

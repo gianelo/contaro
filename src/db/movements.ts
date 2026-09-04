@@ -18,11 +18,11 @@ import {
 } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { categoriesTheSpaceCanSee } from "./categories";
-import type { Connection } from "./connection";
+import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
 import { movements, spaceMembers } from "./schema";
 
-type Database = Connection["db"];
+type Database = Queries;
 
 /** Exactly the columns a domain `Movement` is made of. */
 const movementColumns = {

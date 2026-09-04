@@ -97,11 +97,62 @@ export const es = {
   "budget.item.remove": "Sacar del plan",
   "budget.item.remove.working": "Sacando\u2026",
 
+  // The other half of a Budget (#13): the amounts whose day and figure are
+  // known in advance. Above the Variables, the way the canvas draws them, and
+  // named for the kind of item rather than for the grouping. `GroupedList`
+  // puts it in capitals.
+  "budget.fixed": "Fijos",
+  "budget.fixed.new": "Agregar un fijo",
+  "budget.fixed.new.title": "Nuevo \u00edtem fijo",
+  "budget.fixed.name": "C\u00f3mo se llama",
+  "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
+  "budget.fixed.amount": "Cu\u00e1nto es",
+  // The badge at the end of a row. Two words, and never a colour on its own:
+  // the state has to survive somebody who cannot tell the two grounds apart.
+  "budget.fixed.paid": "Pagado",
+  "budget.fixed.pending": "Pendiente",
+  // "Vivienda · 1 sep" — the Category and the day, under the name.
+  "budget.fixed.beneath": "{category} \u00b7 {day}",
+  // What an item close to its day says, in words and not only in the amber
+  // (#13). It says the day is near and promises nothing more: the advance
+  // warning before a subscription renews is phase two in #1, and a line
+  // saying "avisa 3 días antes" would be signing for an email nobody sends.
+  "budget.fixed.due.soon": "vence en {days} d\u00edas",
+  "budget.fixed.due.tomorrow": "vence ma\u00f1ana",
+  "budget.fixed.due.today": "vence hoy",
+  // Louder rather than quieter once the day has passed: an unpaid item behind
+  // its date is the one a Member most needs telling about.
+  "budget.fixed.due.overdue": "vencido",
+  // Marking one paid, which is what creates its Movement. It confirms first,
+  // because that brings money into existence in the ledger — and the recap is
+  // the point of the confirmation: it says which Space the money lands in and
+  // whose it will be, the two things a stray tap would get wrong.
+  "budget.fixed.pay": "Marcar pagado",
+  "budget.fixed.pay.title": "\u00bfMarcar {name} como pagado?",
+  // Two halves, because the amount between them is written in the ordinary ink
+  // while the rest is grey: it is the one figure a person is confirming, and a
+  // single interpolated string would render it in the same grey as the words
+  // around it. Split at a clause boundary, so neither half carries a space it
+  // could lose.
+  "budget.fixed.pay.body.lead": "Se va a crear un gasto de",
+  "budget.fixed.pay.body.rest":
+    "con fecha de hoy, en la categor\u00eda {category}.",
+  "budget.fixed.pay.space": "Espacio",
+  "budget.fixed.pay.recordedBy": "Registrado por",
+  "budget.fixed.pay.attributedTo": "Atribuido a",
+  "budget.fixed.pay.working": "Marcando\u2026",
+
   "budget.error.amount": "Pon\u00e9 un monto mayor que cero.",
   "budget.error.category": "Eleg\u00ed una categor\u00eda de este espacio.",
   "budget.error.month": "No pudimos ver de qu\u00e9 mes se trata.",
   "budget.error.space": "No pudimos ver de qu\u00e9 espacio se trata.",
+  // The ceiling comes from `MAX_FIXED_ITEM_NAME_LENGTH` rather than being
+  // written out here: a number in the copy and a number in the domain are two
+  // places for one rule, and only one of them refuses anything.
+  "budget.error.name": "Pon\u00e9le un nombre de hasta {max} caracteres.",
+  "budget.error.dueDay": "Eleg\u00ed un d\u00eda que ese mes tenga.",
   "budget.error.gone": "Ese \u00edtem ya no est\u00e1.",
+  "budget.error.alreadyPaid": "Ese \u00edtem ya estaba pagado.",
   "budget.error.signedOut": "Se cerr\u00f3 tu sesi\u00f3n. Entr\u00e1 de nuevo.",
   "budget.error.failed": "No pudimos guardar el \u00edtem. Prob\u00e1 de nuevo.",
 

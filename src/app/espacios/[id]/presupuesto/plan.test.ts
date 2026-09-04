@@ -1,15 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  FixedItemAlreadyPaidError,
   UnplannableBudgetItemError,
   type BudgetItem,
   type BudgetItemDraft,
+  type FixedItem,
+  type FixedItemDraft,
 } from "@/domain/budget/budget";
-import { month } from "@/domain/calendar/month";
+import { calendarDate, month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
+import type { Movement } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import {
   handleAmendBudgetItem,
+  handlePayFixedItem,
   handlePlanBudgetItem,
+  handlePlanFixedItem,
   handleRemoveBudgetItem,
   refusalMessage,
   type BudgetPorts,
@@ -19,11 +25,46 @@ const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
 const GIAN = "member-gian";
 
 const PLANNED: BudgetItem = {
+  kind: "variable",
   id: "item-1",
   spaceId: CASA.id,
   month: month("2026-09"),
   categoryId: "cat-super",
   amount: money(240_000_00, "ARS"),
+};
+
+const TODAY = calendarDate("2026-09-18");
+
+const FIXED: FixedItem = {
+  kind: "fixed",
+  id: "fixed-1",
+  spaceId: CASA.id,
+  month: month("2026-09"),
+  categoryId: "cat-vivienda",
+  amount: money(1_800_000_00, "ARS"),
+  name: "Arriendo",
+  dueOn: calendarDate("2026-09-01"),
+  movementId: null,
+};
+
+const PAYMENT: Movement = {
+  id: "mov-1",
+  spaceId: CASA.id,
+  direction: "expense",
+  categoryId: "cat-vivienda",
+  amount: money(1_800_000_00, "ARS"),
+  occurredOn: TODAY,
+  recordedBy: GIAN,
+  attributedTo: GIAN,
+};
+
+const fixedDraft: FixedItemDraft = {
+  spaceId: CASA.id,
+  month: "2026-09",
+  categoryId: "cat-vivienda",
+  amount: 1_800_000_00,
+  name: "Arriendo",
+  dueDay: 1,
 };
 
 const draft: BudgetItemDraft = {
@@ -36,9 +77,12 @@ const draft: BudgetItemDraft = {
 const ports = (changes: Partial<BudgetPorts> = {}): BudgetPorts => ({
   readSession: async () => ({ memberId: GIAN }),
   findSpace: async () => CASA,
+  today: () => TODAY,
   plan: async () => PLANNED,
+  planFixed: async () => FIXED,
   amend: async () => PLANNED,
   remove: async () => true,
+  pay: async () => PAYMENT,
   ...changes,
 });
 
@@ -156,5 +200,112 @@ describe("what a refused plan says on the screen", () => {
     for (const refusal of refusals) {
       expect(refusalMessage(refusal)).not.toBe("");
     }
+  });
+});
+
+describe("planning a Fixed item from the screen", () => {
+  it("plans it, once the Member has been proved to be in the Space", async () => {
+    expect(await handlePlanFixedItem(ports(), fixedDraft)).toEqual({
+      kind: "planned",
+      item: FIXED,
+    });
+  });
+
+  // The same claim the other kind makes, refused the same way: without this,
+  // the Space somebody plans in is the Space whose identifier they guessed.
+  it("refuses a Space the session does not prove", async () => {
+    const planFixed = vi.fn(async () => FIXED);
+
+    const outcome = await handlePlanFixedItem(
+      ports({ findSpace: async () => null, planFixed }),
+      fixedDraft,
+    );
+
+    expect(outcome).toEqual({ kind: "no-such-space" });
+    expect(planFixed).not.toHaveBeenCalled();
+  });
+
+  it("names the answer that was refused", async () => {
+    expect(
+      await handlePlanFixedItem(
+        ports({
+          planFixed: async () => {
+            throw new UnplannableBudgetItemError("dueDay", "no such day");
+          },
+        }),
+        fixedDraft,
+      ),
+    ).toEqual({ kind: "rejected", field: "dueDay" });
+  });
+});
+
+describe("marking a Fixed item paid", () => {
+  it("records the Movement and hands it back", async () => {
+    expect(await handlePayFixedItem(ports(), CASA.id, FIXED.id)).toEqual({
+      kind: "paid",
+      movement: PAYMENT,
+    });
+  });
+
+  // Who typed it in comes from the session and never from the screen, and the
+  // day from the clock and never from a browser: a Movement a plan created
+  // carries both exactly as one typed in by hand does (#13).
+  it("records it as the signed-in Member, on the day the clock says", async () => {
+    const pay = vi.fn(async () => PAYMENT);
+
+    await handlePayFixedItem(ports({ pay }), CASA.id, FIXED.id);
+
+    expect(pay).toHaveBeenCalledWith(
+      { space: CASA, recordedBy: GIAN, today: TODAY },
+      FIXED.id,
+    );
+  });
+
+  it("refuses a Space the session does not prove", async () => {
+    const pay = vi.fn(async () => PAYMENT);
+
+    const outcome = await handlePayFixedItem(
+      ports({ findSpace: async () => null, pay }),
+      CASA.id,
+      FIXED.id,
+    );
+
+    expect(outcome).toEqual({ kind: "no-such-space" });
+    expect(pay).not.toHaveBeenCalled();
+  });
+
+  it("refuses when there is no such pending item", async () => {
+    expect(
+      await handlePayFixedItem(
+        ports({ pay: async () => null }),
+        CASA.id,
+        FIXED.id,
+      ),
+    ).toEqual({ kind: "no-such-item" });
+  });
+
+  // The row in front of them, already settled. A person is owed the
+  // difference between that and a row that is not theirs.
+  it("says so when the item was already paid", async () => {
+    expect(
+      await handlePayFixedItem(
+        ports({
+          pay: async () => {
+            throw new FixedItemAlreadyPaidError({
+              ...FIXED,
+              movementId: "mov-0",
+            });
+          },
+        }),
+        CASA.id,
+        FIXED.id,
+      ),
+    ).toEqual({ kind: "already-paid" });
+  });
+
+  it("says nothing was created when it was already paid", () => {
+    expect(refusalMessage({ kind: "already-paid" })).toBe(
+      "Ese ítem ya estaba pagado.",
+    );
   });
 });

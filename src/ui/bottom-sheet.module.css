@@ -40,6 +40,16 @@
   color: var(--color-text);
 }
 
+/*
+ * A title that runs on rather than announcing. Centring works for a short
+ * label over a warning; "¿Marcar Arriendo como pagado?" is a sentence with
+ * something under it, and a centred sentence over a left-aligned body and a
+ * left-aligned card reads as a heading that belongs to another screen.
+ */
+.start {
+  text-align: left;
+}
+
 .body {
   display: flex;
   flex-direction: column;

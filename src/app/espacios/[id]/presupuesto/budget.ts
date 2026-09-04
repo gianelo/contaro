@@ -4,8 +4,12 @@ import { categoriesTheSpaceCanSee } from "@/db/categories";
 import { movementsInMonth } from "@/db/movements";
 import {
   comparedToPlan,
+  dueNotice,
   expected,
-  type BudgetItem,
+  isPaid,
+  type DueNotice,
+  type FixedItem,
+  type VariableItem,
 } from "@/domain/budget/budget";
 import {
   monthOf,
@@ -15,7 +19,8 @@ import {
 } from "@/domain/calendar/month";
 import { formatAmount, formatMoney } from "@/domain/money/money";
 import type { Space } from "@/domain/space/space";
-import { monthLabel } from "@/i18n/day";
+import { t } from "@/i18n";
+import { monthLabel, shortDayLabel } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
 import {
   namesFrom,
@@ -79,6 +84,47 @@ export type ReadableComparison = {
   filled: number;
 };
 
+/**
+ * One Fixed item, as the FIJOS section shows it (#13).
+ *
+ * Everything here is already words. The row draws a name, a line under it and
+ * a badge, and the two decisions behind those -- how near the day is, and
+ * whether it is paid -- were made in the domain and said in the interface's
+ * language here, so the component has nothing left to decide.
+ */
+export type ReadableFixedItem = {
+  id: string;
+  /** What the row is called: "Arriendo", "Netflix". */
+  name: string;
+  /**
+   * The Category it is filed under, named. Carried apart from the line below
+   * as well as inside it, because the confirmation writes it into a sentence
+   * of its own — and reading it back out of `beneath` would mean splitting a
+   * formatted string on a separator that is copy.
+   */
+  category: string;
+  /** The line under the name: "Vivienda · 1 sep". */
+  beneath: string;
+  amount: string;
+  /**
+   * Whether it has been paid, which is the badge. A boolean and not the two
+   * words, because the row also turns on it: a paid item is not tappable and
+   * says nothing about its day.
+   */
+  paid: boolean;
+  /**
+   * What its day means, while it is pending and close: "vence en 4 días",
+   * "vence hoy", "vencido". Null while it is far off or already paid.
+   *
+   * In words and never only in the amber it is written in (#13). Somebody who
+   * cannot tell the two greys apart still reads that the day is near, which is
+   * the whole reason the sentence is there -- and it says the day is near and
+   * nothing more, because the advance warning before a subscription renews is
+   * phase two in #1.
+   */
+  due: string | null;
+};
+
 /** One Space's Budget for a month, as the screen showing it needs to know it. */
 export type ReadableBudget = {
   month: Month;
@@ -87,11 +133,18 @@ export type ReadableBudget = {
   /** Where the control at the top of the screen can go from here. */
   around: MonthsToPlan;
   /**
-   * The items, in the order they were planned. Several on one Category stay
-   * several here: they are how a person thinks in weeks, and collapsing them
-   * on the screen would take away the four rows they meant to edit.
+   * The Variable items, in the order they were planned. Several on one
+   * Category stay several here: they are how a person thinks in weeks, and
+   * collapsing them on the screen would take away the four rows they meant to
+   * edit.
    */
   items: readonly ReadableBudgetItem[];
+  /**
+   * The Fixed items, in the order they were planned, drawn above the rest
+   * (#13). Their own list and not rows among the others, because they are read
+   * for a different question: not "how much is left" but "what have I paid".
+   */
+  fixed: readonly ReadableFixedItem[];
   /**
    * The same items collapsed to one line per Category and measured against
    * what really got spent (#11), which is what "several items on one Category
@@ -103,7 +156,10 @@ export type ReadableBudget = {
    * and now it carries what the row above cannot — the spending.
    */
   variables: readonly ReadableComparison[];
-  /** What the whole month's plan adds up to, in the Space's money. */
+  /**
+   * What the whole month's plan adds up to, in the Space's money -- both kinds
+   * together, because both are what the month expects to cost (#13).
+   */
   expected: string;
 };
 
@@ -139,7 +195,12 @@ export async function readableBudget(
     month,
     label: monthLabel(month, monthOf(reader.today)),
     around: monthsToPlan(month),
-    items: planned.map((item) => readable(item, named, reader)),
+    items: planned
+      .filter((item): item is VariableItem => item.kind === "variable")
+      .map((item) => readable(item, named, reader)),
+    fixed: planned
+      .filter((item): item is FixedItem => item.kind === "fixed")
+      .map((item) => readableFixed(item, named, reader)),
     variables: comparedToPlan(
       planned,
       spending,
@@ -167,13 +228,72 @@ export async function readableBudgetItem(
   reader: Reader,
 ): Promise<ReadableBudgetItem | null> {
   const item = await findBudgetItemInSpace(database(), space, itemId);
-  if (!item) return null;
+  // A Fixed item reads as no item at all from here, and so its correction
+  // screen is a 404. It is a screen shaped for the other kind: it asks for a
+  // Category and an amount and nothing else, so opening one on a Fixed item
+  // would offer to save a row with its name, its day and its payment quietly
+  // left out. #13 gave the kind no correction screen of its own; this is that
+  // gap said out loud rather than half-answered.
+  if (!item || item.kind === "fixed") return null;
 
   return readable(item, namesFrom(await readableCatalogueFor(space.id)), reader);
 }
 
+/**
+ * A Fixed item put into words.
+ *
+ * The Category is named through `readableCatalogueFor` like everything else,
+ * and falls back to its identifier for the reason the Variable row does: a
+ * plan whose Category was retired by a migration is a figure a person should
+ * still see, and a line with nothing on the left of it is a line nobody can
+ * tap on purpose.
+ */
+function readableFixed(
+  item: FixedItem,
+  named: Naming,
+  reader: Reader,
+): ReadableFixedItem {
+  const notice = dueNotice(item, reader.today);
+  const category = named.get(item.categoryId)?.name ?? item.categoryId;
+
+  return {
+    id: item.id,
+    name: item.name,
+    category,
+    beneath: t("budget.fixed.beneath", {
+      category,
+      day: shortDayLabel(item.dueOn),
+    }),
+    amount: formatMoney(item.amount, reader.locales),
+    paid: isPaid(item),
+    due: notice === null ? null : dueInWords(notice),
+  };
+}
+
+/**
+ * The four things a due day can mean, in the interface's language.
+ *
+ * Beside the reader that uses it rather than in the domain: which of the four
+ * it is, is a rule and is decided once in `dueNotice`; what a person reads is
+ * copy, and copy is Spanish (story 43 in #1). The switch is exhaustive, so a
+ * fifth kind added upstream is a type error here rather than a blank line on
+ * somebody's plan.
+ */
+function dueInWords(notice: DueNotice): string {
+  switch (notice.kind) {
+    case "overdue":
+      return t("budget.fixed.due.overdue");
+    case "today":
+      return t("budget.fixed.due.today");
+    case "tomorrow":
+      return t("budget.fixed.due.tomorrow");
+    case "soon":
+      return t("budget.fixed.due.soon", { days: notice.days });
+  }
+}
+
 function readable(
-  item: BudgetItem,
+  item: VariableItem,
   named: Naming,
   reader: Reader,
 ): ReadableBudgetItem {

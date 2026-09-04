@@ -14,10 +14,10 @@ import {
 } from "@/domain/space/invitation";
 import { isCurrencyCode } from "@/domain/money/currency";
 import type { Space } from "@/domain/space/space";
-import type { Connection } from "./connection";
+import type { Queries } from "./connection";
 import { members, spaceInvitations, spaceMembers, spaces } from "./schema";
 
-type Database = Connection["db"];
+type Database = Queries;
 
 /** Exactly the columns a domain `Invitation` is made of. */
 const invitationColumns = {

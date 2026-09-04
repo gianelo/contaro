@@ -60,11 +60,11 @@ One expected expense inside a Budget, carrying its Category and amount. Every it
 _Avoid_: Line, Entry, Row
 
 **Over**:
-A Category whose Movements for the month add up past what the Budget expected of it. It is a Category's state and never one item's or one Movement's: several items on one Category are a single expectation, and a Member under on every shop can still be over for the month. A plan written on a heading is over when everything filed under it adds up past it (ADR-0021). Being over is said in colour, in words and in an icon at once, never in colour alone.
+A Category whose Movements for the month add up past what the Budget expected of it. It is a Category's state and never one item's or one Movement's: several items on one Category are a single expectation, and a Member under on every shop can still be over for the month. A plan written on a heading is over when everything filed under it adds up past it (ADR-0021). What a Category is measured against is the whole of what the month planned for it, Fixed items included, and only a Category with a Variable item is measured at all: one planned with Fixed items alone has a badge saying whether it was paid, which is its whole question (ADR-0023). Being over is said in colour, in words and in an icon at once, never in colour alone.
 _Avoid_: Exceeded, Breached, Blown, Over budget
 
 **Fixed item**:
-A Budget item whose amount and due date are known, such as rent or a subscription. Marking it paid is what creates its Movement.
+A Budget item whose amount and due date are known, such as rent or a subscription. It is called something of its own — "Arriendo", "Netflix" — because that is what it is read by, and it falls due on a day of the month it is planned on. It is pending or paid, and it is paid by holding the Movement that paid it rather than by a flag beside one (ADR-0023): marking it paid is what creates that Movement, so nobody types the rent twice. Because that brings money into existence in the ledger, it confirms first, naming the Space the money lands in and whose it will be.
 
 **Variable item**:
 A Budget item that sets an expected amount for its Category, such as food or leisure. Movements recorded in that Category count against it, and it is never marked paid. Several on one Category are how a month is planned in weeks, and they behave as a single item of their combined amount rather than as several comparisons.

@@ -64,6 +64,13 @@
       "when": 1788527136635,
       "tag": "0008_plan_a_month",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788551695089,
+      "tag": "0009_fixed_items",
+      "breakpoints": true
     }
   ]
 }
