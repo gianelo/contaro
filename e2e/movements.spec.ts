@@ -1,4 +1,10 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import {
   createMember,
   createSpaceFor,
@@ -37,6 +43,29 @@ async function type(page: Page, digits: string) {
 }
 
 /**
+ * Changing the day or whose money it was, which is a deliberate act now (#37):
+ * the line states both, and a sheet is what opens to change either.
+ *
+ * Shut again afterwards, because it is a modal — leaving it open would leave
+ * Guardar behind a scrim, which is a failure that reads as a timeout rather
+ * than as what it is.
+ */
+async function changeWhen(
+  page: Page,
+  // Whatever the change returns: `fill` resolves to nothing and
+  // `selectOption` to the values it chose, and neither is of interest here.
+  change: (sheet: Locator) => Promise<unknown>,
+) {
+  await page.getByRole("button", { name: "Cambiar cuándo y de quién" }).click();
+
+  const sheet = page.getByRole("dialog");
+  await change(sheet);
+
+  await sheet.getByRole("button", { name: "Listo" }).click();
+  await expect(sheet).toHaveCount(0);
+}
+
+/**
  * The Category, answered the way the picker asks (#45): the heading first,
  * and what it holds only if something more precise is wanted.
  */
@@ -57,7 +86,13 @@ test("a Member records an expense in a few taps and finds it in the month", asyn
   const { space } = await aMemberWithASpace("Ana Gasta", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}/movimientos`);
-  await page.getByRole("link", { name: "Anotar un movimiento" }).click();
+
+  // One way in and not two: the month's list gave up the full-width link at
+  // its foot, which was a scroll away on the one screen that had it. What is
+  // left is the raised button, which is on every screen inside the Space.
+  const record = page.getByRole("link", { name: "Anotar un movimiento" });
+  await expect(record).toHaveCount(1);
+  await record.click();
 
   // Story 18 in #1: the amount first, on a large keypad, because it is the
   // only part a person might forget on the way home from the till.
@@ -118,8 +153,11 @@ test("a heading is an answer, and what is under it is the next offer", async ({
     page.getByRole("radio", { name: "Comida", exact: true }),
   ).toBeChecked();
 
-  // And the whole list is one tap away again.
-  await page.getByRole("button", { name: "Cambiar" }).click();
+  // And the whole list is one tap away again. Exact, because the line that
+  // states the day names itself "Cambiar cuándo y de quién" and this one is
+  // just "Cambiar" — two buttons that read the same and mean different things
+  // (#45, #37).
+  await page.getByRole("button", { name: "Cambiar", exact: true }).click();
   await expect(
     page.getByRole("radio", { name: "Mascotas", exact: true }),
   ).toBeVisible();
@@ -189,6 +227,61 @@ test("correcting a Movement opens on the branch its Category sits in", async ({
   ).toBeVisible();
 });
 
+test("recording an expense is one thing, with nothing else offered", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Nina Anota", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+
+  // No tab bar (#37). A person here is doing one thing, and a bar offering
+  // three other places is three ways to lose what they have typed. It is the
+  // counterpart of ADR-0027: the raised button in the middle of that bar is
+  // what leads here, and this is what it leads to.
+  await expect(page.getByRole("navigation", { name: "Principal" })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByRole("link", { name: "Anotar un movimiento" }),
+  ).toHaveCount(0);
+
+  // The way out is in the head, where a thumb reaching to leave already is,
+  // rather than a scroll past the keypad at the foot of the page.
+  await expect(page.getByRole("link", { name: "Cancelar" })).toHaveAttribute(
+    "href",
+    `/espacios/${space.id}/movimientos`,
+  );
+  await expect(
+    page.getByRole("heading", { name: "Nuevo movimiento", level: 1 }),
+  ).toBeVisible();
+});
+
+test("a button that cannot be pressed says so in grey, not in a fade", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Omar Espera", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  const save = page.getByRole("button", { name: "Guardar" });
+
+  // A faded accent reads as "loading", because that is what half-opacity means
+  // everywhere else. A solid grey reads as "not yet", which is what it is.
+  await expect(save).toBeDisabled();
+  await expect(save).toHaveCSS("opacity", "1");
+  await expect(save).toHaveCSS("background-color", "rgb(198, 198, 200)");
+  // The ink too, and not only the ground: white on #C6C6C8 is what the light
+  // artboard draws, and borrowing the accent's ink would have put a
+  // near-black green here in the dark palette.
+  await expect(save).toHaveCSS("color", "rgb(255, 255, 255)");
+
+  await type(page, "1200");
+  await expect(save).toBeEnabled();
+});
+
 test("the amount reads as money while it is being typed", async ({
   page,
   context,
@@ -199,7 +292,9 @@ test("the amount reads as money while it is being typed", async ({
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
 
   const amount = page.getByRole("status");
-  await expect(amount).toHaveText(/^\$\s?0,00$/);
+  // A bare nought and not "$0,00": nothing has been typed, so there is no
+  // amount yet to write out to the currency's decimals (#37).
+  await expect(amount).toHaveText(/^\$\s*0$/);
 
   await type(page, "1284");
   // ADR-0014: the separators are the reader's, the currency is the Space's.
@@ -244,8 +339,11 @@ test("today and the Member are already filled in, and say so", async ({
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
 
-  // Story 20 in #1: the ordinary case requires no decisions at all.
-  await expect(page.getByText("Hoy · Dani Hoy")).toBeVisible();
+  // Story 20 in #1: the ordinary case requires no decisions at all. Two
+  // assertions and not one string: the line is a day and a name with their
+  // own icons between them, which is what makes it readable at a glance.
+  await expect(page.getByText("Hoy", { exact: true })).toBeVisible();
+  await expect(page.getByText("Dani Hoy")).toBeVisible();
 });
 
 test("the recorder can never be changed, and is not offered as something to change", async ({
@@ -256,12 +354,13 @@ test("the recorder can never be changed, and is not offered as something to chan
   const { space } = await aMemberWithASpace("Eli Anota", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
-  await page.getByText("Cambiar").click();
+  await page.getByRole("button", { name: "Cambiar cuándo y de quién" }).click();
 
   // Story 22 in #1. There is a field for whose money it was and there is no
   // field for who typed it in, which is the strongest form of "never editable".
-  await expect(page.getByLabel("Día")).toBeVisible();
-  await expect(page.getByLabel("Anotado por")).toHaveCount(0);
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByLabel("Día")).toBeVisible();
+  await expect(sheet.getByLabel("Anotado por")).toHaveCount(0);
 });
 
 test("a Member records something their partner spent, and it says whose it was", async ({
@@ -280,8 +379,9 @@ test("a Member records something their partner spent, and it says whose it was",
   await page.getByRole("radio", { name: "Otros", exact: true }).click();
 
   // Story 21 in #1: the case a couple actually argues about.
-  await page.getByText("Cambiar").click();
-  await page.getByLabel("Es plata de").selectOption({ label: "Ana Gastó" });
+  await changeWhen(page, (sheet) =>
+    sheet.getByLabel("Es plata de").selectOption({ label: "Ana Gastó" }),
+  );
   await page.getByRole("button", { name: "Guardar" }).click();
 
   await expect(page).toHaveURL(/\/movimientos\?mes=/);
@@ -302,14 +402,20 @@ test("the line above the keypad follows who the money is attributed to", async (
   await startSession(context, baseURL!, gian);
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
-  await expect(page.getByText("Hoy · Gian Mira")).toBeVisible();
+  // Exact, because the head of this screen says "Compartido con Ana Cambia":
+  // the pill names the Space and this line names whose money it is, and only
+  // the second one is what this test is about.
+  const line = (member: string) => page.getByText(member, { exact: true });
+  await expect(line("Gian Mira")).toBeVisible();
 
-  await page.getByText("Cambiar").click();
-  await page.getByLabel("Es plata de").selectOption({ label: "Ana Cambia" });
+  await changeWhen(page, (sheet) =>
+    sheet.getByLabel("Es plata de").selectOption({ label: "Ana Cambia" }),
+  );
 
   // The form would have saved the right person either way. What this is about
   // is the screen not saying the wrong one while it does.
-  await expect(page.getByText("Hoy · Ana Cambia")).toBeVisible();
+  await expect(line("Ana Cambia")).toBeVisible();
+  await expect(line("Gian Mira")).toHaveCount(0);
 });
 
 test("a Member corrects an expense they got wrong", async ({
@@ -408,8 +514,7 @@ test("the list lands on the month the money is in, not the server's", async ({
   lastMonth.setDate(1);
   lastMonth.setMonth(lastMonth.getMonth() - 1);
   const day = lastMonth.toISOString().slice(0, 10);
-  await page.getByText("Cambiar").click();
-  await page.getByLabel("Día").fill(day);
+  await changeWhen(page, (sheet) => sheet.getByLabel("Día").fill(day));
   await page.getByRole("button", { name: "Guardar" }).click();
 
   await expect(page).toHaveURL(new RegExp(`mes=${day.slice(0, 7)}`));
@@ -495,7 +600,7 @@ test("a Member records income in the same flow as an expense", async ({
 
   // #8: the same screen, the same keypad, one chip apart. Choosing income
   // takes the Category picker off the screen -- income carries none.
-  await page.getByRole("radio", { name: "Un ingreso" }).click();
+  await page.getByRole("radio", { name: "Ingreso" }).click();
   await expect(page.getByRole("group", { name: "Categoría" })).toHaveCount(0);
 
   await type(page, "85000000");
@@ -531,8 +636,7 @@ test("the month's Movements are grouped by the day they happened on", async ({
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "2000");
   await page.getByRole("radio", { name: "Otros", exact: true }).click();
-  await page.getByText("Cambiar").click();
-  await page.getByLabel("Día").fill(other);
+  await changeWhen(page, (sheet) => sheet.getByLabel("Día").fill(other));
   await page.getByRole("button", { name: "Guardar" }).click();
 
   const movements = page.getByRole("region", { name: "Movimientos" });
@@ -553,7 +657,7 @@ test("the month shows what came in and what went out, side by side", async ({
   const { space } = await aMemberWithASpace("Sol Cuenta", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
-  await page.getByRole("radio", { name: "Un ingreso" }).click();
+  await page.getByRole("radio", { name: "Ingreso" }).click();
   await type(page, "500000");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(/\/movimientos\?mes=/);
@@ -584,8 +688,9 @@ test("in a shared Space every Movement says whose money it was", async ({
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "3000");
   await page.getByRole("radio", { name: "Otros", exact: true }).click();
-  await page.getByText("Cambiar").click();
-  await page.getByLabel("Es plata de").selectOption({ label: "Ana Comparte" });
+  await changeWhen(page, (sheet) =>
+    sheet.getByLabel("Es plata de").selectOption({ label: "Ana Comparte" }),
+  );
   await page.getByRole("button", { name: "Guardar" }).click();
 
   // #8: it is the shared Space that makes this worth saying on every row.
@@ -655,7 +760,7 @@ test("a correction cannot turn an expense into income", async ({
   // There is no control for it: which way the money went is what kind of
   // Movement this is, and a control whose only outcome is a refusal has no
   // business on a screen.
-  await expect(page.getByRole("radio", { name: "Un ingreso" })).toHaveCount(0);
+  await expect(page.getByRole("radio", { name: "Ingreso" })).toHaveCount(0);
 
   // So this is the only way to ask for it, and it is refused rather than
   // half-saved. Without the action reading the hidden field, the four answers

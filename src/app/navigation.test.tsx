@@ -24,13 +24,25 @@ describe("navigating inside a Space", () => {
     );
   });
 
-  it("keeps a Space's own Categories inside it, the way #6 needs", () => {
+  it("offers Ajustes, and no longer the catalogue it now holds", () => {
+    // The tabs are the four places a thumb goes every day. A person edits
+    // their Categories once and then rarely, so the catalogue moved inside
+    // Ajustes and stopped spending a quarter of the bar.
     render(<SpaceNavigation spaceId={casa} activeId="budget" />);
 
-    expect(screen.getByRole("link", { name: "Categorías" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Ajustes" })).toHaveAttribute(
       "href",
-      `/espacios/${casa}/categorias`,
+      `/espacios/${casa}/ajustes`,
     );
+    expect(screen.queryByRole("link", { name: "Categorías" })).toBeNull();
+  });
+
+  it("carries the way to record a Movement inside the Space too", () => {
+    render(<SpaceNavigation spaceId={casa} activeId="budget" />);
+
+    expect(
+      screen.getByRole("link", { name: "Anotar un movimiento" }),
+    ).toHaveAttribute("href", `/espacios/${casa}/movimientos/nuevo`);
   });
 
   it("offers the way back out to the list, which belongs to no Space", () => {

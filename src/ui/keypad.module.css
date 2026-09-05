@@ -8,19 +8,58 @@
  * The figure the whole screen is built around. It is the largest thing on the
  * page because it is the only part a person might forget on the way home from
  * the till (story 18 in #1).
+ *
+ * Its two halves sit on one baseline rather than centred against each other,
+ * so a 30px symbol beside a 52px number reads as one figure and not as a small
+ * word next to a big one.
  */
-.amount {
-  text-align: center;
-  font-size: var(--text-amount);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -1.5px;
-  line-height: 1.1;
+.figure {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-2);
   /* An amount runs from "$0" to twelve digits; it shrinks rather than wraps. */
   overflow-wrap: anywhere;
 }
 
-/* Nothing typed yet reads as a placeholder rather than as an amount of zero. */
+/*
+ * Quiet, because it is the half nobody is watching: it says which money this
+ * is, and the digits are what somebody typed. 300 is lighter than any
+ * --weight-* token and is used here alone.
+ */
+.symbol {
+  font-size: var(--text-3xl);
+  font-weight: 300;
+}
+
+.amount {
+  font-size: var(--text-amount);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+}
+
+/* Nothing typed yet reads as a field waiting rather than as an amount of
+   zero, which is the same grey a button that cannot be pressed is filled
+   with. */
 .empty {
+  color: var(--color-disabled);
+}
+
+/*
+ * The figure and the money it is in, as one block. They are 2px apart on the
+ * canvas -- the currency is a caption under the number and not a line of its
+ * own -- so the keypad's gap belongs between this and the keys.
+ */
+.readout {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.currency {
+  text-align: center;
+  font-size: var(--text-xs);
   color: var(--color-text-tertiary);
 }
 
@@ -30,25 +69,27 @@
   gap: var(--space-4);
 }
 
+/*
+ * The canvas's key: 50px tall, on the same fill every quiet ground in the app
+ * uses. Three of its numbers have no token because nothing else wants them --
+ * the 50px height, the 10px corner and the 25px face are this keypad's and no
+ * screen else's (ADR-0027 for why that is a value and not a token).
+ */
 .key {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6);
+  height: 50px;
   border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
+  border-radius: 10px;
+  background: var(--color-fill);
   color: var(--color-text);
   font-family: inherit;
-  font-size: var(--text-3xl);
+  font-size: 25px;
   font-weight: var(--weight-regular);
   cursor: pointer;
 }
 
 .key:active {
   background: var(--color-fill-pressed);
-}
-
-.erase {
-  font-size: var(--text-2xl);
 }

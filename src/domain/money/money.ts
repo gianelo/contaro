@@ -67,6 +67,58 @@ export function formatAmount(
   return written(money, locales, { style: "decimal" });
 }
 
+/** One figure, cut in two where the symbol ends and the digits begin. */
+export type MoneyParts = {
+  /** What says which money this is: "$", "COP", whatever the reader gets. */
+  readonly symbol: string;
+  /** The digits, with the reader's separators and the currency's decimals. */
+  readonly amount: string;
+};
+
+/**
+ * The two halves of what `formatMoney` writes whole.
+ *
+ * The entry screen draws one figure at two sizes -- the symbol quiet and small,
+ * the digits loud -- because the digits are what a person is watching
+ * themselves type and the symbol is not (#37). That is still a figure carrying
+ * its symbol, so it is not the bare amount ADR-0007 forbids; it is one figure
+ * set in two type sizes.
+ *
+ * Cut from a single `formatToParts` rather than assembled from two calls. The
+ * separators are the reader's and the decimals are the currency's, and two
+ * formattings are two chances for the halves to disagree about either -- the
+ * same reason `formatMoney` and `formatAmount` share one `written` below.
+ *
+ * The symbol is whatever the reader's own conventions make it, which is why it
+ * is read back out of the formatting rather than kept in a table here: a
+ * Colombian Space read by somebody in the United States says "COP" and not
+ * "$", because to that reader a bare "$" would say dollars.
+ */
+export function moneyParts(
+  money: Money,
+  locales: string | readonly string[],
+): MoneyParts {
+  const parts = partsOf(money, locales, {
+    style: "currency",
+    currency: money.currency,
+  });
+
+  const symbol = parts
+    .filter(({ type }) => type === "currency")
+    .map(({ value }) => value)
+    .join("");
+
+  // Everything that is not the symbol, in the order it was written, so a
+  // locale that puts the symbol at the end or slips a space beside it loses
+  // neither its digits nor its separators.
+  const amount = parts
+    .filter(({ type }) => type !== "currency" && type !== "literal")
+    .map(({ value }) => value)
+    .join("");
+
+  return { symbol, amount };
+}
+
 /**
  * The one place minor units become the digits a person reads.
  *
@@ -76,15 +128,32 @@ export function formatAmount(
  * halves of "$210.000 / 400.000" to start disagreeing about either.
  */
 function written(
-  { amount, currency }: Money,
+  money: Money,
   locales: string | readonly string[],
   how: Intl.NumberFormatOptions,
 ): string {
+  return partsOf(money, locales, how)
+    .map(({ value }) => value)
+    .join("");
+}
+
+/**
+ * The same figure, before it is joined into a string.
+ *
+ * `written` is this plus a join, so a screen that needs the halves and a
+ * screen that needs the whole are reading one decision about decimals and
+ * separators rather than two.
+ */
+function partsOf(
+  { amount, currency }: Money,
+  locales: string | readonly string[],
+  how: Intl.NumberFormatOptions,
+): readonly Intl.NumberFormatPart[] {
   const digits = minorUnits(currency);
 
   return new Intl.NumberFormat(locales, {
     ...how,
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
-  }).format(amount / 10 ** digits);
+  }).formatToParts(amount / 10 ** digits);
 }

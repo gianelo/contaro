@@ -34,10 +34,24 @@
   --color-border-dashed: light-dark(#b8b8be, #48484a);
   --color-grabber: light-dark(#d8d8dc, #48484a);
 
-  /* Nothing there yet. An amount nobody has typed, a button that cannot be
-     pressed. It is both ink and ground: the canvas draws the untyped amount in
-     it and fills the dead button with it. */
+  /* Nothing there yet: an amount nobody has typed. Ink, not ground -- the two
+     artboards draw the untyped amount in it and fill the dead button with
+     something else, which is --color-disabled-surface below. */
   --color-disabled: light-dark(#c6c6c8, #48484a);
+
+  /* A control that cannot be pressed, and the ink that goes on it. Not a
+     faded accent: half opacity means "loading" in every other product a
+     person has used, and this means "not yet". In light they are one pair
+     with --color-disabled and in dark they are not, which is the whole reason
+     they are named apart. */
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+
+  /* The half of a segmented control that is already true, lifted out of the
+     groove it sits in. It cannot be --color-surface: in dark that is the same
+     #1c1c1e as the track, and with --shadow-raised also none there, the
+     chosen half would be invisible. */
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
 
   /* The length a progress meter is measured against, which the bar runs in. */
   --color-meter-track: light-dark(#e9e9ee, #3a3a3c);

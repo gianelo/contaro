@@ -23,7 +23,7 @@ export default async function NewCategoryPage({
   const catalogue = await readableCatalogueFor(space.id);
 
   return (
-    <SpaceScreen space={space} tab="categories">
+    <SpaceScreen space={space} tab="settings">
       <h2 className={styles.title}>{t("categories.new.title")}</h2>
 
       <NewCategoryForm

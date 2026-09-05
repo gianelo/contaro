@@ -322,12 +322,12 @@ test("a Member plans the rent and marks it paid", async ({
   // sightings of the figure: the month's total says $1.800.000 too, and it
   // says it because of this one row.
   await page.goto(`/espacios/${space.id}/movimientos`);
-  // The rows themselves, which are links to one Movement each. The way to
-  // record another one lives under the same path, so it is excluded by name
-  // rather than by URL shape.
-  const rows = page
-    .locator(`a[href*="/espacios/${space.id}/movimientos/"]`)
-    .filter({ hasNotText: "Anotar" });
+  // The rows themselves, which are links to one Movement each. The raised
+  // button in the tab bar lives under the same path and carries no text at
+  // all -- its name is an aria-label -- so it is excluded by where it goes.
+  const rows = page.locator(
+    `a[href*="/espacios/${space.id}/movimientos/"]:not([href$="/nuevo"])`,
+  );
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText("Alquiler");
   await expect(rows.first()).toContainText("$ 1.800.000,00");

@@ -1,0 +1,56 @@
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-bottom: var(--space-5);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.cancel {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-lg);
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+/*
+ * Takes exactly the room Cancelar takes, so the title sits in the middle of
+ * the screen. Hidden from a screen reader, which would otherwise hear the way
+ * out twice, and unreachable by a thumb or a tab.
+ */
+.mirror {
+  font-size: var(--text-lg);
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}
+
+/*
+ * Centred and quiet: it is context for what follows rather than something to
+ * act on, so it reads as a caption and never as a control.
+ */
+.shared {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-fill);
+  border-radius: var(--radius-pill);
+  /* 5px, which has no token because nothing else wants it: a pill this small
+     sits between --space-2 and --space-3 and matches neither. */
+  padding: 5px var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}

@@ -65,13 +65,13 @@ test("every interactive element inside a Space is at least 44px", async ({
   await page.goto(`/espacios/${space.id}`);
   const inside = await undersizedTargets(page);
 
-  // The way out, the four tabs, the two steps of the month the plan is read
-  // in, the two ways to plan an item -- a Variable one (#10) and a Fixed one
-  // (#13) -- and the row to who shares this Space (#9). The plan itself is
-  // empty on a Space this new, and an empty state is a line of words rather
-  // than something to tap; so is a month with no Fixed items, which draws no
-  // Fijos section at all.
-  expect(inside.count).toBe(10);
+  // The way out, the four tabs and the raised button between them, the two
+  // steps of the month the plan is read in, the two ways to plan an item -- a
+  // Variable one (#10) and a Fixed one (#13) -- and the row to who shares this
+  // Space (#9). The plan itself is empty on a Space this new, and an empty
+  // state is a line of words rather than something to tap; so is a month with
+  // no Fixed items, which draws no Fijos section at all.
+  expect(inside.count).toBe(11);
   expect(inside.undersized).toEqual([]);
 });
 
@@ -87,17 +87,18 @@ test("every interactive element on a Space's catalogue is at least 44px", async 
   await page.goto(`/espacios/${space.id}/categorias`);
   const catalogue = await undersizedTargets(page);
 
-  // The way out, the four tabs, and the way to a new Category. The rows
-  // themselves are not links yet: #7 gives a Category somewhere to lead.
-  expect(catalogue.count).toBe(6);
+  // The way out, the four tabs and the raised button, and the way to a new
+  // Category. The rows themselves are not links yet: #7 gives a Category
+  // somewhere to lead.
+  expect(catalogue.count).toBe(7);
   expect(catalogue.undersized).toEqual([]);
 
   await page.goto(`/espacios/${space.id}/categorias/nueva`);
   const form = await undersizedTargets(page);
 
-  // The same six, plus the name field, the picker and the submit -- a form
+  // The same seven, plus the name field, the picker and the submit -- a form
   // filled with one hand at a till has to be reachable with one thumb.
-  expect(form.count).toBe(9);
+  expect(form.count).toBe(10);
   expect(form.undersized).toEqual([]);
 });
 
@@ -127,9 +128,10 @@ test("every target on the screen an expense is recorded on is at least 44px", as
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
 
-  // Opened, so the day field is measured as well as the line that folds it
-  // away. Everything on this screen is hit with one thumb at a till.
-  await page.getByText("Cambiar").click();
+  // Opened, so the sheet that changes the day is measured as well as the line
+  // that states it. Everything on this screen is hit with one thumb at a till.
+  await page.getByRole("button", { name: "Cambiar cuándo y de quién" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
 
   const { undersized } = await undersizedTargets(page);
 
@@ -149,8 +151,9 @@ test("every target on the screen that shares a Space is at least 44px", async ({
   await page.goto(`/espacios/${space.id}/miembros`);
   const offering = await undersizedTargets(page);
 
-  // The way out, the four tabs, and the address field with the button under it.
-  expect(offering.count).toBe(7);
+  // The way out, the four tabs and the raised button, and the address field
+  // with the button under it.
+  expect(offering.count).toBe(8);
   expect(offering.undersized).toEqual([]);
 
   // The seat held: the form is gone and the way to free it is there instead.
@@ -158,7 +161,8 @@ test("every target on the screen that shares a Space is at least 44px", async ({
   await page.reload();
   const holding = await undersizedTargets(page);
 
-  expect(holding.count).toBe(6); // the way out, the four tabs, and Cancelar
+  // The way out, the four tabs and the raised button, and Cancelar.
+  expect(holding.count).toBe(7);
   expect(holding.undersized).toEqual([]);
 });
 

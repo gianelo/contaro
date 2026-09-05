@@ -1,16 +1,26 @@
 import { headers } from "next/headers";
-import { ButtonLink } from "@/ui/button";
 import { t } from "@/i18n";
+import { AppShell } from "@/ui/app-shell";
 import { numberLocalesFor } from "@/app/reader";
-import { SpaceScreen } from "../../screen";
 import { currentSpace, viewingMember } from "../../space";
 import { MovementForm } from "../form";
 import { categoryChips, spaceMembers, todayOnTheServer } from "../month";
 import { recordMovementAction } from "../actions";
-import styles from "./page.module.css";
+import { EntryHead } from "./head";
 
 /**
  * Recording an expense: the screen the whole product rests on (#7).
+ *
+ * It carries no tab bar, which is why it renders `AppShell` directly instead
+ * of going through `SpaceScreen` like every other screen inside a Space. A
+ * person here is doing one thing, and a bar offering three other places is
+ * three ways to lose what they have typed. It is the counterpart of ADR-0027:
+ * the raised button in the middle of that bar is what leads here, and what it
+ * leads to is a screen with nothing else on it.
+ *
+ * There is no account row either, for the same reason, and no Space heading:
+ * the pill in the head says which Space this is, which is the only part of
+ * that heading somebody about to spend needs.
  *
  * Membership is proved here the way every route under `/espacios/[id]` proves
  * it, and proved again by the action, because the form names the Space and a
@@ -36,9 +46,16 @@ export default async function NewMovementPage({
 
   const today = todayOnTheServer();
 
+  // Whoever else is in it, for the pill that says so. A Space of one has
+  // nobody to name and says nothing.
+  const other = members.find((member) => member.id !== recordedBy);
+
   return (
-    <SpaceScreen space={space} tab="movements">
-      <h2 className={styles.title}>{t("movements.new.title")}</h2>
+    <AppShell>
+      <EntryHead
+        back={`/espacios/${space.id}/movimientos`}
+        sharedWith={other?.name ?? null}
+      />
 
       <MovementForm
         spaceId={space.id}
@@ -69,12 +86,6 @@ export default async function NewMovementPage({
         submit={t("movements.submit")}
         working={t("movements.working")}
       />
-
-      <div className={styles.back}>
-        <ButtonLink href={`/espacios/${space.id}/movimientos`} variant="plain">
-          {t("action.cancel")}
-        </ButtonLink>
-      </div>
-    </SpaceScreen>
+    </AppShell>
   );
 }

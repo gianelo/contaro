@@ -61,7 +61,7 @@ export function Variables({
                   and a screen reader that heard "alert triangle" first would
                   hear the same fact twice.
                 */}
-                <Icon name="alert-triangle" size={13} />
+                <Icon name="alert-triangle" size={13} weight={2.2} />
                 {t("budget.over", { amount: over })}
               </p>
             )}

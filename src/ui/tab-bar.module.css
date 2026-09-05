@@ -1,11 +1,18 @@
 .bar {
   display: flex;
-  align-items: stretch;
+  /* Centred rather than stretched, so the raised button's negative margin
+     lifts it out of the bar instead of being absorbed by a stretched row. */
+  align-items: center;
   background: var(--color-surface);
   /* The stronger of the two: this line holds the bar apart from the screen
      scrolling under it, which --color-separator is too light to do. */
   border-top: 1px solid var(--color-separator-strong);
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* 9px is the canvas's, and it has no token because nothing else uses it.
+     Below the bar the canvas draws 24px of nothing, which on a real phone is
+     the home indicator: env() where there is one, --space-10 where there is
+     not. */
+  padding-top: 9px;
+  padding-bottom: max(var(--space-10), env(safe-area-inset-bottom, 0px));
 }
 
 .tab {
@@ -14,14 +21,38 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-2);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  /* 3px between the icon and its word, off the canvas. */
+  gap: 3px;
+  /* 10px labels, smaller than any token: the tab bar is the one place in the
+     app where the word is a caption under a drawing rather than text to read. */
+  font-size: 10px;
+  /* Regular asleep, so the jump to semibold below is the whole difference the
+     canvas draws. The old bar was medium, which left awake and asleep one step
+     apart instead of two. */
+  font-weight: var(--weight-regular);
   color: var(--color-text-tertiary);
   text-decoration: none;
 }
 
 .active {
   color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+}
+
+.action {
+  /* Fixed, and not a fifth column: the four destinations keep their even
+     share of the bar and this sits in the gap between the second and third. */
+  flex: 0 0 50px;
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The raise. It overflows the bar upwards, which works because nothing
+     between here and the shell sets overflow -- see ADR-0025. */
+  margin-top: -18px;
+  text-decoration: none;
 }
