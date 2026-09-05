@@ -82,8 +82,32 @@ export const spaceMembers = pgTable(
     joinedAt: timestamp("joined_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /**
+     * When this Member last opened this Space, which is what the Space list
+     * marks "Activo" (#38).
+     *
+     * Here and not on `spaces`, because it is a fact about a person and a
+     * Space rather than about the Space: two Members of one shared Space each
+     * came back to it at their own moment, and a column on the Space would
+     * have one of them telling the other where they had been.
+     *
+     * Nullable and stays null: somebody who has joined a Space and never
+     * opened it has no such moment, and defaulting it to the join would put
+     * an "Activo" badge on a Space nobody has ever been inside.
+     */
+    lastOpenedAt: timestamp("last_opened_at", { withTimezone: true }),
   },
-  (table) => [primaryKey({ columns: [table.spaceId, table.memberId] })],
+  (table) => [
+    primaryKey({ columns: [table.spaceId, table.memberId] }),
+    // The Space list's own question, asked on every landing: "which of mine
+    // did I open last?". Descending and nulls last, which is the order the
+    // answer is read in, so it is a lookup rather than a sort of every
+    // membership a Member has.
+    index("space_members_last_opened_idx").on(
+      table.memberId,
+      table.lastOpenedAt.desc().nullsLast(),
+    ),
+  ],
 );
 
 /**

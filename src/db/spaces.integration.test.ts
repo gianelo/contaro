@@ -5,7 +5,9 @@ import { memberFromGoogle } from "./members";
 import {
   createSpaceForMember,
   findSpaceForMember,
+  lastOpenedSpace,
   listSpacesForMember,
+  markSpaceOpened,
 } from "./spaces";
 
 // Run with `pnpm test:db`, which starts Postgres first.
@@ -221,4 +223,96 @@ it("keeps two Spaces of the same Member apart, down to the currency", async () =
     { id: pesos.id, name: "Casa", currency: "ARS" },
     { id: dolares.id, name: "Viaje", currency: "USD" },
   ]);
+});
+
+/*
+ * Which Space is the one being used (#38). A moment per membership row rather
+ * than a flag, so the only way it can be wrong is by not having been written.
+ */
+
+it("has no Space being used until a Member has opened one", async () => {
+  const nadia = await aMember("Nadia");
+  await createSpaceForMember(db, nadia.id, { name: "Casa", currency: "ARS" });
+
+  // Joining a Space is not opening it: a badge on a Space nobody has ever
+  // been inside is a statement nothing supports.
+  await expect(lastOpenedSpace(db, nadia.id)).resolves.toBeNull();
+});
+
+it("remembers the Space a Member opened last", async () => {
+  const omar = await aMember("Omar");
+  const casa = await createSpaceForMember(db, omar.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+  const viaje = await createSpaceForMember(db, omar.id, {
+    name: "Viaje",
+    currency: "USD",
+  });
+
+  await markSpaceOpened(db, casa.id, omar.id);
+  await markSpaceOpened(db, viaje.id, omar.id);
+
+  await expect(lastOpenedSpace(db, omar.id)).resolves.toBe(viaje.id);
+});
+
+it("moves the answer when a Member goes back to an older Space", async () => {
+  const pia = await aMember("Pia");
+  const casa = await createSpaceForMember(db, pia.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+  const viaje = await createSpaceForMember(db, pia.id, {
+    name: "Viaje",
+    currency: "USD",
+  });
+
+  await markSpaceOpened(db, viaje.id, pia.id);
+  await markSpaceOpened(db, casa.id, pia.id);
+
+  await expect(lastOpenedSpace(db, pia.id)).resolves.toBe(casa.id);
+});
+
+it("keeps one Member's answer out of another's", async () => {
+  const rita = await aMember("Rita");
+  const saul = await aMember("Saul");
+  const hers = await createSpaceForMember(db, rita.id, {
+    name: "Casa de Rita",
+    currency: "ARS",
+  });
+  await createSpaceForMember(db, saul.id, {
+    name: "Casa de Saul",
+    currency: "ARS",
+  });
+
+  await markSpaceOpened(db, hers.id, rita.id);
+
+  // The column is on the membership row for exactly this: two Members of one
+  // shared Space each came back at their own moment, and a column on the Space
+  // would have one of them telling the other where they had been.
+  await expect(lastOpenedSpace(db, rita.id)).resolves.toBe(hers.id);
+  await expect(lastOpenedSpace(db, saul.id)).resolves.toBeNull();
+});
+
+it("writes nothing for a Member who is not in the Space", async () => {
+  const tere = await aMember("Tere");
+  const ugo = await aMember("Ugo");
+  const hers = await createSpaceForMember(db, tere.id, {
+    name: "Casa de Tere",
+    currency: "ARS",
+  });
+
+  await markSpaceOpened(db, hers.id, ugo.id);
+
+  await expect(lastOpenedSpace(db, ugo.id)).resolves.toBeNull();
+});
+
+it("refuses an identifier that is not one, rather than erroring on it", async () => {
+  const vera = await aMember("Vera");
+
+  // A path segment is any string at all, and Postgres answers a malformed
+  // uuid with an error rather than an empty update.
+  await expect(
+    markSpaceOpened(db, "not-a-uuid", vera.id),
+  ).resolves.toBeUndefined();
 });

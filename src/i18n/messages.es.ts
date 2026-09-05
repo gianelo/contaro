@@ -16,10 +16,24 @@ export const es = {
   "nav.settings": "Ajustes",
 
   "spaces.title": "Espacios",
+  // The screen greets whoever landed on it instead of naming itself: a person
+  // who just arrived can see which screen they are on (#38).
+  "spaces.greeting": "Hola, {member}",
+  "spaces.greeting.lead": "Elegí un espacio para entrar",
+  "spaces.yours": "Tus espacios",
+  // Who is in a Space and what money it holds, in one line under its name.
+  // Two whole sentences rather than a count glued to a word, so a second
+  // language can put them in whatever order it puts them in.
+  "spaces.who.alone": "Solo vos · {currency}",
+  "spaces.who.several": "{count} miembros · {currency}",
+  "spaces.active": "Activo",
+  // What the month has cost, and what it was planned to (story 5 of #1).
+  "spaces.card.spent": "Gastado",
+  "spaces.card.expected": "Presupuesto",
   "spaces.empty.title": "Todavía no tenés espacios",
   "spaces.empty.body":
     "Un espacio guarda los movimientos y el presupuesto de una sola moneda. Creá el primero para empezar.",
-  "spaces.new": "Crear un espacio",
+  "spaces.new": "Crear espacio",
 
   "gallery.title": "Componentes",
   "gallery.buttons": "Botones",

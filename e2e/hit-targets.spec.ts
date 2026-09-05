@@ -59,7 +59,7 @@ test("every interactive element inside a Space is at least 44px", async ({
   await page.goto("/espacios");
   const list = await undersizedTargets(page);
 
-  expect(list.count).toBe(4); // the way out, two Space rows, and the way to a new one
+  expect(list.count).toBe(4); // the way out, two Space cards, and the way to a new one
   expect(list.undersized).toEqual([]);
 
   await page.goto(`/espacios/${space.id}`);

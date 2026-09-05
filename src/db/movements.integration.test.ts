@@ -16,6 +16,7 @@ import {
   amendMovementInSpace,
   findMovementInSpace,
   movementsInMonth,
+  movementsInMonthForSpaces,
   recordMovementInSpace,
   strikeMovementInSpace,
 } from "./movements";
@@ -517,4 +518,95 @@ it("refuses, in the database itself, any attempt to change a direction", async (
   await expect(
     sql`UPDATE movements SET direction = 'income' WHERE id = ${recorded.id}`,
   ).rejects.toThrow(/direction can never be changed/);
+});
+
+/*
+ * The Space list reads every Space's month at once (#38). The risk it carries
+ * is one Space's money landing on another's card, so these ask exactly that.
+ */
+
+it("reads several Spaces' months in one go, each under its own Space", async () => {
+  const casa = await aSpaceWithACategory("Batch Casa", "ARS");
+  const viaje = await aSpaceWithACategory("Batch Viaje", "USD");
+
+  await recordMovementInSpace(db, recording(casa.space, casa.member.id), {
+    spaceId: casa.space.id,
+    direction: "expense",
+    categoryId: casa.categoryId,
+    amount: 120_00,
+    occurredOn: "2026-09-03",
+    attributedTo: casa.member.id,
+  });
+  await recordMovementInSpace(db, recording(viaje.space, viaje.member.id), {
+    spaceId: viaje.space.id,
+    direction: "expense",
+    categoryId: viaje.categoryId,
+    amount: 45_00,
+    occurredOn: "2026-09-04",
+    attributedTo: viaje.member.id,
+  });
+
+  const grouped = await movementsInMonthForSpaces(
+    db,
+    [casa.space, viaje.space],
+    month("2026-09"),
+  );
+
+  // Each total in its own Space's currency: the two are not interchangeable
+  // even where the numbers would add up (ADR-0001).
+  expect(spent(grouped.get(casa.space.id) ?? [], "ARS")).toEqual(
+    money(120_00, "ARS"),
+  );
+  expect(spent(grouped.get(viaje.space.id) ?? [], "USD")).toEqual(
+    money(45_00, "USD"),
+  );
+});
+
+it("leaves out a Space that was not asked about", async () => {
+  const mine = await aSpaceWithACategory("Batch Mine");
+  const theirs = await aSpaceWithACategory("Batch Theirs");
+
+  await recordMovementInSpace(db, recording(theirs.space, theirs.member.id), {
+    spaceId: theirs.space.id,
+    direction: "expense",
+    categoryId: theirs.categoryId,
+    amount: 90_00,
+    occurredOn: "2026-09-03",
+    attributedTo: theirs.member.id,
+  });
+
+  const grouped = await movementsInMonthForSpaces(
+    db,
+    [mine.space],
+    month("2026-09"),
+  );
+
+  expect(grouped.has(theirs.space.id)).toBe(false);
+});
+
+it("holds a batch to the same month a single Space is held to", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Batch Mes");
+
+  await recordMovementInSpace(db, recording(space, member.id), {
+    spaceId: space.id,
+    direction: "expense",
+    categoryId,
+    amount: 70_00,
+    occurredOn: "2026-08-31",
+    attributedTo: member.id,
+  });
+
+  const grouped = await movementsInMonthForSpaces(
+    db,
+    [space],
+    month("2026-09"),
+  );
+
+  expect(grouped.get(space.id) ?? []).toHaveLength(0);
+});
+
+it("asks nothing at all when there are no Spaces to ask about", async () => {
+  await expect(
+    movementsInMonthForSpaces(db, [], month("2026-09")),
+  ).resolves.toEqual(new Map());
 });

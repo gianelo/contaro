@@ -48,6 +48,10 @@ _Avoid_: Source, Kind, Type
 The single currency a Space is denominated in, chosen when the Space is created and never changed afterwards. Every Movement and every report in that Space uses it.
 _Avoid_: Base currency, Default currency
 
+**Last opened**:
+The moment a Member last went into one of their Spaces, and by it the one Space of theirs the list marks as the one being used — "Activo" on its card (ADR-0029). It belongs to a Member and a Space together and never to the Space alone: two Members of one shared Space each came back to it at their own moment. A Member who has joined a Space and never opened it has no such moment, and a Member who has opened none has no Space being used.
+_Avoid_: Active, Current, Selected, Default space
+
 **Category**:
 The bucket an *expense* is classified under, such as food, rent or leisure. Categories come from a global catalogue that every Space sees, which a Space can extend with its own; a Category may hold subcategories. Income carries none: the dimension exists to be measured against a Budget, and a Budget is a plan of expenses (ADR-0016).
 

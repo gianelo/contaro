@@ -14,7 +14,7 @@ test("a Member creates a Space and lands inside it", async ({
   await startSession(context, baseURL!, await createMember("Ana Crea"));
 
   await page.goto("/");
-  await page.getByRole("link", { name: "Crear un espacio" }).click();
+  await page.getByRole("link", { name: "Crear espacio" }).click();
 
   await expect(page).toHaveURL(/\/espacios\/nuevo$/);
 

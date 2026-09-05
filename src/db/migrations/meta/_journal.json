@@ -71,6 +71,13 @@
       "when": 1788551695089,
       "tag": "0009_fixed_items",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788587207306,
+      "tag": "0010_omniscient_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

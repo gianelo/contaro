@@ -1,0 +1,21 @@
+/*
+ * The pair of circles at the head of a Space card. The circles themselves are
+ * avatar.module.css; this is only how they are laid against each other.
+ */
+.stack {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+/*
+ * Every circle after the first is pulled a third of its width into the one
+ * before it, which is what the canvas draws and what reads as one pair rather
+ * than as two marks that happen to be near each other. Written as a sibling
+ * rule so the first circle is never the exception a loop has to remember: the
+ * later circle sits on top, so the stack reads in the order the Space names
+ * its Members.
+ */
+.stack > * + * {
+  margin-left: -9px;
+}

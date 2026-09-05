@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   amendItem,
   FixedItemAlreadyPaidError,
@@ -16,6 +16,7 @@ import { isCalendarDate, isMonth, type Month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
 import type { Movement, Recorder } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
+import { bySpace } from "./by-space";
 import { categoriesTheSpaceCanSee } from "./categories";
 import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
@@ -290,6 +291,42 @@ export async function budgetItemsInMonth(
     .orderBy(asc(budgetItems.createdAt));
 
   return rows.map((row) => asBudgetItem(row, space));
+}
+
+/**
+ * The same month's plan for several Spaces at once, grouped by the Space it
+ * belongs to.
+ *
+ * Beside `movementsInMonthForSpaces` and for the same reason: the Space list
+ * shows what every Space was planned to cost, and one query per card is a
+ * screen whose price grows with how many Spaces a person has. The index the
+ * Budget screen already uses (`budget_items_space_id_month_idx`) serves it.
+ *
+ * Whole Spaces rather than ids, because every amount can only be read in the
+ * currency its own Space is denominated in. `bySpace` is what holds each row
+ * to its own (ADR-0007).
+ */
+export async function budgetItemsInMonthForSpaces(
+  db: Database,
+  spaces: readonly Space[],
+  month: Month,
+): Promise<ReadonlyMap<string, readonly BudgetItem[]>> {
+  if (spaces.length === 0) return new Map();
+
+  const byId = new Map(spaces.map((space) => [space.id, space]));
+
+  const rows = await db
+    .select(budgetItemColumns)
+    .from(budgetItems)
+    .where(
+      and(
+        inArray(budgetItems.spaceId, [...byId.keys()]),
+        eq(budgetItems.month, month),
+      ),
+    )
+    .orderBy(asc(budgetItems.createdAt));
+
+  return bySpace(rows, byId, asBudgetItem);
 }
 
 /**

@@ -1,0 +1,59 @@
+/*
+ * A person as a circle. The ink and the ground come from member-colour.css;
+ * everything here is the shape they are poured into.
+ */
+.avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  font-weight: var(--weight-bold);
+  /*
+   * The circle is exactly as wide as it is tall whatever letter lands in it,
+   * and a letter with a descender does not push it off centre.
+   */
+  line-height: 1;
+  user-select: none;
+}
+
+/*
+ * Alone at the top of a screen, where it is the only thing about the person.
+ * A literal and not --hit-target: the two happen to be 44px and mean different
+ * things, and this circle is not something a thumb aims at.
+ */
+.lg {
+  width: 44px;
+  height: 44px;
+  font-size: var(--text-lg);
+}
+
+/* Stacked against whoever else is in the Space, on a Space card. */
+.sm {
+  width: 28px;
+  height: 28px;
+  font-size: var(--text-2xs);
+}
+
+/*
+ * What lifts a circle off the one behind it once they overlap. The surface
+ * colour and not white, so the gap is still a gap at night.
+ */
+.ringed {
+  border: 2px solid var(--color-surface);
+}
+
+/*
+ * The Reader on a screen that belongs to no Space, in the app's own accent.
+ *
+ * Deliberately not one of the two Member seats. The Space list draws the
+ * Reader twice -- once here and once inside every Space they share -- and the
+ * seat they hold inside a Space depends on how the two ids sort (ADR-0020).
+ * Wearing seat one here would show one person in two colours on one screen,
+ * which is the exact confusion that ADR exists to prevent. The accent belongs
+ * to no seat and so can never collide with either.
+ */
+.reader {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
