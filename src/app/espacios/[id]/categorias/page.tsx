@@ -29,7 +29,7 @@ export default async function SpaceCategoriesPage({
   const alone = catalogue.filter((entry) => entry.children.length === 0);
 
   return (
-    <SpaceScreen space={space} tab="categories">
+    <SpaceScreen space={space} tab="settings">
       <p className={styles.subtitle}>{t("categories.subtitle")}</p>
 
       {withChildren.map((entry) => (

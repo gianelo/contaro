@@ -13,6 +13,7 @@ export const es = {
   "nav.movements": "Movimientos",
   "nav.categories": "Categorías",
   "nav.spaces": "Espacios",
+  "nav.settings": "Ajustes",
 
   "spaces.title": "Espacios",
   "spaces.empty.title": "Todavía no tenés espacios",

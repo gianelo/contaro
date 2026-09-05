@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { t } from "@/i18n";
-import { ButtonLink } from "@/ui/button";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { cx } from "@/ui/cx";
 import { hitTarget } from "@/ui/hit-target";
@@ -122,12 +121,6 @@ export default async function SpaceMovementsPage({
           ))
         )}
       </section>
-
-      <div className={styles.add}>
-        <ButtonLink href={`/espacios/${space.id}/movimientos/nuevo`}>
-          {t("movements.new")}
-        </ButtonLink>
-      </div>
     </SpaceScreen>
   );
 }

@@ -14,12 +14,6 @@
   color: var(--color-text-secondary);
 }
 
-.add {
-  display: flex;
-  flex-direction: column;
-  margin-top: var(--space-9);
-}
-
 /*
  * The month, with a step either side of it. The name is centred and the two
  * steps hold their width whether or not there is anywhere to step to, so the

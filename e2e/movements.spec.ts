@@ -57,7 +57,13 @@ test("a Member records an expense in a few taps and finds it in the month", asyn
   const { space } = await aMemberWithASpace("Ana Gasta", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}/movimientos`);
-  await page.getByRole("link", { name: "Anotar un movimiento" }).click();
+
+  // One way in and not two: the month's list gave up the full-width link at
+  // its foot, which was a scroll away on the one screen that had it. What is
+  // left is the raised button, which is on every screen inside the Space.
+  const record = page.getByRole("link", { name: "Anotar un movimiento" });
+  await expect(record).toHaveCount(1);
+  await record.click();
 
   // Story 18 in #1: the amount first, on a large keypad, because it is the
   // only part a person might forget on the way home from the till.

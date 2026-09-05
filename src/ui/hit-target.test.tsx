@@ -49,14 +49,25 @@ describe("hit targets", () => {
     expect(screen.getByRole("link", { name: "Casa" })).toHaveClass(hitTarget);
   });
 
-  it("every tab in the tab bar carries the hit target", () => {
+  it("every target in the tab bar carries it, the raised button included", () => {
     render(
       <TabBar
         activeId="budget"
         tabs={[
-          { id: "budget", href: "/", label: "Presupuesto" },
-          { id: "movements", href: "/movimientos", label: "Movimientos" },
+          {
+            id: "budget",
+            href: "/",
+            label: "Presupuesto",
+            icon: "calendar-day",
+          },
+          {
+            id: "movements",
+            href: "/movimientos",
+            label: "Movimientos",
+            icon: "list",
+          },
         ]}
+        action={{ href: "/movimientos/nuevo", label: "Anotar un movimiento" }}
       />,
     );
     for (const tab of screen.getAllByRole("link")) {
