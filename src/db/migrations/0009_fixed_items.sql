@@ -11,8 +11,8 @@
 -- so for a few minutes the code of #10 -- which has never heard of this column
 -- -- is still inserting here. Every row already in the table is a Variable
 -- item, so 'variable' backfills the truth and keeps those writes working. It
--- is a bridge: dropping it is the contraction half and its own ticket, exactly
--- as 0007 was to 0005.
+-- was a bridge: 0011 dropped it (#47) as the contraction half, exactly as
+-- 0007 was to 0005.
 --
 -- `movement_id` is where "marking an already-paid item paid does not create a
 -- second Movement" is actually enforced. Paid is not a flag beside the

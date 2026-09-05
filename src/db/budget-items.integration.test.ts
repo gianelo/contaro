@@ -423,3 +423,22 @@ it("asks nothing at all when there are no Spaces to ask about", async () => {
     budgetItemsInMonthForSpaces(db, [], SEPTEMBER),
   ).resolves.toEqual(new Map());
 });
+
+// The floor under the domain. Every test above goes through `planItem` or
+// `planFixedItem`; this one goes round them, straight to SQL, which is the
+// path a migration written in a hurry or a psql session takes.
+
+it("refuses, in the database itself, a Budget item that names no kind", async () => {
+  // The Space, the Category and the amount are all fine, so 0009's
+  // `DEFAULT 'variable'` would have let this row in as a Variable item. 0011
+  // dropped it (#47): the kind `planItem` and `planFixedItem` each say by name
+  // is said here too.
+  const { space, categoryId } = await aSpaceWithACategory("Sin especie");
+
+  await expect(
+    sql`
+      INSERT INTO budget_items (space_id, month, category_id, amount)
+      VALUES (${space.id}, '2026-09', ${categoryId}, 240000)
+    `,
+  ).rejects.toThrow(/null value in column "kind"/);
+});

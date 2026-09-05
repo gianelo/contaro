@@ -392,20 +392,18 @@ export const budgetItems = pgTable(
     /**
      * Which kind of item this is: `variable` or `fixed` (#13).
      *
-     * The default is the expand half of an expand/contract, exactly as
-     * `direction` had one for a deploy (#26, ADR-0008): migrations run from an
-     * Action while Vercel deploys in parallel, so for a few minutes the code
-     * of #10 -- which has never heard of this column -- is still inserting
-     * here. Every row it wrote and every row already in the table is a
-     * Variable item, so `variable` backfills the truth and keeps those writes
-     * working.
+     * No default here, and for a reason: the two kinds are not variations of
+     * one thing. One is an expectation Movements count against, the other a
+     * known amount somebody marks paid. `planItem` and `planFixedItem` each
+     * say which kind they wrote, so a row that names none is a write that went
+     * round the domain rather than a Variable item somebody forgot to name.
      *
-     * It is a bridge and not a rule: the two kinds are not variations of one
-     * thing, and once nothing writing here is unaware of the column the
-     * default turns into a guess for every insert that forgot to say. Dropping
-     * it is the contraction half, and its own ticket.
+     * The running column said otherwise for one deploy: 0009 added it
+     * `DEFAULT 'variable'` as the expand step of ADR-0008, because the code of
+     * #10 was still inserting while the Action ran. 0011 dropped it (#47), so
+     * this declaration and the running column now say the same thing.
      */
-    kind: text("kind").notNull().default("variable"),
+    kind: text("kind").notNull(),
     /**
      * What a Fixed item is called: "Arriendo", "Netflix". Null on a Variable
      * item, which is named by its Category and has nothing else to be called.
