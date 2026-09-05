@@ -9,3 +9,33 @@
   flex-direction: column;
   margin-top: var(--space-8);
 }
+
+/*
+ * What a paid item's screen has instead of a form: why there is nothing to
+ * fill in, and the one thing that undoes it. The same soft card a refusal
+ * takes elsewhere, because that is what this is — said before somebody types
+ * rather than after.
+ */
+.paid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-7);
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
+}
+
+.paidTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.paidBody {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}

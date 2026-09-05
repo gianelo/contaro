@@ -6,6 +6,7 @@ import { SpaceScreen } from "../../../screen";
 import { currentSpace } from "../../../space";
 import { categoryChips, monthInView } from "../../../movimientos/month";
 import { FixedItemForm } from "../../fixed-form";
+import { planFixedItemAction } from "../../actions";
 import styles from "../page.module.css";
 
 /**
@@ -45,6 +46,10 @@ export default async function NewFixedItemPage({
         categories={categories}
         currency={space.currency}
         locales={locales}
+        initial={{ amount: 0, name: "", dueDay: null, categoryId: null }}
+        action={planFixedItemAction}
+        submit={t("budget.item.save")}
+        working={t("budget.item.save.working")}
       />
 
       <div className={styles.back}>

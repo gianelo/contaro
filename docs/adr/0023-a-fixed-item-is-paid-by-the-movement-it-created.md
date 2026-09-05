@@ -61,7 +61,7 @@ The Fijos section sits above it, the way the canvas draws it. #40 moves the tota
 
 ## Consequences
 
-A Fixed item has no correction screen. `readableBudgetItem` refuses one outright and `amendItem` throws rather than letting the Variable item's correction through, because that form asks for a Category and an amount and nothing else — saving through it would strip the name, the day and the payment silently. The refusal makes it a gap somebody can see rather than a hole they fall into; the screen is its own ticket.
+A Fixed item has no correction screen. `readableBudgetItem` refuses one outright and `amendItem` throws rather than letting the Variable item's correction through, because that form asks for a Category and an amount and nothing else — saving through it would strip the name, the day and the payment silently. The refusal makes it a gap somebody can see rather than a hole they fall into; the screen is its own ticket. #48 is that ticket, and ADR-0034 is what it decided: `amendFixedItem` asks the four questions, `amendItem` goes on refusing a Fixed item but now to name the other door, and a paid item is corrected by striking its Movement out first.
 
 Striking out a Fixed item's Movement left the item still saying "Pagado". The pointer stayed honest (the Movement is an entry and not a gap, ADR-0015) but the plan and the ledger disagreed about whether the money moved. Nothing in #13 asked about this and nothing here answered it; ADR-0031 does, and it is what `FixedItem.movementId` became a `payment` for.
 

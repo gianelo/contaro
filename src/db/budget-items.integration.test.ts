@@ -15,6 +15,7 @@ import { expected } from "@/domain/budget/budget";
 import { movementsInMonth, strikeMovementInSpace } from "./movements";
 import {
   amendBudgetItemInSpace,
+  amendFixedItemInSpace,
   budgetItemsInMonth,
   budgetItemsInMonthForSpaces,
   findBudgetItemInSpace,
@@ -145,7 +146,7 @@ it("answers no such item for one in another Space, rather than refusing it", asy
 
   expect(await amendBudgetItemInSpace(db, space, theirs.id, { amount: 200_00 }))
     .toBeNull();
-  expect(await removeBudgetItemFromSpace(db, space.id, theirs.id)).toBe(false);
+  expect(await removeBudgetItemFromSpace(db, space, theirs.id)).toBe(false);
   // And it is still standing in the Space it belongs to.
   expect(await budgetItemsInMonth(db, other.space, SEPTEMBER)).toEqual([theirs]);
 });
@@ -159,7 +160,7 @@ it("removes an item from the plan, leaving no trace", async () => {
     amount: 100_00,
   });
 
-  expect(await removeBudgetItemFromSpace(db, space.id, planned.id)).toBe(true);
+  expect(await removeBudgetItemFromSpace(db, space, planned.id)).toBe(true);
   expect(await budgetItemsInMonth(db, space, SEPTEMBER)).toEqual([]);
 });
 
@@ -494,6 +495,142 @@ it("asks nothing at all when there are no Spaces to ask about", async () => {
   await expect(
     budgetItemsInMonthForSpaces(db, [], SEPTEMBER),
   ).resolves.toEqual(new Map());
+});
+
+it("corrects all four of a Fixed item's questions at once", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Corrigiendo");
+  const item = await aFixedItem(space, categoryId, { amount: 1_800_00 });
+
+  const other = await addCategoryToSpace(db, {
+    spaceId: space.id,
+    parentId: null,
+    name: "Mate",
+  });
+
+  const corrected = await amendFixedItemInSpace(db, space, item.id, {
+    amount: 1_800_000_00,
+    name: "Arriendo y expensas",
+    dueDay: 5,
+    categoryId: other.id,
+  });
+
+  expect(corrected).toEqual({
+    kind: "fixed",
+    id: item.id,
+    spaceId: space.id,
+    month: SEPTEMBER,
+    categoryId: other.id,
+    amount: money(1_800_000_00, "ARS"),
+    name: "Arriendo y expensas",
+    dueOn: "2026-09-05",
+    payment: null,
+  });
+
+  // Read back through the query the screen reads through, because a correction
+  // that only the RETURNING agrees with is not a correction.
+  expect(await findBudgetItemInSpace(db, space, item.id)).toEqual(corrected);
+});
+
+it("reads a Fixed item of another Space as one that never existed", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Ajeno");
+  const item = await aFixedItem(space, categoryId);
+  const { space: other } = await aSpaceWithACategory("Otro");
+
+  await expect(
+    amendFixedItemInSpace(db, other, item.id, { amount: 1 }),
+  ).resolves.toBeNull();
+});
+
+it("refuses to correct a Fixed item while its payment stands", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Ya pagado");
+  const item = await aFixedItem(space, categoryId);
+
+  await payFixedItemInSpace(
+    db,
+    { space, recordedBy: member.id, today: TODAY },
+    item.id,
+  );
+
+  await expect(
+    amendFixedItemInSpace(db, space, item.id, { amount: 1_800_00 }),
+  ).rejects.toThrow(FixedItemAlreadyPaidError);
+
+  // And nothing landed: a refused correction is not half of one.
+  const read = await findBudgetItemInSpace(db, space, item.id);
+  expect(read?.amount).toEqual(money(1_800_000_00, "ARS"));
+});
+
+/*
+ * The trap this ticket had to walk past. A write reads its own row back
+ * through `asPending`, which was true while `amendItem` refused the only kind
+ * that can carry a payment. Correct an item whose Movement was struck out and
+ * that stops being true: the row comes back with a `movement_id` and no
+ * `struck_at`, which is exactly how a *paid* item reads.
+ */
+it("keeps a struck payment struck across a correction", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Anulado");
+  const item = await aFixedItem(space, categoryId);
+
+  const movement = await payFixedItemInSpace(
+    db,
+    { space, recordedBy: member.id, today: TODAY },
+    item.id,
+  );
+  if (!movement) throw new Error("The Fixed item was not paid.");
+  await strikeMovementInSpace(db, space.id, movement.id, member.id);
+
+  const corrected = await amendFixedItemInSpace(db, space, item.id, {
+    amount: 1_900_000_00,
+  });
+
+  expect(corrected?.kind === "fixed" && isPaid(corrected)).toBe(false);
+  expect(corrected?.payment?.movementId).toBe(movement.id);
+  expect(corrected).toEqual(await findBudgetItemInSpace(db, space, item.id));
+});
+
+it("takes a pending Fixed item off the plan", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Sacando fijo");
+  const item = await aFixedItem(space, categoryId);
+
+  expect(await removeBudgetItemFromSpace(db, space, item.id)).toBe(true);
+  expect(await budgetItemsInMonth(db, space, SEPTEMBER)).toEqual([]);
+});
+
+it("refuses to take a paid Fixed item off the plan, and keeps its Movement", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Pagado fijo");
+  const item = await aFixedItem(space, categoryId);
+
+  const movement = await payFixedItemInSpace(
+    db,
+    { space, recordedBy: member.id, today: TODAY },
+    item.id,
+  );
+  if (!movement) throw new Error("The Fixed item was not paid.");
+
+  await expect(
+    removeBudgetItemFromSpace(db, space, item.id),
+  ).rejects.toThrow(FixedItemAlreadyPaidError);
+
+  // The item is still on the plan, and the money it spent is still in the
+  // ledger. A plan being tidied does not take a Movement with it.
+  expect(await budgetItemsInMonth(db, space, SEPTEMBER)).toHaveLength(1);
+  expect(await movementsInMonth(db, space, SEPTEMBER)).toHaveLength(1);
+});
+
+it("lets an item whose payment was struck out be taken off the plan", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Anulado y fuera");
+  const item = await aFixedItem(space, categoryId);
+
+  const movement = await payFixedItemInSpace(
+    db,
+    { space, recordedBy: member.id, today: TODAY },
+    item.id,
+  );
+  if (!movement) throw new Error("The Fixed item was not paid.");
+  await strikeMovementInSpace(db, space.id, movement.id, member.id);
+
+  expect(await removeBudgetItemFromSpace(db, space, item.id)).toBe(true);
+  expect(await budgetItemsInMonth(db, space, SEPTEMBER)).toEqual([]);
 });
 
 // The floor under the domain. Every test above goes through `planItem` or

@@ -13,6 +13,7 @@ import type { Movement } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import {
   handleAmendBudgetItem,
+  handleAmendFixedItem,
   handlePayFixedItem,
   handlePlanBudgetItem,
   handlePlanFixedItem,
@@ -81,6 +82,7 @@ const ports = (changes: Partial<BudgetPorts> = {}): BudgetPorts => ({
   plan: async () => PLANNED,
   planFixed: async () => FIXED,
   amend: async () => PLANNED,
+  amendFixed: async () => FIXED,
   remove: async () => true,
   pay: async () => PAYMENT,
   ...changes,
@@ -182,6 +184,65 @@ describe("correcting and removing an item", () => {
       await handleRemoveBudgetItem(ports(), CASA.id, PLANNED.id),
     ).toEqual({ kind: "removed" });
   });
+
+  it("corrects all four of a Fixed item's questions", async () => {
+    expect(
+      await handleAmendFixedItem(ports(), CASA.id, FIXED.id, {
+        amount: 1_900_000_00,
+        name: "Arriendo y expensas",
+        dueDay: 5,
+        categoryId: "cat-vivienda",
+      }),
+    ).toEqual({ kind: "planned", item: FIXED });
+  });
+
+  it("reads a Fixed item of another Space as one that never existed", async () => {
+    expect(
+      await handleAmendFixedItem(
+        ports({ amendFixed: async () => null }),
+        CASA.id,
+        "fijo-de-otro",
+        { amount: 1 },
+      ),
+    ).toEqual({ kind: "no-such-item" });
+  });
+
+  // What ADR-0034 decided, arriving at the screen as something to say rather
+  // than as a crash: the plan does not correct what the ledger recorded.
+  it("says a paid Fixed item is paid rather than correcting it", async () => {
+    expect(
+      await handleAmendFixedItem(
+        ports({
+          amendFixed: async () => {
+            throw new FixedItemAlreadyPaidError({
+              ...FIXED,
+              payment: { movementId: PAYMENT.id, struckAt: null },
+            });
+          },
+        }),
+        CASA.id,
+        FIXED.id,
+        { amount: 1 },
+      ),
+    ).toEqual({ kind: "already-paid" });
+  });
+
+  it("says the same when taking a paid Fixed item off the plan", async () => {
+    expect(
+      await handleRemoveBudgetItem(
+        ports({
+          remove: async () => {
+            throw new FixedItemAlreadyPaidError({
+              ...FIXED,
+              payment: { movementId: PAYMENT.id, struckAt: null },
+            });
+          },
+        }),
+        CASA.id,
+        FIXED.id,
+      ),
+    ).toEqual({ kind: "already-paid" });
+  });
 });
 
 describe("what a refused plan says on the screen", () => {
@@ -195,6 +256,9 @@ describe("what a refused plan says on the screen", () => {
       { kind: "rejected", field: "category" },
       { kind: "rejected", field: "month" },
       { kind: "rejected", field: "space" },
+      { kind: "rejected", field: "name" },
+      { kind: "rejected", field: "dueDay" },
+      { kind: "already-paid" },
     ] as const;
 
     for (const refusal of refusals) {

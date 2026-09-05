@@ -288,13 +288,13 @@ test.describe("a Member who reads numbers the Argentine way", () => {
     ).toContainText("US$ 0,00");
 
     await page.goto(`/espacios/${pesos.id}`);
-    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+    await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "$ 0,00",
     );
     await expect(page.getByText("Dólar estadounidense")).toHaveCount(0);
 
     await page.goto(`/espacios/${dolares.id}`);
-    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+    await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "US$ 0,00",
     );
     await expect(page.getByText("Peso argentino")).toHaveCount(0);

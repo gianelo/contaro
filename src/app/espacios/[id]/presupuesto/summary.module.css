@@ -1,0 +1,70 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-8);
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--space-8);
+}
+
+/* The two figures on one baseline, so the smaller one reads as measured
+   against the larger rather than as a second line of its own. */
+.figures {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.spending,
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* The plan sits at the far end and is read right to left from its edge. */
+.plan {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.label {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The figure the screen was opened for: the largest thing on the card.
+ *
+ * Tracked in for the reason the screen's title is: past about twenty pixels
+ * the default spacing reads loose, and every large bold thing in this product
+ * is pulled back against it. Less than the title's -0.6px because this is
+ * smaller than the title -- the tightening follows the size rather than being
+ * one value applied twice.
+ */
+.spent {
+  font-size: var(--text-figure);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+}
+
+/*
+ * Quieter in both size and ink, which is the ranking and not decoration: this
+ * is what the figure beside it is being read against, and two amounts written
+ * the same way would be a card with no subject.
+ */
+.planned {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.meter {
+  margin-top: var(--space-7);
+}
+
+.pace {
+  margin-top: var(--space-6);
+}

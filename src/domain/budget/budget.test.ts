@@ -5,6 +5,7 @@ import { money } from "../money/money";
 import type { Movement } from "../movement/movement";
 import type { Space } from "../space/space";
 import {
+  amendFixedItem,
   amendItem,
   comparedToPlan,
   dueNotice,
@@ -13,10 +14,12 @@ import {
   FixedItemAlreadyPaidError,
   isPaid,
   MAX_FIXED_ITEM_NAME_LENGTH,
+  monthAgainstPlan,
   paceOf,
   paymentFor,
   planFixedItem,
   planItem,
+  unplan,
   UnplannableBudgetItemError,
   type FixedItem,
   type Payment,
@@ -743,6 +746,82 @@ describe("what a comparison leaves out", () => {
   });
 });
 
+describe("the month against the whole of its plan", () => {
+  // What the summary card at the top of the Budget screen draws (#40): one
+  // pair of figures for the whole month, where `comparedToPlan` gives one pair
+  // per Category.
+  it("measures every expense of the month against every item planned for it", () => {
+    expect(
+      monthAgainstPlan(
+        // Both kinds, because both are what the month expects to cost: 400.000
+        // of groceries and 180.000 of rent.
+        [item({ amount: money(400_000_00, "ARS") }), fixed()],
+        [expense({ amount: money(290_000_00, "ARS") })],
+        "ARS",
+      ),
+    ).toEqual({
+      spent: money(290_000_00, "ARS"),
+      expected: money(580_000_00, "ARS"),
+      share: 0.5,
+      over: null,
+    });
+  });
+
+  it("counts what went on a Category nobody planned for", () => {
+    // The card says "Gastado" and not "gastado on the plan". `comparedToPlan`
+    // is driven by the plan's rows and rightly drops the rest; this is the
+    // month's own total, and a month whose spending all went somewhere
+    // unplanned has still spent it.
+    expect(
+      monthAgainstPlan(
+        [item({ amount: money(400_000_00, "ARS") })],
+        [expense({ categoryId: MATE.id, amount: money(100_000_00, "ARS") })],
+        "ARS",
+      ).spent,
+    ).toEqual(money(100_000_00, "ARS"));
+  });
+
+  it("leaves what came in out of what went out", () => {
+    expect(
+      monthAgainstPlan(
+        [item({ amount: money(400_000_00, "ARS") })],
+        [
+          expense({ amount: money(100_000_00, "ARS") }),
+          expense({
+            id: "mov-salary",
+            direction: "income",
+            categoryId: null,
+            amount: money(5_320_000_00, "ARS"),
+          }),
+        ],
+        "ARS",
+      ).spent,
+    ).toEqual(money(100_000_00, "ARS"));
+  });
+
+  it("is over by the difference once the plan is passed", () => {
+    expect(
+      monthAgainstPlan(
+        [item({ amount: money(400_000_00, "ARS") })],
+        [expense({ amount: money(500_000_00, "ARS") })],
+        "ARS",
+      ),
+    ).toMatchObject({ over: money(100_000_00, "ARS"), share: 1.25 });
+  });
+
+  it("has nothing to measure against on a month nobody planned", () => {
+    // A share of no plan is a division by nothing, and "over a plan of
+    // nothing" is not what a month nobody has planned is: it is a month with
+    // no plan, which the meter draws by not being there at all.
+    expect(monthAgainstPlan([], [expense()], "ARS")).toEqual({
+      spent: money(60_000_00, "ARS"),
+      expected: money(0, "ARS"),
+      share: null,
+      over: null,
+    });
+  });
+});
+
 describe("a plan and its spending in two different currencies", () => {
   // Converting behind a person's back is the one thing ADR-0007 exists to
   // prevent, and a comparison is exactly where a conversion would hide.
@@ -1026,13 +1105,125 @@ describe("a month planned with both kinds of item", () => {
   });
 });
 
-describe("correcting an item", () => {
-  // There is no correction screen for a Fixed item yet, and this is what
-  // makes that a gap rather than a hole: the Variable item's correction
-  // cannot quietly strip a name, a due day and a payment off one.
-  it("refuses a Fixed item outright", () => {
+describe("correcting a Fixed item", () => {
+  // The Variable item's correction still refuses one, and that refusal is now
+  // about which door rather than about there being none: it asks for a
+  // Category and an amount and nothing else, so saving a Fixed item through it
+  // would leave its name and its day out of what it wrote back.
+  it("is not what the Variable item's correction does", () => {
     expect(() => amendItem(fixed(), { amount: 1 }, planning())).toThrow(
       UnplannableBudgetItemError,
+    );
+  });
+
+  it("changes any of the four questions it was planned with", () => {
+    expect(
+      amendFixedItem(
+        fixed(),
+        {
+          amount: 200_000_00,
+          categoryId: SUPER.id,
+          name: "Arriendo y expensas",
+          dueDay: 5,
+        },
+        planning(),
+      ),
+    ).toEqual(
+      fixed({
+        amount: money(200_000_00, "ARS"),
+        categoryId: SUPER.id,
+        name: "Arriendo y expensas",
+        dueOn: calendarDate("2026-09-05"),
+      }),
+    );
+  });
+
+  it("leaves standing every question it was not asked", () => {
+    expect(amendFixedItem(fixed(), {}, planning())).toEqual(fixed());
+  });
+
+  it("holds a correction to every rule the planning was held to", () => {
+    expect(() => amendFixedItem(fixed(), { amount: 0 }, planning()))
+      .toThrow(UnplannableBudgetItemError);
+    expect(() => amendFixedItem(fixed(), { categoryId: ELSEWHERE.id }, planning()))
+      .toThrow(UnplannableBudgetItemError);
+    expect(() => amendFixedItem(fixed(), { name: "   " }, planning()))
+      .toThrow(UnplannableBudgetItemError);
+  });
+
+  // The rule ADR-0023 wrote for the planning, asked again of the correction:
+  // the 30th of February is not a late February, it is a day that will not
+  // arrive, and moving it back two days behind somebody's back is worse than
+  // saying the plan cannot be written.
+  it("refuses a due day the month does not have", () => {
+    expect(() =>
+      amendFixedItem(
+        fixed({ month: month("2026-02"), dueOn: calendarDate("2026-02-01") }),
+        { dueDay: 30 },
+        planning(),
+      ),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  it("refuses an item planned in another Space", () => {
+    expect(() =>
+      amendFixedItem(
+        fixed({ spaceId: "space-de-otro" }),
+        { amount: 1 },
+        planning(),
+      ),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  // The decision this ticket had to make (ADR-0034). The item's amount is
+  // already in the ledger, and a plan does not own a ledger entry (ADR-0031),
+  // so the correction waits for the payment to be undone rather than reaching
+  // through it.
+  it("refuses one that is paid", () => {
+    expect(() =>
+      amendFixedItem(
+        fixed({ payment: paidBy("mov-1") }),
+        { amount: 1 },
+        planning(),
+      ),
+    ).toThrow(FixedItemAlreadyPaidError);
+  });
+
+  // Which is the way back out: striking the Movement puts the item back to
+  // pending (ADR-0031), and a pending item is corrected like any other.
+  it("corrects one whose payment was struck out", () => {
+    expect(
+      amendFixedItem(
+        fixed({ payment: struck("mov-1") }),
+        { amount: 200_000_00 },
+        planning(),
+      ),
+    ).toEqual(
+      fixed({ payment: struck("mov-1"), amount: money(200_000_00, "ARS") }),
+    );
+  });
+});
+
+describe("taking an item off the plan", () => {
+  it("lets a Variable item go", () => {
+    expect(() => unplan(item())).not.toThrow();
+  });
+
+  it("lets a pending Fixed item go", () => {
+    expect(() => unplan(fixed())).not.toThrow();
+  });
+
+  it("lets go of one whose payment was struck out", () => {
+    expect(() => unplan(fixed({ payment: struck("mov-1") }))).not.toThrow();
+  });
+
+  // The same decision as the correction, and deliberately the same rule
+  // rather than a second one: removing a paid item would leave a Movement in
+  // the ledger with nothing to say what it paid for, and the plan is not the
+  // screen that gets to destroy an entry of money that moved (ADR-0015).
+  it("refuses one that is paid", () => {
+    expect(() => unplan(fixed({ payment: paidBy("mov-1") }))).toThrow(
+      FixedItemAlreadyPaidError,
     );
   });
 });

@@ -152,6 +152,19 @@ export type BudgetItemAmendment = {
 };
 
 /**
+ * The same, plus the two more questions a Fixed item was planned with.
+ *
+ * Its own type, and the reason is the one that keeps a Variable item from
+ * being marked paid: a Variable item has no name and no due day, so a
+ * correction carrying either is not a correction of one. Said in the type,
+ * that is a refusal nobody has to remember to write.
+ */
+export type FixedItemAmendment = BudgetItemAmendment & {
+  name?: string;
+  dueDay?: number;
+};
+
+/**
  * The Space a plan is being made in, and the Categories it can see.
  *
  * Handed in rather than looked up, for the reason `Recording` is: it is what
@@ -410,10 +423,11 @@ export function dueNotice(
  * from `BudgetItemAmendment`, so that is a refusal the type makes.
  *
  * A Fixed item is refused outright, and the refusal is here rather than left
- * to the type alone. #13 gave a Fixed item a name, a day it falls due on and a
- * Movement, and gave it no correction screen; a correction shaped for the
- * other kind reaching one would answer three questions it was never asked --
- * silently, by leaving them out of what it wrote back.
+ * to the type alone. It is about which door and no longer about there being
+ * none: `amendFixedItem` is where one is corrected (#48). This form asks for a
+ * Category and an amount and nothing else, so a Fixed item saved through it
+ * would answer two questions it was never asked -- silently, by leaving its
+ * name and its day out of what it wrote back.
  */
 export function amendItem(
   item: BudgetItem,
@@ -425,7 +439,7 @@ export function amendItem(
   if (item.kind === "fixed") {
     throw new UnplannableBudgetItemError(
       "space",
-      "a Fixed item is not corrected here",
+      "a Fixed item is corrected by amendFixedItem and not here",
     );
   }
 
@@ -440,6 +454,72 @@ export function amendItem(
         ? item.amount
         : amount(changes.amount, planning.space.currency),
   };
+}
+
+/**
+ * A Fixed item as a correction leaves it: the four questions the planning
+ * asked, asked again and held to the same rules (#48).
+ *
+ * Its payment is not among them, and that is the decision this made rather
+ * than a field left out (ADR-0034). A paid item's amount is already in the
+ * ledger, and a plan does not own a ledger entry (ADR-0031) -- so correcting
+ * one is refused while the payment stands, rather than reaching through it to
+ * rewrite a Movement from a screen that is not the ledger's. The way back out
+ * is the one #49 already built: strike the Movement, and the item is pending
+ * again and corrigible like any other.
+ *
+ * A struck payment is kept and not cleared. The plan reads through the pointer
+ * and never caches what it said (ADR-0031), so what "paid" is stays the
+ * ledger's answer across a correction as much as across anything else.
+ */
+export function amendFixedItem(
+  item: FixedItem,
+  changes: FixedItemAmendment,
+  planning: Planning,
+): FixedItem {
+  inTheSameSpace(item.spaceId, planning.space.id);
+
+  if (isPaid(item)) throw new FixedItemAlreadyPaidError(item);
+
+  return {
+    ...item,
+    categoryId:
+      changes.categoryId === undefined
+        ? item.categoryId
+        : category(changes.categoryId, planning),
+    amount:
+      changes.amount === undefined
+        ? item.amount
+        : amount(changes.amount, planning.space.currency),
+    name: changes.name === undefined ? item.name : name(changes.name),
+    dueOn:
+      changes.dueDay === undefined
+        ? item.dueOn
+        : dueOn(item.month, changes.dueDay),
+  };
+}
+
+/**
+ * Whether an item may be taken off the plan at all. Says nothing and throws
+ * when the answer is no, the way `inTheSameSpace` does: there is one item and
+ * removing it changes nothing about it, so there is nothing to hand back.
+ *
+ * A rule and not a query, so the kind cannot be routed around (#48). The
+ * delete underneath is filtered on an id and a Space and knows nothing about
+ * either kind; before this, the only thing keeping a paid Fixed item out of it
+ * was that no screen linked to one, which is a guard that lasts exactly as
+ * long as the screens do.
+ *
+ * The same refusal as the correction's, and deliberately the same one rather
+ * than a second rule about the same state: removing a paid item would leave a
+ * Movement in the ledger with nothing left to say what it paid for, and a
+ * Movement is struck out from the ledger by somebody who meant to (ADR-0015),
+ * never taken along by a plan being tidied.
+ */
+export function unplan(item: BudgetItem): void {
+  if (item.kind === "fixed" && isPaid(item)) {
+    throw new FixedItemAlreadyPaidError(item);
+  }
 }
 
 /**
@@ -722,6 +802,69 @@ export function expected(
     inTheSameCurrency(item, currency);
     return money(running.amount + item.amount.amount, currency);
   }, zero(currency));
+}
+
+/**
+ * The whole month's spending against the whole of its plan (#40).
+ *
+ * The pair of figures the summary card draws, where `comparedToPlan` gives one
+ * pair per Category. They are different questions and the difference is in the
+ * numerator: a Category's row is driven by the plan, so spending on a Category
+ * nobody planned for has no row and belongs in none. The month's own total has
+ * no such filter — "Gastado" on that card is what the month cost, the same
+ * figure the month's list prints at the top of its days, and a total that
+ * quietly dropped the unplanned half would disagree with it.
+ */
+export type MonthComparison = {
+  /** What the month cost: every expense in it, planned for or not. */
+  spent: Money;
+  /** What the month was planned to cost: every item, of either kind. */
+  expected: Money;
+  /**
+   * How much of the plan has gone, as a share of it: 0.87 is most of the way
+   * through. Past 1 on a month that went over, which the meter clamps.
+   *
+   * Null, and not zero, on a month nobody has planned: there is no plan to be
+   * a share of, and the meter draws nothing rather than an empty length.
+   */
+  share: number | null;
+  /** How far past the plan, or null while the month is inside it. */
+  over: Money | null;
+};
+
+/**
+ * What the month cost, what it was planned to cost, and how those two stand.
+ *
+ * The arithmetic is here rather than in the reader that formats them, for the
+ * reason `CategoryComparison.share` is: a screen doing sums on `Money.amount`
+ * is a screen that can disagree with the figures beside it.
+ *
+ * A month nobody has planned answers `null` twice rather than zero twice. Zero
+ * would say "you have spent all of a plan of nothing" and draw a full meter on
+ * a month whose plan does not exist; the plan's own empty state has already
+ * said the true thing, in words.
+ */
+export function monthAgainstPlan(
+  items: readonly BudgetItem[],
+  movements: readonly Movement[],
+  currency: CurrencyCode,
+): MonthComparison {
+  const cost = spent(movements, currency);
+  const plan = expected(items, currency);
+
+  if (plan.amount === 0) {
+    return { spent: cost, expected: plan, share: null, over: null };
+  }
+
+  return {
+    spent: cost,
+    expected: plan,
+    share: cost.amount / plan.amount,
+    over:
+      cost.amount > plan.amount
+        ? money(cost.amount - plan.amount, currency)
+        : null,
+  };
 }
 
 /**

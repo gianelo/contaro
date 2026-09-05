@@ -29,10 +29,12 @@ export type FixedItemsProps = {
  * A Variable item asks "how much is left"; a Fixed one asks "have I paid it",
  * and the answer is a badge rather than a meter.
  *
- * A pending row is a button and a paid one is not. There is exactly one thing
- * to do to a Fixed item, so the row is that thing — and a paid row has nothing
- * left to do, which is why it stops being tappable rather than opening a sheet
- * that would only refuse.
+ * Every row opens its item, the way a Variable row already did (#48). Marking
+ * one paid keeps its own control beside the row rather than being the row:
+ * there are two things to do to a Fixed item now, and a row that was only one
+ * of them left the other with nowhere to live. A paid row keeps the link and
+ * loses the control -- there is nothing left to pay, and a control that opened
+ * a sheet only to refuse is a control that exists to say no.
  */
 export function FixedItems({
   spaceId,
@@ -62,14 +64,29 @@ export function FixedItems({
         {items.map((item) => (
           <GroupedListItem
             key={item.id}
-            onClick={item.paid ? undefined : () => setPaying(item)}
+            href={`/espacios/${spaceId}/presupuesto/${item.id}`}
             trailing={
-              <span className={styles.end}>
-                <span className={styles.amount}>{item.amount}</span>
-                <Badge variant={item.paid ? "accent" : "muted"}>
-                  {t(item.paid ? "budget.fixed.paid" : "budget.fixed.pending")}
-                </Badge>
-              </span>
+              <span className={styles.amount}>{item.amount}</span>
+            }
+            beside={
+              item.paid ? (
+                <Badge variant="accent">{t("budget.fixed.paid")}</Badge>
+              ) : (
+                /*
+                  The badge is what it looks like and the button is what it
+                  does, so the two are named apart: a screen reader hears
+                  "Marcar Arriendo como pagado" and eyes read "Pendiente",
+                  which is the state the tap would leave behind.
+                */
+                <button
+                  type="button"
+                  className={styles.pay}
+                  aria-label={t("budget.fixed.pay.row", { name: item.name })}
+                  onClick={() => setPaying(item)}
+                >
+                  <Badge variant="muted">{t("budget.fixed.pending")}</Badge>
+                </button>
+              )
             }
           >
             <span className={styles.name}>{item.name}</span>

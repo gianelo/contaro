@@ -35,7 +35,7 @@ test("two Members of one Space each read its money their own way", async ({
   await memoSees.goto(`/espacios/${shared.id}`);
 
   const month = (page: typeof ritaSees) =>
-    page.getByRole("group", { name: "Este mes" });
+    page.getByRole("region", { name: "Este mes" });
 
   // The same amount, written two ways. Nothing is recorded yet (#7), so the
   // decimal separator is the only one there is to invert — which is the very
@@ -76,7 +76,7 @@ test.describe("a Member whose browser asks for a language we cannot read", () =>
     // Colombian, which spells a money that is not its own with the code. The
     // separators are the same either way -- what moves is whose peso gets the
     // bare symbol, and it is not this Space's.
-    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+    await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "ARS 0,00",
     );
   });

@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { database } from "@/db/client";
 import {
   amendBudgetItemInSpace,
+  amendFixedItemInSpace,
   payFixedItemInSpace,
   planBudgetItemInSpace,
   planFixedItemInSpace,
@@ -17,6 +18,7 @@ import { todayFor } from "@/app/reader";
 import { report } from "@/app/report";
 import {
   handleAmendBudgetItem,
+  handleAmendFixedItem,
   handlePayFixedItem,
   handlePlanBudgetItem,
   handlePlanFixedItem,
@@ -59,8 +61,10 @@ async function ports(): Promise<BudgetPorts> {
     planFixed: (space, draft) => planFixedItemInSpace(database(), space, draft),
     amend: (space, itemId, changes) =>
       amendBudgetItemInSpace(database(), space, itemId, changes),
-    remove: (spaceId, itemId) =>
-      removeBudgetItemFromSpace(database(), spaceId, itemId),
+    amendFixed: (space, itemId, changes) =>
+      amendFixedItemInSpace(database(), space, itemId, changes),
+    remove: (space, itemId) =>
+      removeBudgetItemFromSpace(database(), space, itemId),
     pay: (recorder, itemId) =>
       payFixedItemInSpace(database(), recorder, itemId),
   };
@@ -179,6 +183,45 @@ export async function amendBudgetItemAction(
   );
 
   report("Correcting a Budget item", outcome);
+
+  if (outcome.kind === "planned") {
+    redirect(budgetScreen(spaceId, outcome.item.month));
+  }
+
+  return { error: refusalMessage(outcome) };
+}
+
+/**
+ * A correction to a Fixed item: all four of the questions it was planned with
+ * (#48).
+ *
+ * Beside `amendBudgetItemAction` and not merged with it, the way the two
+ * planning actions are two: they read different fields off the form, and one
+ * action switching on which fields happened to be posted would be an action
+ * whose rules depend on a form somebody could send half of.
+ */
+export async function amendFixedItemAction(
+  _previous: BudgetFormState,
+  form: FormData,
+): Promise<BudgetFormState> {
+  const spaceId = answer(form, "spaceId");
+
+  const outcome = await handleAmendFixedItem(
+    await ports(),
+    spaceId,
+    answer(form, "itemId"),
+    {
+      categoryId: answer(form, "categoryId"),
+      amount: Number(answer(form, "amount")),
+      name: answer(form, "name"),
+      // Raw, as the planning passes it: `amendFixedItem` refuses a NaN and a
+      // day the month does not have by name, and repairing either here would
+      // file a due date the person never chose.
+      dueDay: Number(answer(form, "dueDay")),
+    },
+  );
+
+  report("Correcting a Fixed item", outcome);
 
   if (outcome.kind === "planned") {
     redirect(budgetScreen(spaceId, outcome.item.month));

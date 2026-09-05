@@ -52,13 +52,31 @@ export type GroupedListItemProps = {
   leading?: ReactNode;
   trailing?: ReactNode;
   /**
+   * What sits next to the row and not inside it: a second thing to do to the
+   * same line, such as marking a Fixed item paid on a row that opens it (#48).
+   *
+   * Outside the link or button rather than in `trailing`, because `trailing`
+   * is inside it -- and a button inside a link is not a control a keyboard or
+   * a screen reader can reach, whatever it looks like. The row keeps its own
+   * whole tap; this takes its own beside it.
+   */
+  beside?: ReactNode;
+  /**
    * Given a destination, the row becomes a link and takes a touch target. A
    * row that goes somewhere is a link and not a button for the reason
    * `ButtonLink` is one: it opens in a new tab, and it works before any
    * JavaScript has loaded.
    */
   href?: string;
-  /** Given a handler, the row becomes a button and takes a touch target. */
+  /**
+   * Given a handler and no destination, the row becomes a button and takes a
+   * touch target.
+   *
+   * Given one *beside* an `href`, it is what the row also does on its way:
+   * the month picker closes its own sheet as a month is chosen, because a
+   * client-side navigation leaves the picker mounted and its sheet would
+   * otherwise stay open across the screen it just opened.
+   */
   onClick?: () => void;
   children: ReactNode;
 };
@@ -66,6 +84,7 @@ export type GroupedListItemProps = {
 export function GroupedListItem({
   leading,
   trailing,
+  beside,
   href,
   onClick,
   children,
@@ -83,7 +102,7 @@ export function GroupedListItem({
   return (
     <li className={styles.item}>
       {href !== undefined ? (
-        <Link href={href} className={actionable}>
+        <Link href={href} onClick={onClick} className={actionable}>
           {inner}
         </Link>
       ) : onClick ? (
@@ -93,6 +112,7 @@ export function GroupedListItem({
       ) : (
         <div className={styles.row}>{inner}</div>
       )}
+      {beside ? <span className={styles.beside}>{beside}</span> : null}
     </li>
   );
 }

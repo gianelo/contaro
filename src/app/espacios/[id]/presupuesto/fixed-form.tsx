@@ -9,17 +9,36 @@ import { Button } from "@/ui/button";
 import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
 import { SelectField, TextField } from "@/ui/field";
 import { Keypad } from "@/ui/keypad";
-import { planFixedItemAction } from "./actions";
-import { nothingWrongYet } from "./plan";
+import { nothingWrongYet, type BudgetFormState } from "./plan";
 import styles from "./form.module.css";
 
 export type FixedItemFormProps = {
   spaceId: string;
+  /** The item being corrected, or nothing at all for a new one. */
+  itemId?: string;
   /** The month being planned. Carried, because an item is on one month. */
   month: string;
   categories: readonly ChipBranch[];
   currency: CurrencyCode;
   locales: readonly string[];
+  /**
+   * What the four questions already say, and what nothing chosen looks like
+   * for one being planned: a keypad on zero, an empty name, and `null` for the
+   * two the person picks from a list rather than fills in -- which is what the
+   * day's placeholder and the unchosen chip each read as.
+   */
+  initial: {
+    amount: number;
+    name: string;
+    dueDay: number | null;
+    categoryId: string | null;
+  };
+  action: (
+    previous: BudgetFormState,
+    form: FormData,
+  ) => Promise<BudgetFormState>;
+  submit: string;
+  working: string;
 };
 
 /**
@@ -37,23 +56,31 @@ export type FixedItemFormProps = {
  * be offering somebody the chance to contradict it — and the choices stop at
  * the length of that month, so a February plan is never offered a 30th.
  *
- * There is no correction screen for one of these yet, and nothing here
- * pretends otherwise: this form only plans. `readableBudgetItem` refuses a
- * Fixed item outright rather than opening it in the Variable form, which would
- * offer to save a row with its name, its day and its payment left out.
+ * Planning and correcting are one form, the way they already are for the other
+ * kind (#48). Two copies would be two places for the correction to stop being
+ * held to the rules the planning was -- and the four questions are the four
+ * questions whichever of the two is being asked.
+ *
+ * Nothing here asks whether the item is paid. That refusal is the domain's
+ * (`amendFixedItem`, ADR-0034) and the screen above decides whether to render
+ * a form at all: a control that could be typed into and then refused is worse
+ * than no control, and a second copy of the rule here would be a second place
+ * for it to drift.
  */
 export function FixedItemForm({
   spaceId,
+  itemId,
   month,
   categories,
   currency,
   locales,
+  initial,
+  action,
+  submit,
+  working,
 }: FixedItemFormProps) {
-  const [state, send, pending] = useActionState(
-    planFixedItemAction,
-    nothingWrongYet,
-  );
-  const [amount, setAmount] = useState(0);
+  const [state, send, pending] = useActionState(action, nothingWrongYet);
+  const [amount, setAmount] = useState(initial.amount);
 
   // Exactly the days this month has. `lastDayOf` is what knows February is
   // shorter and how much shorter this particular February is; the domain
@@ -72,6 +99,7 @@ export function FixedItemForm({
         before anything is written (ADR-0010).
       */}
       <input type="hidden" name="spaceId" value={spaceId} />
+      {itemId ? <input type="hidden" name="itemId" value={itemId} /> : null}
       <input type="hidden" name="mes" value={month} />
       {/* The keypad is not a text field, so its figure is carried here. */}
       <input type="hidden" name="amount" value={amount} />
@@ -87,6 +115,7 @@ export function FixedItemForm({
         name="name"
         label={t("budget.fixed.name")}
         maxLength={MAX_FIXED_ITEM_NAME_LENGTH}
+        defaultValue={initial.name}
         required
       />
 
@@ -96,8 +125,10 @@ export function FixedItemForm({
         choices={choices}
         // Nothing chosen to begin with, so `required` has teeth: a picker
         // that starts on the 1st answers for whoever does not look, and it
-        // would answer with a due date they never chose.
+        // would answer with a due date they never chose. A correction opens on
+        // the day the item already has, which is an answer somebody did give.
         placeholder="—"
+        defaultValue={initial.dueDay === null ? "" : String(initial.dueDay)}
         required
       />
 
@@ -107,6 +138,7 @@ export function FixedItemForm({
         more={t("chips.more")}
         change={t("chips.change")}
         branches={categories}
+        defaultValue={initial.categoryId ?? undefined}
         required
       />
 
@@ -118,7 +150,7 @@ export function FixedItemForm({
 
       <div className={styles.save}>
         <Button type="submit" disabled={pending || amount === 0}>
-          {pending ? t("budget.item.save.working") : t("budget.item.save")}
+          {pending ? working : submit}
         </Button>
       </div>
     </form>

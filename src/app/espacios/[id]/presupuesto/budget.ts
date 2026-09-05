@@ -5,12 +5,13 @@ import { movementsInMonth } from "@/db/movements";
 import {
   comparedToPlan,
   dueNotice,
-  expected,
   isPaid,
+  monthAgainstPlan,
   paceOf,
   type BudgetItem,
   type DueNotice,
   type FixedItem,
+  type MonthComparison,
   type PaceStanding,
   type VariableItem,
 } from "@/domain/budget/budget";
@@ -19,7 +20,6 @@ import {
   monthSoFar,
   monthsToPlan,
   type Month,
-  type MonthsToPlan,
 } from "@/domain/calendar/month";
 import type { Category } from "@/domain/category/category";
 import type { CurrencyCode } from "@/domain/money/currency";
@@ -35,11 +35,8 @@ import {
   type Naming,
 } from "../categorias/catalogue";
 
-/**
- * One item of a month's plan, as a screen shows it: named by its Category and
- * written in the reader's separators.
- */
-export type ReadableBudgetItem = {
+/** What both kinds of item carry into their correction screen. */
+type ReadableItemInCommon = {
   id: string;
   /**
    * The month this item is on. Carried, and not recomputed from the Reader's
@@ -62,6 +59,43 @@ export type ReadableBudgetItem = {
   minorUnits: number;
   categoryId: string;
 };
+
+/**
+ * One item of a month's plan, as its correction screen shows it: named by its
+ * Category and written in the reader's separators.
+ *
+ * Discriminated on `kind`, because the correction screen is two screens behind one URL
+ * (#48). A Fixed item is corrected by four questions and a Variable one by
+ * two, and a screen that read the four off an optional field would be a screen
+ * that could render half of either.
+ */
+export type ReadableBudgetItem =
+  | (ReadableItemInCommon & { kind: "variable" })
+  | (ReadableItemInCommon & {
+      kind: "fixed";
+      /** What it is read by, and the first thing its correction asks. */
+      name: string;
+      /**
+       * The day of the month it falls due on, and not the date. The choice
+       * list on the screen is days of *this* month, so a date would have to be
+       * taken apart there anyway -- and a date carrying its own month could
+       * disagree with the plan it sits on (ADR-0023).
+       */
+      dueDay: number;
+      /**
+       * The Movement paying for it while that payment stands, and nothing
+       * where the item is pending. The Movement and not a flag, for the reason
+       * `FixedItem` holds one: what a paid item's screen has to offer is the
+       * way out of being paid, and that is a link to the entry somebody has to
+       * strike.
+       *
+       * Not so the screen can enforce anything -- the domain refuses a paid
+       * item's correction and its removal on its own (ADR-0034) -- but so it
+       * can say why there is nothing to fill in, instead of offering a form
+       * that would refuse whatever was typed into it.
+       */
+      paidBy: string | null;
+    });
 
 /**
  * One Category of the plan, what it expected, and what it really cost (#11).
@@ -153,13 +187,47 @@ export type ReadableFixedItem = {
   due: string | null;
 };
 
+/** One month the pill at the top of the screen offers (#40). */
+export type ReadableMonthChoice = {
+  month: Month;
+  /** The month as a person reads it: "Septiembre", "Enero 2027". */
+  label: string;
+  /** Whether it is the month the screen is currently showing. */
+  inView: boolean;
+};
+
+/**
+ * The month's two figures and how they stand, as the summary card draws them
+ * (#40).
+ *
+ * One shape and not four fields on `ReadableBudget`, because they are one
+ * thing: what the month cost, what it was planned to cost, and the single
+ * comparison between them that the meter is a picture of. Splitting them up
+ * would let a screen draw the meter of one month beside the figures of
+ * another.
+ */
+export type ReadableMonthSummary = {
+  /** What the month has cost: every expense in it, planned for or not. */
+  spent: string;
+  /** What it was planned to cost -- both kinds of item together (#13). */
+  planned: string;
+  /**
+   * How much of the plan has gone, as a share of it, or nothing at all on a
+   * month nobody has planned: there is no plan to be a share of, and the card
+   * draws no meter rather than an empty one.
+   */
+  filled: number | null;
+  /** Whether the month has passed what it planned to spend. */
+  over: boolean;
+};
+
 /** One Space's Budget for a month, as the screen showing it needs to know it. */
 export type ReadableBudget = {
   month: Month;
   /** The month named at the top of the screen: "Septiembre". */
   label: string;
-  /** Where the control at the top of the screen can go from here. */
-  around: MonthsToPlan;
+  /** Every month the pill at the top of the screen can be moved to. */
+  choices: readonly ReadableMonthChoice[];
   /**
    * The Variable items, in the order they were planned. Several on one
    * Category stay several here: they are how a person thinks in weeks, and
@@ -185,10 +253,10 @@ export type ReadableBudget = {
    */
   variables: readonly ReadableComparison[];
   /**
-   * What the whole month's plan adds up to, in the Space's money -- both kinds
-   * together, because both are what the month expects to cost (#13).
+   * The card at the top of the screen: the month's spending, the whole of its
+   * plan, and how the two stand (#40).
    */
-  expected: string;
+  summary: ReadableMonthSummary;
   /**
    * Whether the month is ahead of or behind an even spread of its Variable
    * items, or nothing where there is no such question to answer (#14).
@@ -227,7 +295,11 @@ export async function readableBudget(
   return {
     month,
     label: monthLabel(month, monthOf(reader.today)),
-    around: monthsToPlan(month),
+    choices: monthsToPlan(month).map((offered) => ({
+      month: offered,
+      label: monthLabel(offered, monthOf(reader.today)),
+      inView: offered === month,
+    })),
     items: planned
       .filter((item): item is VariableItem => item.kind === "variable")
       .map((item) => readable(item, named, reader)),
@@ -247,10 +319,14 @@ export async function readableBudget(
       over: over === null ? null : formatMoney(over, reader.locales),
       filled: share,
     })),
-    // Read off the items rather than summed in SQL, so what the screen shows
-    // is the total of exactly the rows beneath it and can never disagree with
-    // them.
-    expected: formatMoney(expected(planned, space.currency), reader.locales),
+    // Both halves of the card from one answer, so the meter can never be a
+    // picture of figures other than the two printed above it. Read off the
+    // items and the Movements rather than summed in SQL, the way every other
+    // total on this screen is.
+    summary: readableSummary(
+      monthAgainstPlan(planned, spending, space.currency),
+      reader,
+    ),
     pace: readablePace(
       planned,
       spending,
@@ -259,6 +335,22 @@ export async function readableBudget(
       month,
       reader,
     ),
+  };
+}
+
+/** The month against its plan, written the way its reader reads numbers. */
+function readableSummary(
+  against: MonthComparison,
+  reader: Reader,
+): ReadableMonthSummary {
+  return {
+    spent: formatMoney(against.spent, reader.locales),
+    planned: formatMoney(against.expected, reader.locales),
+    filled: against.share,
+    // A boolean here and the amount in the domain, unlike a Category's row:
+    // the card says how far past in the two figures it already prints, so
+    // nothing on it has to write the difference out.
+    over: against.over !== null,
   };
 }
 
@@ -322,22 +414,28 @@ function standingInWords(standing: PaceStanding, reader: Reader): string {
   }
 }
 
-/** One item of a Space's plan, as its correction screen shows it. */
+/**
+ * One item of a Space's plan, as its correction screen shows it.
+ *
+ * Both kinds, since #48. It used to refuse a Fixed item outright, which made
+ * its correction screen a 404 -- the gap #13 left, said out loud rather than
+ * half-answered by a form shaped for the other kind. The form is built now,
+ * so what comes back says which kind it is and carries what that kind is
+ * asked.
+ */
 export async function readableBudgetItem(
   space: Space,
   itemId: string,
   reader: Reader,
 ): Promise<ReadableBudgetItem | null> {
   const item = await findBudgetItemInSpace(database(), space, itemId);
-  // A Fixed item reads as no item at all from here, and so its correction
-  // screen is a 404. It is a screen shaped for the other kind: it asks for a
-  // Category and an amount and nothing else, so opening one on a Fixed item
-  // would offer to save a row with its name, its day and its payment quietly
-  // left out. #13 gave the kind no correction screen of its own; this is that
-  // gap said out loud rather than half-answered.
-  if (!item || item.kind === "fixed") return null;
+  if (!item) return null;
 
-  return readable(item, namesFrom(await readableCatalogueFor(space.id)), reader);
+  const named = namesFrom(await readableCatalogueFor(space.id));
+
+  return item.kind === "fixed"
+    ? readableFixedToCorrect(item, named, reader)
+    : readable(item, named, reader);
 }
 
 /**
@@ -393,6 +491,40 @@ function dueInWords(notice: DueNotice): string {
   }
 }
 
+/**
+ * A Fixed item as its correction screen shows it, which is a different set of
+ * words from `readableFixed` above.
+ *
+ * That one draws a row in the Fijos list: a name, a line beneath it and a due
+ * notice, all of them already sentences. This one fills in a form, so it
+ * carries the figures those sentences were made of -- the minor units the
+ * keypad counts in, the day the choice list is picked from, the Category
+ * identifier the chips select by.
+ */
+function readableFixedToCorrect(
+  item: FixedItem,
+  named: Naming,
+  reader: Reader,
+): ReadableBudgetItem {
+  const category = named.get(item.categoryId);
+
+  return {
+    kind: "fixed",
+    id: item.id,
+    month: item.month,
+    category: category?.name ?? item.categoryId,
+    heading: category?.heading ?? null,
+    amount: formatMoney(item.amount, reader.locales),
+    minorUnits: item.amount.amount,
+    categoryId: item.categoryId,
+    name: item.name,
+    // The last two characters of a `CalendarDate`, which is `YYYY-MM-DD` and
+    // is checked to be one before it is ever built (`isCalendarDate`).
+    dueDay: Number(item.dueOn.slice(8)),
+    paidBy: isPaid(item) ? (item.payment?.movementId ?? null) : null,
+  };
+}
+
 function readable(
   item: VariableItem,
   named: Naming,
@@ -401,6 +533,7 @@ function readable(
   const category = named.get(item.categoryId);
 
   return {
+    kind: "variable",
     id: item.id,
     month: item.month,
     // The identifier showing rather than a blank row, the way the month's

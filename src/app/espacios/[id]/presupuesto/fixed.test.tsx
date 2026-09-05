@@ -117,14 +117,50 @@ describe("the Fijos section", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
-    // A paid item has nothing left to do to it. A row that opened a sheet
-    // only to refuse would be a control that exists to say no.
-    it("offers nothing to do to an item that is already paid", () => {
+    // A paid item has nothing left to pay. A control that opened a sheet only
+    // to refuse would be a control that exists to say no.
+    it("offers nothing to pay on an item that is already paid", () => {
       render(section([item({ paid: true })]));
 
       expect(
         screen.queryByRole("button", { name: /Arriendo/ }),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("reaching the item itself", () => {
+    // Every row of the plan opens its item, the way a Variable row already
+    // did (#48). The pay tap is beside the row rather than instead of it: two
+    // things to do to one line, and a row that was only one of them left the
+    // other with nowhere to live.
+    it("opens the item behind every row", () => {
+      render(section([item()]));
+
+      expect(screen.getByRole("link", { name: /Arriendo/ })).toHaveAttribute(
+        "href",
+        "/espacios/space-casa/presupuesto/fixed-1",
+      );
+    });
+
+    // And the paid row most of all: it is the one with nothing else to do,
+    // and until now it was inert.
+    it("opens a paid item too", () => {
+      render(section([item({ paid: true })]));
+
+      expect(screen.getByRole("link", { name: /Arriendo/ })).toHaveAttribute(
+        "href",
+        "/espacios/space-casa/presupuesto/fixed-1",
+      );
+    });
+
+    // Marking paid keeps its own control, and it says what it does rather
+    // than reading as the state it would leave behind.
+    it("names the pay control by what tapping it does", () => {
+      render(section([item()]));
+
+      expect(
+        screen.getByRole("button", { name: "Marcar Arriendo como pagado" }),
+      ).toBeInTheDocument();
     });
   });
 });

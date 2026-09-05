@@ -254,32 +254,45 @@ export function monthsAround(inView: Month, today: Month): MonthsAround {
 }
 
 /**
- * The months either side of the one a plan is being read in — both of them,
- * always.
+ * Every month a plan can be opened on from the one being read: the twelve of
+ * the year it falls in, and the month either side of that year.
  *
- * The mirror image of `monthsAround`, and the difference is the whole point.
- * That one stops at the month being lived in because a Movement is money that
- * has already moved, so every month past this one is guaranteed empty. A
- * Budget is the opposite kind of thing: it is what a Space expects to spend,
- * the month after this one is exactly the month a person plans on the 28th,
- * and a plan screen that could not go forwards would be a plan screen you can
- * only use for the month you are already inside.
+ * A list and not two steps, which is the difference between choosing a month
+ * and walking to it: reaching March from September was six taps, and every one
+ * of them loaded a screen nobody wanted to look at (#40). All fourteen are one
+ * tap from the pill at the top of the screen.
  *
- * Backwards is unbounded for the same reason it is there: a Space has a first
- * month, this does not know which, and an empty plan behind you is an honest
- * answer to "what did I mean to spend in March".
+ * Forwards as well as back, which is the mirror image of `monthsAround` and is
+ * the whole point of the pair. That one stops at the month being lived in
+ * because a Movement is money that has already moved, so every month past this
+ * one is guaranteed empty. A Budget is the opposite kind of thing: it is what a
+ * Space expects to spend, and the month after this one is exactly the month a
+ * person plans on the 28th.
+ *
+ * The year is the unit because that is the unit a person reads a calendar in,
+ * and it is fixed by the month in view rather than centred on it: a window that
+ * slid as a thumb moved inside it would put March in a different place on every
+ * opening. The month either side of the year is there for the one case the year
+ * alone gets wrong — planning January on the 28th of December.
+ *
+ * The window is the trade, and it is worth naming: the walker this replaced
+ * reached backwards without a bound, and this does not. Nothing became
+ * unreachable — a month further off is a second opening of the pill, whose
+ * fourteen are then that year's — but the effort stopped being one tap per
+ * month and became roughly one opening per year, which is the point.
  */
-export function monthsToPlan(inView: Month): MonthsToPlan {
-  return { previous: previousMonth(inView), next: nextMonth(inView) };
-}
+export function monthsToPlan(inView: Month): readonly Month[] {
+  const year = Number(inView.slice(0, 4));
+  const january = month(`${year}-01`);
 
-/**
- * Where a screen reading one month's plan can go. Its own type and not
- * `MonthsAround`, because `next` is never nothing here — and a screen made to
- * check for a null that cannot happen is a screen carrying a branch nobody can
- * ever reach or test.
- */
-export type MonthsToPlan = { previous: Month; next: Month };
+  return [
+    previousMonth(january),
+    ...Array.from({ length: 12 }, (_, index) =>
+      month(`${year}-${String(index + 1).padStart(2, "0")}`),
+    ),
+    nextMonth(month(`${year}-12`)),
+  ];
+}
 
 /**
  * A month a given number of months away, which is only ever one either way.

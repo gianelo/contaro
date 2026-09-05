@@ -7,6 +7,7 @@ import {
   type BudgetItemAmendment,
   type BudgetItemDraft,
   type FixedItem,
+  type FixedItemAmendment,
   type FixedItemDraft,
 } from "@/domain/budget/budget";
 import type { CalendarDate } from "@/domain/calendar/month";
@@ -39,7 +40,22 @@ export type BudgetPorts = {
     itemId: string,
     changes: BudgetItemAmendment,
   ) => Promise<BudgetItem | null>;
-  remove: (spaceId: string, itemId: string) => Promise<boolean>;
+  /**
+   * The other kind's correction, and its own port for the reason `planFixed`
+   * is one: it writes back two more answers, and a port that took either set
+   * would be a port neither screen could be held to.
+   */
+  amendFixed: (
+    space: Space,
+    itemId: string,
+    changes: FixedItemAmendment,
+  ) => Promise<FixedItem | null>;
+  /**
+   * The Space and not its id, because taking an item off the plan is a rule
+   * about the item before it is a delete (#48), and the rule has to read the
+   * item to know whether it moved money.
+   */
+  remove: (space: Space, itemId: string) => Promise<boolean>;
   /**
    * The Movement a Fixed item's payment created, or nothing where there was no
    * pending item of that id to pay.
@@ -150,6 +166,27 @@ export async function handlePayFixedItem(
   });
 }
 
+/**
+ * A correction to a Fixed item, held to every rule the planning was held to.
+ *
+ * Its own handler beside the other kind's, and the two never merge: they ask
+ * different questions, write back different columns and reach different
+ * screens. What they share is this shape, which is the point of `inSpace`.
+ */
+export async function handleAmendFixedItem(
+  ports: BudgetPorts,
+  spaceId: string,
+  itemId: string,
+  changes: FixedItemAmendment,
+): Promise<Planned | Refusal> {
+  return inSpace(ports, spaceId, async (space) => {
+    const amended = await ports.amendFixed(space, itemId, changes);
+    return amended
+      ? { kind: "planned", item: amended }
+      : { kind: "no-such-item" };
+  });
+}
+
 /** A correction to an item, held to every rule the planning was held to. */
 export async function handleAmendBudgetItem(
   ports: BudgetPorts,
@@ -179,8 +216,8 @@ export async function handleRemoveBudgetItem(
   spaceId: string,
   itemId: string,
 ): Promise<Removed | Refusal> {
-  return inSpace(ports, spaceId, async () => {
-    const removed = await ports.remove(spaceId, itemId);
+  return inSpace(ports, spaceId, async (space) => {
+    const removed = await ports.remove(space, itemId);
     return removed ? { kind: "removed" } : { kind: "no-such-item" };
   });
 }

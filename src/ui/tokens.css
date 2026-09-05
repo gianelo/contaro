@@ -151,6 +151,12 @@
   --text-2xl: 21px;
   --text-3xl: 30px;
   --text-title: 32px;
+  /* What the month has cost, on the Budget screen's summary card (#40). It
+   * sits between --text-2xl and --text-3xl and is named for its use rather
+   * than wedged into the scale, the way --radius-card is: it is the one figure
+   * on a card that is the subject of the card, and the scale has no step there
+   * that anything else wants. */
+  --text-figure: 26px;
   --text-amount: 52px;
 
   --weight-regular: 400;

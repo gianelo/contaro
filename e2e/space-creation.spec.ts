@@ -25,9 +25,12 @@ test("a Member creates a Space and lands inside it", async ({
   await expect(page).toHaveURL(
     /\/espacios\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
   );
+  // It lands on the Budget screen, which names itself and says which Space it
+  // is showing on the line under the title (#40).
   await expect(
-    page.getByRole("heading", { name: "Casa", level: 1 }),
+    page.getByRole("heading", { name: "Presupuesto", level: 1 }),
   ).toBeVisible();
+  await expect(page.getByText(/^Casa · /)).toBeVisible();
 });
 
 test("the creation screen says the currency can never be changed", async ({
@@ -132,7 +135,7 @@ test.describe("a Member who reads numbers the Argentine way", () => {
     await page.getByRole("button", { name: "Crear el espacio" }).click();
 
     await expect(page.getByText("Peso colombiano (COP)")).toBeVisible();
-    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+    await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "COP 0",
     );
   });
@@ -153,7 +156,7 @@ test.describe("a Member who reads numbers the Argentine way", () => {
 
     // Nothing is recorded yet (#7), but the figure that is there is already
     // denominated in the Space's money and not in the reader's.
-    await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+    await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "US$ 0,00",
     );
   });

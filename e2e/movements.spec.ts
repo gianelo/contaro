@@ -326,7 +326,7 @@ test("what the month has cost is the sum of what was recorded", async ({
   // is the one figure the Budget tab has shown since #7, still adding up.
   await page.goto(`/espacios/${space.id}`);
   await expect(
-    page.getByRole("group", { name: "Este mes" }),
+    page.getByRole("region", { name: "Este mes" }),
   ).toContainText(/\$\s?1\.500,00/);
 });
 
@@ -441,7 +441,7 @@ test("a Member corrects an expense they got wrong", async ({
   );
   await page.goto(`/espacios/${space.id}`);
   await expect(
-    page.getByRole("group", { name: "Este mes" }),
+    page.getByRole("region", { name: "Este mes" }),
   ).toContainText(/\$\s?1\.284,00/);
 });
 
@@ -493,7 +493,7 @@ test("a Member deletes an expense, and is asked first", async ({
   // And it stops counting: a deleted expense that still moved the total would
   // be the worst of both.
   await page.goto(`/espacios/${space.id}`);
-  await expect(page.getByRole("group", { name: "Este mes" })).toContainText(
+  await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
     /\$\s?0,00/,
   );
 });
