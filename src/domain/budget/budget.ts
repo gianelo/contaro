@@ -54,11 +54,31 @@ type PlannedAmount = {
 export type VariableItem = PlannedAmount & { kind: "variable" };
 
 /**
+ * What paid a Fixed item: the Movement it created, and whether that Movement
+ * is still standing.
+ *
+ * Both halves and not the identifier alone, because a struck Movement counts
+ * towards no figure in the month (ADR-0015) while the pointer to it stays
+ * perfectly valid. Read as one value, "paid" cannot come apart from "and the
+ * money is still in the ledger" — which is the disagreement ADR-0031 exists
+ * to make unsayable.
+ *
+ * `struckAt` and not a boolean, because it is the column itself
+ * (`movements.struck_at`) rather than a reading of it, and a value read
+ * through is a value nothing has to keep in sync.
+ */
+export type Payment = {
+  movementId: string;
+  /** When the Movement was struck out, or nothing while it stands. */
+  struckAt: Date | null;
+};
+
+/**
  * A known amount on a known day, such as rent or a subscription.
  *
- * `movementId` is how "paid" is said, and it is deliberately the Movement
- * itself rather than a flag beside it. A boolean and a Movement are two facts
- * that have to agree, and two facts that have to agree are two facts that
+ * `payment` is how "paid" is said, and it is deliberately the Movement itself
+ * rather than a flag beside it. A boolean and a Movement are two facts that
+ * have to agree, and two facts that have to agree are two facts that
  * eventually will not — a `paid` left true by a half-finished write would show
  * a row as settled with no money anywhere in the ledger. Held this way, "paid"
  * and "there is a Movement for it" are one thing, and marking an item paid
@@ -78,8 +98,11 @@ export type FixedItem = PlannedAmount & {
    * to a month it is not on.
    */
   dueOn: CalendarDate;
-  /** The Movement marking it paid created, or null while it is pending. */
-  movementId: string | null;
+  /**
+   * The Movement that paid it, or nothing while it is pending. Read through
+   * rather than trusted: see `isPaid`.
+   */
+  payment: Payment | null;
 };
 
 /**
@@ -212,7 +235,7 @@ export const MAX_FIXED_ITEM_NAME_LENGTH = 60;
  * A Fixed item planned, held to every rule a Variable one is held to and to
  * the two more its shape asks for.
  *
- * It starts pending, because nothing has been paid: `movementId` is null and
+ * It starts pending, because nothing has been paid: `payment` is null and
  * there is no answer on the entry screen that could make it anything else.
  * Marking it paid is a separate act with its own confirmation (`paymentFor`),
  * which is the whole point of the kind — the money comes into existence when
@@ -234,18 +257,23 @@ export function planFixedItem(
     amount: amount(draft.amount, planning.space.currency),
     name: name(draft.name),
     dueOn: dueOn(month, draft.dueDay),
-    movementId: null,
+    payment: null,
   };
 }
 
 /**
  * Whether a Fixed item has been paid.
  *
- * One reading of `movementId` rather than a field, so nothing anywhere can
- * hold the answer separately from the Movement that is the answer.
+ * One reading of `payment` rather than a field, so nothing anywhere can hold
+ * the answer separately from the Movement that is the answer.
+ *
+ * A payment whose Movement was struck out is not a payment (ADR-0031). The
+ * plan reads through the pointer instead of caching what it once said, which
+ * is why striking a Movement can un-pay an item without writing a single row
+ * back into the plan.
  */
 export function isPaid(item: NewFixedItem | FixedItem): boolean {
-  return item.movementId !== null;
+  return item.payment !== null && item.payment.struckAt === null;
 }
 
 /** The Space a Fixed item is being paid in, and the day it is being paid on. */
@@ -275,7 +303,16 @@ export type Paying = {
  */
 export class FixedItemAlreadyPaidError extends Error {
   constructor(item: FixedItem) {
-    super(`${item.name} was already paid by Movement ${item.movementId}.`);
+    // Two ways to arrive and two truths to tell. `paymentFor` refuses an item
+    // it can see is paid, and names the Movement. `payFixedItemInSpace`
+    // throws for the tap that arrived between its read and its write, which
+    // read a *pending* item -- so it has no Movement to name, and saying
+    // "Movement undefined" would be worse than saying what happened.
+    super(
+      item.payment === null
+        ? `${item.name} was paid between reading it and marking it paid.`
+        : `${item.name} was already paid by Movement ${item.payment.movementId}.`,
+    );
     this.name = "FixedItemAlreadyPaidError";
   }
 }

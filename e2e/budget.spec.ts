@@ -337,6 +337,53 @@ test("a Member plans the rent and marks it paid", async ({
   await expect(fijos.getByRole("button", { name: /Arriendo/ })).toHaveCount(0);
 });
 
+test("a Member deletes the payment, and the rent goes back to pending", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Nico Anula", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+  await planFixed(page, space.id, "Arriendo", "180000000", "1");
+
+  const fijos = page.getByRole("group", { name: "Fijos" });
+  await fijos.getByRole("button", { name: /Arriendo/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Marcar pagado" }).click();
+  await expect(fijos).toContainText("Pagado");
+
+  // Strike out the Movement the payment created, from the ledger side --
+  // which is the only place a Member can reach it.
+  await page.goto(`/espacios/${space.id}/movimientos`);
+  await page.getByRole("link", { name: /Alquiler/ }).click();
+  await page.getByRole("button", { name: "Borrar el movimiento" }).click();
+  await page.getByRole("button", { name: "Sí, borralo" }).click();
+  // The redirect the strike lands on, waited for before navigating away:
+  // leaving early cancels the Action's own request mid-flight.
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  // The plan and the ledger say the same thing about the same money (#49):
+  // nothing was spent on the rent, so the rent is not paid.
+  await page.goto(`/espacios/${space.id}`);
+  await expect(fijos).toContainText("Pendiente");
+  await expect(fijos).not.toContainText("Pagado");
+
+  // Pending means payable: the row is a button again, and paying it is an
+  // ordinary payment rather than an undo.
+  await fijos.getByRole("button", { name: /Arriendo/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Marcar pagado" }).click();
+  await expect(fijos).toContainText("Pagado");
+
+  // One standing Movement and not two: the struck one is still an entry
+  // (ADR-0015) and counts towards nothing.
+  await page.goto(`/espacios/${space.id}/movimientos`);
+  await expect(
+    page.locator(
+      `a[href*="/espacios/${space.id}/movimientos/"]:not([href$="/nuevo"])`,
+    ),
+  ).toHaveCount(1);
+});
+
 /**
  * Which day of the month the run is standing in, in the zone the whole suite
  * is pinned to (`playwright.config.ts` fixes the browser and the header

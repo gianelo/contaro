@@ -19,6 +19,7 @@ import {
   planItem,
   UnplannableBudgetItemError,
   type FixedItem,
+  type Payment,
   type Planning,
   type VariableItem,
 } from "./budget";
@@ -117,8 +118,17 @@ const fixed = (changes: Partial<FixedItem> = {}): FixedItem => ({
   amount: money(180_000_00, "ARS"),
   name: "Arriendo",
   dueOn: calendarDate("2026-09-01"),
-  movementId: null,
+  payment: null,
   ...changes,
+});
+
+/** A Movement that paid a Fixed item and still stands. */
+const paidBy = (movementId: string): Payment => ({ movementId, struckAt: null });
+
+/** The same payment, after somebody struck its Movement out. */
+const struck = (movementId: string): Payment => ({
+  movementId,
+  struckAt: new Date("2026-09-19T14:00:00Z"),
 });
 
 describe("several items on one Category", () => {
@@ -263,7 +273,7 @@ describe("the pace of the month", () => {
   // its own Category -- one nothing was planned to spend evenly on.
   it("leaves the pace where it was when a Fixed item is paid", () => {
     const paid = paceOf(
-      [...variables, fixed({ movementId: "mov-arriendo" })],
+      [...variables, fixed({ payment: paidBy("mov-arriendo") })],
       [
         expense({ amount: money(1_520_000_00, "ARS") }),
         expense({
@@ -299,7 +309,7 @@ describe("the pace of the month", () => {
           fixed({
             categoryId: MATE.id,
             amount: money(89_000_00, "ARS"),
-            movementId: "mov-luz",
+            payment: paidBy("mov-luz"),
           }),
         ],
         [
@@ -334,7 +344,7 @@ describe("the pace of the month", () => {
           fixed({
             categoryId: SUPER.id,
             amount: money(200_000_00, "ARS"),
-            movementId: "mov-arriendo",
+            payment: paidBy("mov-arriendo"),
           }),
         ],
         [
@@ -773,7 +783,7 @@ describe("planning a Fixed item", () => {
       amount: money(180_000_00, "ARS"),
       name: "Arriendo",
       dueOn: calendarDate("2026-09-01"),
-      movementId: null,
+      payment: null,
     });
   });
 
@@ -842,8 +852,16 @@ describe("whether a Fixed item is paid", () => {
   // Paid is not a flag beside the Movement, it *is* the Movement. Two facts
   // that have to agree are two facts that eventually will not.
   it("is the Movement marking it paid created, and nothing else", () => {
-    expect(isPaid(fixed({ movementId: null }))).toBe(false);
-    expect(isPaid(fixed({ movementId: "mov-1" }))).toBe(true);
+    expect(isPaid(fixed({ payment: null }))).toBe(false);
+    expect(isPaid(fixed({ payment: paidBy("mov-1") }))).toBe(true);
+  });
+
+  // Striking a Movement out is a person saying that expense did not happen,
+  // and a struck Movement counts towards no figure in the month. An item
+  // still calling itself paid would have the plan and the ledger disagreeing
+  // about the same money.
+  it("goes back to pending once that Movement is struck out", () => {
+    expect(isPaid(fixed({ payment: struck("mov-1") }))).toBe(false);
   });
 });
 
@@ -879,9 +897,23 @@ describe("marking a Fixed item paid", () => {
   });
 
   it("refuses an item that is already paid", () => {
-    expect(() => paymentFor(fixed({ movementId: "mov-1" }), paying)).toThrow(
+    expect(() => paymentFor(fixed({ payment: paidBy("mov-1") }), paying)).toThrow(
       FixedItemAlreadyPaidError,
     );
+  });
+
+  // The plan reads through the pointer (ADR-0031), so nothing had to be
+  // written back for this to become payable again -- and paying it now is an
+  // ordinary payment creating an ordinary Movement, not an undo.
+  it("lets an item whose Movement was struck out be paid again", () => {
+    expect(paymentFor(fixed({ payment: struck("mov-1") }), paying)).toEqual({
+      spaceId: CASA.id,
+      direction: "expense",
+      categoryId: MATE.id,
+      amount: 180_000_00,
+      occurredOn: "2026-09-18",
+      attributedTo: null,
+    });
   });
 
   it("refuses an item planned in another Space", () => {
@@ -929,10 +961,10 @@ describe("a Fixed item falling due", () => {
   // line counting down to a day that no longer matters is noise.
   it("says nothing at all once it is paid", () => {
     expect(
-      dueNotice(fixed({ dueOn: on("17"), movementId: "mov-1" }), on("18")),
+      dueNotice(fixed({ dueOn: on("17"), payment: paidBy("mov-1") }), on("18")),
     ).toBeNull();
     expect(
-      dueNotice(fixed({ dueOn: on("19"), movementId: "mov-1" }), on("18")),
+      dueNotice(fixed({ dueOn: on("19"), payment: paidBy("mov-1") }), on("18")),
     ).toBeNull();
   });
 });

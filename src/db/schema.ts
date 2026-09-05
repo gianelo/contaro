@@ -429,6 +429,14 @@ export const budgetItems = pgTable(
      * Not cascaded, for the reason `category_id` is not: a Movement struck out
      * is still an entry (ADR-0015), and an item whose payment vanished from
      * under it would read as pending with the money still spent.
+     *
+     * Nor is it unset when that Movement is struck out. The plan reads through
+     * this column instead of caching what it said (ADR-0031): a read joins
+     * `movements` and asks whether the Movement it names still stands, so
+     * striking one writes to the ledger and never to a plan. Paying such an
+     * item again moves the pointer, which is what leaves this UNIQUE
+     * satisfiable -- the struck Movement stays in the ledger with nothing
+     * pointing at it.
      */
     movementId: uuid("movement_id")
       .references(() => movements.id)

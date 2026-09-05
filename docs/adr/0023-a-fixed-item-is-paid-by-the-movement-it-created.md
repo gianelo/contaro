@@ -4,7 +4,7 @@
 
 ## The decision
 
-An item is paid when it holds the Movement that paid it. `FixedItem.movementId` is null while it is pending, and `isPaid` is one reading of it.
+An item is paid when it holds the Movement that paid it. `FixedItem.payment` is null while it is pending, and `isPaid` is one reading of it. (It was `movementId` here; ADR-0031 made it the Movement *and* whether that Movement still stands, which is the same refusal to hold two facts that have to agree.)
 
 The obvious alternative is a `paid` boolean beside a Movement recorded separately. It is the same information written down twice, and two facts that have to agree are two facts that eventually will not: a half-finished write leaves a row saying "Pagado" with no money anywhere in the ledger, or an expense in the month with a plan still asking to be paid. Neither is recoverable by looking, because both halves look correct on their own.
 
@@ -63,6 +63,6 @@ The Fijos section sits above it, the way the canvas draws it. #40 moves the tota
 
 A Fixed item has no correction screen. `readableBudgetItem` refuses one outright and `amendItem` throws rather than letting the Variable item's correction through, because that form asks for a Category and an amount and nothing else — saving through it would strip the name, the day and the payment silently. The refusal makes it a gap somebody can see rather than a hole they fall into; the screen is its own ticket.
 
-Striking out a Fixed item's Movement leaves the item still saying "Pagado". The pointer stays honest (the Movement is an entry and not a gap, ADR-0015) but the plan and the ledger now disagree about whether the money moved. Nothing in #13 asks about this and nothing here answers it.
+Striking out a Fixed item's Movement left the item still saying "Pagado". The pointer stayed honest (the Movement is an entry and not a gap, ADR-0015) but the plan and the ledger disagreed about whether the money moved. Nothing in #13 asked about this and nothing here answered it; ADR-0031 does, and it is what `FixedItem.movementId` became a `payment` for.
 
 `kind` ships with a `DEFAULT 'variable'`, which is the expand half of an expand/contract (ADR-0008). Dropping it is the contraction and its own ticket, exactly as 0007 was to 0005.

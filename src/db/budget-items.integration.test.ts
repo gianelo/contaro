@@ -12,7 +12,7 @@ import { memberFromGoogle } from "./members";
 import { createSpaceForMember } from "./spaces";
 import { addCategoryToSpace, catalogueForSpace } from "./categories";
 import { expected } from "@/domain/budget/budget";
-import { movementsInMonth } from "./movements";
+import { movementsInMonth, strikeMovementInSpace } from "./movements";
 import {
   amendBudgetItemInSpace,
   budgetItemsInMonth,
@@ -193,7 +193,7 @@ it("plans a Fixed item and reads it back as one", async () => {
     amount: money(1_800_000_00, "ARS"),
     name: "Arriendo",
     dueOn: "2026-09-01",
-    movementId: null,
+    payment: null,
   });
 
   // Read back through the same query the screen reads through: the kind has
@@ -260,7 +260,79 @@ it("marks a Fixed item paid, which creates exactly one Movement", async () => {
   // And the item now says so, by holding the Movement rather than a flag.
   const paid = await findBudgetItemInSpace(db, space, item.id);
   expect(paid?.kind === "fixed" && isPaid(paid)).toBe(true);
-  expect(paid?.kind === "fixed" && paid.movementId).toBe(movement?.id);
+  expect(paid?.kind === "fixed" && paid.payment?.movementId).toBe(movement?.id);
+});
+
+/*
+ * The whole path #49 asks for: plan it, pay it, strike the payment out, and
+ * read the plan back. It is one test and not three because the disagreement
+ * it is about only exists between the halves -- each of them, asked on its
+ * own, has always been right.
+ */
+it("says a Fixed item is pending again once its Movement is struck out", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Anulando");
+  const item = await aFixedItem(space, categoryId);
+
+  const movement = await payFixedItemInSpace(
+    db,
+    { space, recordedBy: member.id, today: TODAY },
+    item.id,
+  );
+  if (!movement) throw new Error("The Fixed item was not paid.");
+
+  expect(
+    await strikeMovementInSpace(db, space.id, movement.id, member.id),
+  ).toBe(true);
+
+  // The ledger already agreed: a struck Movement counts towards nothing.
+  expect(await movementsInMonth(db, space, SEPTEMBER)).toHaveLength(0);
+
+  // And now the plan says the same thing, in both of the ways it is read.
+  const read = await findBudgetItemInSpace(db, space, item.id);
+  expect(read?.kind === "fixed" && isPaid(read)).toBe(false);
+
+  const [listed] = await budgetItemsInMonth(db, space, SEPTEMBER);
+  expect(listed?.kind === "fixed" && isPaid(listed)).toBe(false);
+
+  // Including the read the Space list is drawn from (#38), which is a third
+  // query and would have been a third place for the two halves to disagree.
+  const [across] = await budgetItemsInMonthForSpaces(db, [space], SEPTEMBER)
+    .then((plans) => plans.get(space.id) ?? []);
+  expect(across?.kind === "fixed" && isPaid(across)).toBe(false);
+
+  // The pointer itself is untouched: striking a Movement writes to the
+  // ledger and never to a plan (ADR-0031).
+  expect(read?.kind === "fixed" && read.payment?.movementId).toBe(movement.id);
+});
+
+it("lets a Fixed item whose payment was struck out be paid again", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("De nuevo");
+  const item = await aFixedItem(space, categoryId);
+  const recorder = { space, recordedBy: member.id, today: TODAY };
+
+  const first = await payFixedItemInSpace(db, recorder, item.id);
+  if (!first) throw new Error("The Fixed item was not paid.");
+  await strikeMovementInSpace(db, space.id, first.id, member.id);
+
+  const second = await payFixedItemInSpace(db, recorder, item.id);
+
+  // A payment and not an undo: an ordinary second Movement, and the struck
+  // first one still in the ledger with nothing pointing at it any more.
+  expect(second?.id).not.toBe(first.id);
+  expect(await movementsInMonth(db, space, SEPTEMBER)).toHaveLength(1);
+
+  // The pointer moved rather than doubled, which is what keeps
+  // `budget_items_movement_pays_one_item` satisfiable at all.
+  const paid = await findBudgetItemInSpace(db, space, item.id);
+  expect(paid?.kind === "fixed" && isPaid(paid)).toBe(true);
+  expect(paid?.kind === "fixed" && paid.payment?.movementId).toBe(second?.id);
+
+  // And it is settled again: a third tap is refused exactly as a second one
+  // on a standing payment is.
+  await expect(payFixedItemInSpace(db, recorder, item.id)).rejects.toThrow(
+    FixedItemAlreadyPaidError,
+  );
+  expect(await movementsInMonth(db, space, SEPTEMBER)).toHaveLength(1);
 });
 
 it("creates no second Movement when an item is marked paid twice", async () => {
