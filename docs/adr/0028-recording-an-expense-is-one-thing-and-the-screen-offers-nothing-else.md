@@ -66,4 +66,6 @@ Six numbers are read off `design/Main.dc.html` and kept as literals for the reas
 
 `next build` type-checks the end-to-end suite and `tsc --noEmit` does not, so a helper whose callback returned `Promise<string[]>` where `Promise<void>` was declared passed `pnpm verify` and failed the build.
 
+The order down the screen was left alone, on the ticket's own word that it "is already right". That word contradicts the artboard the same ticket points at, and the canvas is what was designed: #52 is the correction, and it has to split `Keypad` to get there, because the figure and the keys are one component and the canvas puts three blocks between them.
+
 One more thing a weak assertion was hiding: a test that only checked `toHaveBeenCalled()` on the day picker passed while `userEvent.type` composed nothing at all. A `type="date"` input takes a whole date at once, and typing into a controlled one whose parent is a mock types against a value that never moves.
