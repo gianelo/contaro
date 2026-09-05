@@ -92,6 +92,56 @@ describe("the keypad on the screen", () => {
     }
   });
 
+  describe("the figure a person watches themselves type", () => {
+    it("writes the symbol and the digits as two things, not one string", () => {
+      // The canvas sets the symbol quiet and small and the digits loud: what a
+      // person is watching is the number, and the symbol only says which money
+      // it is. One string cannot be set at two sizes.
+      render(
+        <Keypad value={128_400} currency="ARS" locales={["es-AR"]} onChange={vi.fn()} />,
+      );
+
+      expect(screen.getByText("$")).toBeInTheDocument();
+      expect(screen.getByText("1.284,00")).toBeInTheDocument();
+    });
+
+    it("shows a bare nought before anything is typed", () => {
+      // Not "$0,00". Nothing has been typed, so there is no amount yet to
+      // write out to the currency's decimals -- a formatted nothing reads as
+      // an amount somebody chose.
+      render(
+        <Keypad value={0} currency="ARS" locales={["es-AR"]} onChange={vi.fn()} />,
+      );
+
+      expect(screen.getByRole("status")).toHaveTextContent(/^\$\s*0$/);
+    });
+
+    it("names the money underneath, and does not announce it on every key", () => {
+      // Outside the live region on purpose: the currency cannot change while
+      // somebody types, and a screen reader repeating "ARS" after every press
+      // is reading out the one thing that did not.
+      render(
+        <Keypad value={128_400} currency="ARS" locales={["es-AR"]} onChange={vi.fn()} />,
+      );
+      const currency = screen.getByText("ARS");
+
+      expect(currency).toBeInTheDocument();
+      expect(screen.getByRole("status")).not.toContainElement(currency);
+    });
+  });
+
+  it("draws the erase key rather than spelling it in a glyph", () => {
+    // The canvas draws the backspace icon. The glyph it replaces is a
+    // character a font may or may not have.
+    const { container } = render(
+      <Keypad value={127} currency="ARS" locales={["es-AR"]} onChange={vi.fn()} />,
+    );
+    const erase = screen.getByRole("button", { name: "Borrar el último número" });
+
+    expect(erase.querySelector("svg")).toBeInTheDocument();
+    expect(container).not.toHaveTextContent("⌫");
+  });
+
   it("gives every key a touch target a thumb can hit", () => {
     render(<Keypad value={0} currency="ARS" locales={["es-AR"]} onChange={vi.fn()} />);
 

@@ -15,8 +15,22 @@
 }
 
 .button:disabled {
-  opacity: 0.4;
   cursor: default;
+}
+
+/*
+ * Filled with grey rather than faded to 40%. A faded accent reads as
+ * "loading", because that is what a half-opacity control means everywhere
+ * else; a solid grey reads as "not yet", which is what it is.
+ *
+ * Only the two variants that have a ground to replace. A `plain` button is
+ * text on nothing, and filling it would turn a dead link into a grey block --
+ * louder disabled than it ever was alive.
+ */
+.primary:disabled,
+.destructive:disabled {
+  background: var(--color-disabled-surface);
+  color: var(--color-on-disabled);
 }
 
 .primary {
@@ -44,4 +58,9 @@
 
 .plain:active:not(:disabled) {
   color: var(--color-accent-pressed);
+}
+
+/* Nothing to fill, so it goes quiet instead. */
+.plain:disabled {
+  color: var(--color-disabled);
 }

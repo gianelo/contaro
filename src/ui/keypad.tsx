@@ -1,12 +1,13 @@
 "use client";
 
 import type { CurrencyCode } from "@/domain/money/currency";
-import { formatMoney, money } from "@/domain/money/money";
+import { moneyParts, money } from "@/domain/money/money";
 import { MAX_MOVEMENT_AMOUNT } from "@/domain/movement/movement";
 import { t } from "@/i18n";
 import styles from "./keypad.module.css";
 import { cx } from "./cx";
 import { hitTarget } from "./hit-target";
+import { Icon } from "./icon";
 
 /**
  * The keys, in the order a thumb finds them: a phone's dialling pad, with the
@@ -51,27 +52,52 @@ export type KeypadProps = {
   onChange: (amount: number) => void;
 };
 
+/** What the canvas draws the erase key's icon at. */
+const ERASE_SIZE = 27;
+
 /**
  * The amount, and the keys that build it.
  *
- * The figure above the keys is the same `formatMoney` the month's list uses,
- * so what a person watches themselves type is character for character what
- * they will read back afterwards. A keypad that showed a raw number would be
- * a keypad whose result is a small surprise.
+ * The figure above the keys is cut from the same formatting the month's list
+ * uses, so what a person watches themselves type is character for character
+ * what they will read back afterwards. A keypad that showed a raw number would
+ * be a keypad whose result is a small surprise.
+ *
+ * It is set at two sizes because the two halves are not equally interesting:
+ * the digits are what somebody is watching appear, and the symbol only says
+ * which money they are. Both still come from one `moneyParts`, so neither can
+ * drift from the other or from the list (ADR-0007, ADR-0014).
  */
 export function Keypad({ value, currency, locales, onChange }: KeypadProps) {
+  const { symbol, amount } = moneyParts(money(value, currency), locales);
+
   return (
     <div className={styles.keypad}>
-      <p
+      <div className={styles.readout}>
+        <p
         // Announced as it changes, so the amount is followed by a person who
         // cannot see it — which on a keypad with no text field is the only way
         // to know what has been typed.
         role="status"
         aria-live="polite"
-        className={cx(styles.amount, value === 0 && styles.empty)}
+        className={cx(styles.figure, value === 0 && styles.empty)}
       >
-        {formatMoney(money(value, currency), locales)}
+        <span className={styles.symbol}>{symbol}</span>
+        {/*
+          A bare nought until something is typed, and not the currency's
+          decimals: nothing has been chosen yet, and "$0,00" reads as an amount
+          somebody meant rather than as a field waiting.
+        */}
+        <span className={styles.amount}>{value === 0 ? "0" : amount}</span>
       </p>
+
+      {/*
+        Outside the live region: the currency cannot change while somebody is
+        typing, so announcing it after every press would read out the one thing
+        that did not.
+      */}
+        <p className={styles.currency}>{currency}</p>
+      </div>
 
       <div className={styles.keys} role="group" aria-label={t("movements.keypad")}>
         {KEYS.map((key) => (
@@ -89,9 +115,11 @@ export function Keypad({ value, currency, locales, onChange }: KeypadProps) {
           type="button"
           aria-label={t("movements.keypad.erase")}
           onClick={() => onChange(nextAmount(value, "erase"))}
-          className={cx(hitTarget, styles.key, styles.erase)}
+          className={cx(hitTarget, styles.key)}
         >
-          <span aria-hidden="true">⌫</span>
+          {/* Unlabelled: the name is on the button, and an icon that named
+              itself too would have the key read out twice. */}
+          <Icon name="backspace" size={ERASE_SIZE} />
         </button>
       </div>
     </div>

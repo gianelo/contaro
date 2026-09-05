@@ -11,7 +11,9 @@
   font-weight: var(--weight-semibold);
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: var(--color-text-secondary);
+  /* One step quieter than the secondary ink: a section label is a signpost
+     over the thing it names, never something competing with it. */
+  color: var(--color-text-tertiary);
 }
 
 .chips {

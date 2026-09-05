@@ -1,0 +1,68 @@
+/*
+ * The track the two halves sit in. Its 2px of padding is what lets a chosen
+ * half read as raised out of the groove rather than painted onto it.
+ */
+.track {
+  display: flex;
+  background: var(--color-fill);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1);
+  gap: var(--space-1);
+}
+
+.half {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /*
+   * The canvas draws each half 40px tall, which would leave a 44px track. It
+   * is 44px here instead, so the track comes out 48px: `hitTarget` is the
+   * rule this repo measures in a real browser, and four pixels of a control
+   * nobody can mis-tap is the better half of that trade.
+   */
+  /* 7px, which is the canvas's: a corner inside a 9px corner, so the thumb
+     sits in the groove rather than filling it to the edge. */
+  border-radius: 7px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+/*
+ * Invisible and exactly the size of its half, for the reasons written out in
+ * chip-field.module.css: `display: none` would cost the keyboard, and a
+ * clipped pixel would leave the thing that takes the tap smaller than the
+ * thing a thumb aims at.
+ */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  appearance: none;
+  cursor: pointer;
+}
+
+/*
+ * The thumb. Not the accent, because it is not a button being pressed: it is
+ * the half that is already true, lifted off the groove.
+ *
+ * Its own token and not --color-surface, which is what this was: in dark that
+ * resolves to the same #1c1c1e as the track, and --shadow-raised is none
+ * there, so the chosen half was invisible in the dark palette.
+ */
+.chosen {
+  background: var(--color-segment-thumb);
+  color: var(--color-text);
+  box-shadow: var(--shadow-raised);
+}
+
+.half:has(.input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

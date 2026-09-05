@@ -5,14 +5,11 @@ import { isCalendarDate, type CalendarDate } from "@/domain/calendar/month";
 import type { CurrencyCode } from "@/domain/money/currency";
 import type { MovementDirection } from "@/domain/movement/movement";
 import { t } from "@/i18n";
-import { dayLabel } from "@/i18n/day";
 import { Button } from "@/ui/button";
 import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
-import { ChipField } from "@/ui/chip-field";
-import { SelectField, TextField } from "@/ui/field";
+import { SegmentedField } from "@/ui/segmented-field";
 import { Keypad } from "@/ui/keypad";
-import { cx } from "@/ui/cx";
-import { hitTarget } from "@/ui/hit-target";
+import { When } from "./when";
 import { nothingWrongYet, type MovementFormState } from "./record";
 import styles from "./form.module.css";
 
@@ -177,10 +174,10 @@ export function MovementForm({
       {correcting ? (
         <input type="hidden" name="direction" value={direction} />
       ) : (
-        <ChipField
+        <SegmentedField
           name="direction"
           legend={t("movements.direction")}
-          chips={[
+          options={[
             { value: "expense", label: t("movements.direction.expense") },
             { value: "income", label: t("movements.direction.income") },
           ]}
@@ -192,46 +189,14 @@ export function MovementForm({
         />
       )}
 
-      <details className={styles.when}>
-        {/* Composes the one class that owns the 44px, rather than
-            restating the rule here: see src/ui/hit-target.ts. */}
-        <summary className={cx(hitTarget, styles.summary)}>
-          <span className={styles.said}>
-            {t("movements.when", {
-              day: readableDay(day, today),
-              member: attributedTo?.label ?? "",
-            })}
-          </span>
-          <span className={styles.change}>{t("movements.change")}</span>
-        </summary>
-
-        <div className={styles.changes}>
-          <TextField
-            type="date"
-            name="occurredOn"
-            label={t("movements.day")}
-            value={day}
-            onChange={(event) => setChosenDay(event.target.value)}
-            required
-          />
-
-          {/*
-            Offered only where there is somebody else to choose. In a personal
-            Space the question has one answer, and asking it is asking nothing.
-            The field is absent rather than disabled, so the form carries no
-            attribution at all and `recordMovement` fills in the recorder.
-          */}
-          {members.length > 1 ? (
-            <SelectField
-              name="attributedTo"
-              label={t("movements.attributedTo")}
-              choices={members}
-              value={attributedTo?.value}
-              onChange={(event) => setChosenMember(event.target.value)}
-            />
-          ) : null}
-        </div>
-      </details>
+      <When
+        day={day}
+        today={today}
+        members={members}
+        attributedTo={attributedTo}
+        onDayChange={setChosenDay}
+        onMemberChange={setChosenMember}
+      />
 
       {/*
         Absent and not disabled when the money is coming in, so the form
@@ -296,8 +261,3 @@ function browserDay(): CalendarDate | null {
 }
 
 const pad = (value: number) => String(value).padStart(2, "0");
-
-/** Whatever the date field currently holds, named the way a person says it. */
-function readableDay(day: string, today: CalendarDate): string {
-  return isCalendarDate(day) ? dayLabel(day, today) : day;
-}

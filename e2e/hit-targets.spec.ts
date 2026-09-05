@@ -128,9 +128,10 @@ test("every target on the screen an expense is recorded on is at least 44px", as
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
 
-  // Opened, so the day field is measured as well as the line that folds it
-  // away. Everything on this screen is hit with one thumb at a till.
-  await page.getByText("Cambiar").click();
+  // Opened, so the sheet that changes the day is measured as well as the line
+  // that states it. Everything on this screen is hit with one thumb at a till.
+  await page.getByRole("button", { name: "Cambiar cuándo y de quién" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
 
   const { undersized } = await undersizedTargets(page);
 

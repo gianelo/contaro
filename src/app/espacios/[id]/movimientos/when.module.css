@@ -1,0 +1,50 @@
+/*
+ * One quiet line rather than a card: it states two answers that are already
+ * right, so it should read as something already settled and not as a control
+ * waiting to be used.
+ */
+.when {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--color-fill);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  /* Takes the room, so Cambiar is pushed to the far end where a thumb
+     reaching to change something already is. */
+  flex-grow: 1;
+  font-size: var(--text-base);
+}
+
+.dot {
+  color: var(--color-disabled);
+}
+
+/*
+ * The negative margin is the point: the line is 40px tall and this has to be a
+ * 44px target inside it, so it grows past the pill's padding rather than
+ * making the pill taller than the canvas draws it.
+ */
+.change {
+  border: none;
+  background: none;
+  padding: var(--space-6) var(--space-1);
+  margin-block: calc(var(--space-6) * -1);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}

@@ -173,9 +173,10 @@ export const es = {
 
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",
+  "movements.shared": "Compartido con {member}",
   "movements.direction": "Qué anotás",
-  "movements.direction.expense": "Un gasto",
-  "movements.direction.income": "Un ingreso",
+  "movements.direction.expense": "Gasto",
+  "movements.direction.income": "Ingreso",
   // What an income row is called on the month's list. It carries no Category
   // (#8), so this is the whole of its name.
   "movements.income": "Ingreso",
@@ -191,9 +192,10 @@ export const es = {
   "movements.keypad.erase": "Borrar el último número",
   "movements.category": "Categoría",
   "movements.category.none": "Elegí una categoría",
-  "movements.when": "{day} · {member}",
   "movements.when.today": "Hoy",
   "movements.change": "Cambiar",
+  "movements.when.title": "Cuándo y de quién",
+  "movements.when.change": "Cambiar cuándo y de quién",
   "movements.day": "Día",
   "movements.attributedTo": "Es plata de",
   "movements.recordedBy": "Anotado por {member}",
@@ -319,6 +321,7 @@ export const es = {
   "account.signOut": "Salir",
 
   "action.cancel": "Cancelar",
+  "action.done": "Listo",
   "action.save": "Guardar",
   "action.dismiss": "Descartar",
 

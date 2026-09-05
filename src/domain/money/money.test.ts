@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatMoney, money, zero } from "./money";
+import { formatAmount, formatMoney, money, moneyParts, zero } from "./money";
 
 /**
  * Intl separates the symbol from the digits with a non-breaking space, which
@@ -105,5 +105,44 @@ describe("the half of a figure that carries no symbol", () => {
 
   it("is written the way its reader reads numbers, as every amount is", () => {
     expect(formatAmount(money(400_000_00, "ARS"), "en-US")).toBe("400,000.00");
+  });
+});
+
+/**
+ * The entry screen writes one figure at two sizes: the symbol quiet, the
+ * digits loud (#37). That is still one figure carrying its symbol, which is
+ * what ADR-0007 asks of anything a person reads -- but only if the two halves
+ * are cut from the same formatting.
+ */
+describe("a figure split into the symbol and the digits", () => {
+  it("hands back both halves of what formatMoney writes whole", () => {
+    const { symbol, amount } = moneyParts(money(1_284_00, "ARS"), "es-AR");
+
+    expect(symbol).toBe("$");
+    expect(amount).toBe("1.284,00");
+  });
+
+  it("cuts both halves from one formatting, so they cannot disagree", () => {
+    // The separators are the reader's and the decimals are the currency's. Two
+    // calls could drift apart on either; one call cannot.
+    const whole = formatMoney(money(1_284_00, "ARS"), "en-US");
+    const { symbol, amount } = moneyParts(money(1_284_00, "ARS"), "en-US");
+
+    expect(whole).toContain(symbol);
+    expect(whole).toContain(amount);
+  });
+
+  it("gives a currency with no minor units none in either half", () => {
+    const { symbol, amount } = moneyParts(money(400_000, "CLP"), "es-CL");
+
+    expect(symbol).toBe("$");
+    expect(amount).toBe("400.000");
+  });
+
+  it("says which money it is even where the symbol is more than a sign", () => {
+    // A reader whose own money is also written "$" is told whose this is.
+    const { symbol } = moneyParts(money(1_284_00, "COP"), "en-US");
+
+    expect(symbol).toBe("COP");
   });
 });
