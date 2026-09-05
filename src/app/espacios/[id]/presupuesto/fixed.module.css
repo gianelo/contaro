@@ -21,12 +21,24 @@
   color: var(--color-warning);
 }
 
-/* The amount over its badge, at the end of the row. */
-.end {
+/*
+ * The tap that marks an item paid, wearing its badge. A bare button around the
+ * badge and nothing more: what it looks like is the badge's business, and the
+ * touch target is the row's height, which the list already sets.
+ */
+.pay {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-6) 0 var(--space-6) var(--space-5);
+  font-family: inherit;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.pay:active {
+  opacity: 0.6;
 }
 
 .amount {

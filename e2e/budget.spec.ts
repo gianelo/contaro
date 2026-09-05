@@ -410,9 +410,11 @@ test("a Member plans the rent and marks it paid", async ({
   await expect(rows.first()).toContainText("Alquiler");
   await expect(rows.first()).toContainText("$ 1.800.000,00");
 
-  // And the row has nothing left to do to it: a paid item is not a button.
+  // And the row has nothing left to pay: a paid item keeps the link that
+  // opens it and loses the control that would pay it again.
   await page.goto(`/espacios/${space.id}`);
   await expect(fijos.getByRole("button", { name: /Arriendo/ })).toHaveCount(0);
+  await expect(fijos.getByRole("link", { name: /Arriendo/ })).toHaveCount(1);
 });
 
 test("a Member deletes the payment, and the rent goes back to pending", async ({
@@ -460,6 +462,83 @@ test("a Member deletes the payment, and the rent goes back to pending", async ({
       `a[href*="/espacios/${space.id}/movimientos/"]:not([href$="/nuevo"])`,
     ),
   ).toHaveCount(1);
+});
+
+/*
+ * The whole of #48 in one journey, because the parts of it only mean anything
+ * against each other: a Fixed item is corrected, then paid, and then it is
+ * neither correctable nor removable until the Movement that paid it is gone.
+ */
+test("a Member corrects the rent, and cannot while it is paid", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Ana Corrige", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+  await planFixed(page, space.id, "Arriendo", "180000000", "1");
+
+  const fijos = page.getByRole("group", { name: "Fijos" });
+
+  // The row opens the item, the way a Variable row already did.
+  await fijos.getByRole("link", { name: /Arriendo/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Corregir el fijo" }),
+  ).toBeVisible();
+
+  // All four questions, opened on the answers the item already has. The
+  // keypad opens on its amount, so a correction is typed over it: 1.800.000
+  // loses a digit and becomes 180.000.
+  await page.getByRole("button", { name: "Borrar el último número" }).click();
+  await page.getByLabel("Cómo se llama").fill("Arriendo y expensas");
+  await page.getByLabel("Qué día del mes vence").selectOption("5");
+  await page.getByRole("button", { name: "Cambiar" }).click();
+  await categorise(page, "Comida", "Supermercado");
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/espacios/${space.id}\\?mes=`));
+  await expect(fijos).toContainText("Arriendo y expensas");
+  await expect(fijos).toContainText("$ 180.000,00");
+  await expect(fijos).toContainText("Supermercado · 5");
+
+  // Now pay it, which puts the figure in the ledger.
+  await fijos.getByRole("button", { name: /Arriendo/ }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Marcar pagado" })
+    .click();
+  await expect(fijos).toContainText("Pagado");
+
+  // And the item stops being correctable. Not a form that refuses on save --
+  // no form at all, and the one thing that undoes it named as somewhere to go
+  // (ADR-0034).
+  await fijos.getByRole("link", { name: /Arriendo/ }).click();
+  await expect(page.getByText("Este ítem ya está pagado")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guardar" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Sacar del plan" }),
+  ).toHaveCount(0);
+
+  // Follow it to the Movement and strike that out, which is the way back.
+  await page.getByRole("link", { name: "Ver el movimiento" }).click();
+  await page.getByRole("button", { name: "Borrar el movimiento" }).click();
+  await page.getByRole("button", { name: "Sí, borralo" }).click();
+  // The redirect the strike lands on, waited for before navigating away:
+  // leaving early cancels the Action's own request mid-flight.
+  await expect(page).toHaveURL(/\/movimientos\?mes=/);
+
+  // Pending again, and correctable again -- which is the same rule read from
+  // the other side.
+  await page.goto(`/espacios/${space.id}`);
+  await expect(fijos).toContainText("Pendiente");
+
+  await fijos.getByRole("link", { name: /Arriendo/ }).click();
+  await page.getByRole("button", { name: "Sacar del plan" }).click();
+
+  // The section goes with its last item, and the struck Movement stays in the
+  // ledger as an entry (ADR-0015): a plan being tidied takes nothing with it.
+  await expect(fijos).toHaveCount(0);
 });
 
 /**

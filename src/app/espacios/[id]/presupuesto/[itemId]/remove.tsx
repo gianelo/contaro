@@ -17,6 +17,11 @@ import styles from "./remove.module.css";
  * it, and the way back is to plan it again in two taps. A sheet in front of
  * that is a sheet a person learns to dismiss without reading, which is how a
  * confirmation stops protecting the one that matters.
+ *
+ * Which stays true for a Fixed item, because the one that did move money never
+ * gets here: `unplan` refuses a paid item outright and the screen above shows
+ * it no controls at all (ADR-0034). What this removes is always a line nothing
+ * was measured against.
  */
 export function RemoveBudgetItem({
   spaceId,

@@ -141,6 +141,16 @@ export const es = {
   "budget.item.remove": "Sacar del plan",
   "budget.item.remove.working": "Sacando\u2026",
 
+  "budget.fixed.edit.title": "Corregir el fijo",
+  // Why the four questions are not on the screen, and what to do about it. The
+  // way out is named as a place to go and not only as an instruction: a
+  // sentence telling somebody to undo something they cannot reach from here is
+  // a dead end with good manners.
+  "budget.fixed.paid.title": "Este \u00edtem ya est\u00e1 pagado",
+  "budget.fixed.paid.body":
+    "Para corregirlo o sacarlo del plan, primero anul\u00e1 el movimiento que lo pag\u00f3.",
+  "budget.fixed.paid.movement": "Ver el movimiento",
+
   // The other half of a Budget (#13): the amounts whose day and figure are
   // known in advance. Above the Variables, the way the canvas draws them, and
   // named for the kind of item rather than for the grouping. `GroupedList`
@@ -185,6 +195,7 @@ export const es = {
   "budget.fixed.pay.recordedBy": "Registrado por",
   "budget.fixed.pay.attributedTo": "Atribuido a",
   "budget.fixed.pay.working": "Marcando\u2026",
+  "budget.fixed.pay.row": "Marcar {name} como pagado",
 
   "budget.error.amount": "Pon\u00e9 un monto mayor que cero.",
   "budget.error.category": "Eleg\u00ed una categor\u00eda de este espacio.",

@@ -35,8 +35,34 @@
   border: none;
 }
 
-.item:not(:last-child) .row {
+/*
+ * On the item and not on the row, because a row with something beside it does
+ * not span the line: the separator belongs to the line, which is the item.
+ */
+.item:not(:last-child) {
   border-bottom: 1px solid var(--color-separator);
+}
+
+/*
+ * The row takes what is left once whatever is beside it has been laid out, so
+ * a name too long for the line still truncates against the right control
+ * rather than under it.
+ */
+.item {
+  display: flex;
+  align-items: center;
+}
+
+.item > :first-child {
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.beside {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-right: var(--space-7);
 }
 
 .actionable {

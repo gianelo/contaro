@@ -1,15 +1,19 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
+  amendFixedItem,
   amendItem,
   FixedItemAlreadyPaidError,
   paymentFor,
   planFixedItem,
   planItem,
+  unplan,
   type BudgetItem,
   type BudgetItemAmendment,
   type BudgetItemDraft,
   type FixedItem,
+  type FixedItemAmendment,
   type FixedItemDraft,
+  type Payment,
   type Planning,
 } from "@/domain/budget/budget";
 import { isCalendarDate, isMonth, type Month } from "@/domain/calendar/month";
@@ -29,10 +33,11 @@ type Database = Queries;
  * Exactly the columns of `budget_items` a domain `BudgetItem` is made of.
  *
  * Only this table, because this is also what the writes below hand to
- * RETURNING, and RETURNING cannot name a column of another one. A row that
- * has just been written is never paid -- an insert leaves `movement_id` null
- * and a correction is refused on the kind that carries one -- so a write
- * reads its own row back through `asPending`.
+ * RETURNING, and RETURNING cannot name a column of another one. So a write
+ * says for itself what the ledger would have said: the inserts and the
+ * Variable correction through `asPending`, because none of the three can be
+ * looking at a paid row; the Fixed correction by carrying the `struck_at` its
+ * own read returned a moment earlier.
  */
 const budgetItemColumns = {
   id: budgetItems.id,
@@ -75,17 +80,21 @@ type BudgetItemRow = {
 };
 
 /**
- * A row a write just returned, which is never a paid one.
+ * A row a write just returned that cannot be a paid one, so there is no
+ * Movement here to ask the ledger about.
  *
- * An insert writes `movement_id` null and `amendItem` refuses the only kind
- * that can carry one, so there is no Movement here to ask the ledger about.
- * Said once rather than at each of the three call sites, so that stops being
- * true in one place if it ever does.
+ * Three of the four writes: the two inserts, which leave `movement_id` null,
+ * and `amendBudgetItemInSpace`, because `amendItem` refuses the one kind that
+ * can carry a payment. Not the fourth. `amendFixedItemInSpace` (#48) corrects
+ * a row that may carry a *struck* payment, and one read back through here
+ * would come out as a `movement_id` with no `struck_at` -- which is exactly
+ * how a paid item reads. It says its own `struck_at` at the call site instead.
  */
 const asPending = (row: Omit<BudgetItemRow, "paymentStruckAt">) => ({
   ...row,
   paymentStruckAt: null,
 });
+
 
 /**
  * Plans one Variable item, if the Space can hold it.
@@ -274,6 +283,76 @@ export async function amendBudgetItemInSpace(
 }
 
 /**
+ * Corrects a Fixed item, or answers that this Space has no such item.
+ *
+ * Its own function beside `amendBudgetItemInSpace` and not a branch inside it,
+ * because it is a different set of questions written back: the two kinds are
+ * planned by two functions for the same reason (#48). A Variable item reads as
+ * no item at all from here, the way one of another Space does -- the two
+ * screens are two doors, and each only opens on what it was built to ask.
+ *
+ * The payment is never in the SET. It is in the WHERE instead, and that is the
+ * whole guard: `amendFixedItem` throws on an item it can see is paid, and the
+ * compare-and-swap below catches the payment that lands between that read and
+ * this write. Same shape as `payFixedItemInSpace`, and for the same reason --
+ * whoever moved the pointer in between wins, and the loser is told it is paid.
+ */
+export async function amendFixedItemInSpace(
+  db: Database,
+  space: Space,
+  itemId: string,
+  changes: FixedItemAmendment,
+): Promise<FixedItem | null> {
+  const existing = await findBudgetItemInSpace(db, space, itemId);
+  if (!existing || existing.kind !== "fixed") return null;
+
+  const corrected = amendFixedItem(existing, changes, await asPlanning(db, space));
+
+  const [updated] = await db
+    .update(budgetItems)
+    .set({
+      categoryId: corrected.categoryId,
+      amount: corrected.amount.amount,
+      name: corrected.name,
+      dueOn: corrected.dueOn,
+    })
+    .where(
+      and(
+        eq(budgetItems.id, itemId),
+        eq(budgetItems.spaceId, space.id),
+        paymentIsStill(existing.payment),
+      ),
+    )
+    .returning(budgetItemColumns);
+
+  if (!updated) throw new FixedItemAlreadyPaidError(existing);
+
+  // The `struck_at` the read above returned, and not a join this RETURNING
+  // cannot make. It is still the answer: a correction never touches
+  // `movement_id` -- refused outright while the payment stands, and a struck
+  // one kept rather than cleared (ADR-0034) -- and the WHERE is what makes
+  // "the read above" mean a row nobody moved in between.
+  return asFixedItem(
+    { ...updated, paymentStruckAt: existing.payment?.struckAt ?? null },
+    space,
+  );
+}
+
+/**
+ * The payment a read just saw, said as a condition a write can carry.
+ *
+ * Never paid, or paid by the one Movement that was already there. Written
+ * once because `payFixedItemInSpace`, the correction and the removal all need
+ * the same thing said the same way: not "still unpaid" -- which would refuse
+ * a struck payment, the very case #49 exists to allow -- but "still the
+ * pointer I read".
+ */
+const paymentIsStill = (payment: Payment | null) =>
+  payment === null
+    ? isNull(budgetItems.movementId)
+    : eq(budgetItems.movementId, payment.movementId);
+
+/**
  * Takes an item out of the plan. Answers whether there was one to take.
  *
  * A real delete, and unlike a Movement, which is struck out and kept
@@ -283,18 +362,52 @@ export async function amendBudgetItemInSpace(
  * gone before the month is read, and "who removed it and when" answers a
  * question about money that never existed. A plan a person cannot tidy is a
  * plan they stop keeping.
+ *
+ * Which is true of every item except the one that did move money. The item is
+ * read first and `unplan` decides, because "no money moved" is a claim about
+ * one row and not about the table (#48): a paid Fixed item's Movement is in
+ * the ledger, and the delete underneath knows nothing about kinds or payments.
+ * Until now the only thing keeping one out of it was that no screen linked to
+ * a Fixed item -- a guard that lasts exactly as long as the screens do, and
+ * this ticket is the one that builds the link.
+ *
+ * The read is the Space's, so an item of a Space the asker is not in answers
+ * `false` rather than being distinguishable from one that never existed. And
+ * the payment goes into the WHERE for the reason it does in the correction:
+ * to catch the tap that pays it between that read and this delete.
  */
 export async function removeBudgetItemFromSpace(
   db: Database,
-  spaceId: string,
+  space: Space,
   itemId: string,
 ): Promise<boolean> {
-  if (!isIdentifier(itemId)) return false;
+  const existing = await findBudgetItemInSpace(db, space, itemId);
+  if (!existing) return false;
+
+  unplan(existing);
+
+  const payment = existing.kind === "fixed" ? existing.payment : null;
 
   const removed = await db
     .delete(budgetItems)
-    .where(and(eq(budgetItems.id, itemId), eq(budgetItems.spaceId, spaceId)))
+    .where(
+      and(
+        eq(budgetItems.id, itemId),
+        eq(budgetItems.spaceId, space.id),
+        paymentIsStill(payment),
+      ),
+    )
     .returning({ id: budgetItems.id });
+
+  // Nothing went, and the row was there a moment ago. Two things can have
+  // happened in between and they are told apart rather than guessed at: the
+  // other thumb removed it, or the other thumb paid it. Asked again, because
+  // answering "it was already paid" about a row somebody else took off the
+  // plan is a worse answer than the truth and just as easy to get.
+  if (removed.length === 0 && existing.kind === "fixed") {
+    const still = await findBudgetItemInSpace(db, space, itemId);
+    if (still) throw new FixedItemAlreadyPaidError(existing);
+  }
 
   return removed.length > 0;
 }

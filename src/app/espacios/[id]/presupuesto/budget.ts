@@ -35,11 +35,8 @@ import {
   type Naming,
 } from "../categorias/catalogue";
 
-/**
- * One item of a month's plan, as a screen shows it: named by its Category and
- * written in the reader's separators.
- */
-export type ReadableBudgetItem = {
+/** What both kinds of item carry into their correction screen. */
+type ReadableItemInCommon = {
   id: string;
   /**
    * The month this item is on. Carried, and not recomputed from the Reader's
@@ -62,6 +59,43 @@ export type ReadableBudgetItem = {
   minorUnits: number;
   categoryId: string;
 };
+
+/**
+ * One item of a month's plan, as its correction screen shows it: named by its
+ * Category and written in the reader's separators.
+ *
+ * Discriminated on `kind`, because the correction screen is two screens behind one URL
+ * (#48). A Fixed item is corrected by four questions and a Variable one by
+ * two, and a screen that read the four off an optional field would be a screen
+ * that could render half of either.
+ */
+export type ReadableBudgetItem =
+  | (ReadableItemInCommon & { kind: "variable" })
+  | (ReadableItemInCommon & {
+      kind: "fixed";
+      /** What it is read by, and the first thing its correction asks. */
+      name: string;
+      /**
+       * The day of the month it falls due on, and not the date. The choice
+       * list on the screen is days of *this* month, so a date would have to be
+       * taken apart there anyway -- and a date carrying its own month could
+       * disagree with the plan it sits on (ADR-0023).
+       */
+      dueDay: number;
+      /**
+       * The Movement paying for it while that payment stands, and nothing
+       * where the item is pending. The Movement and not a flag, for the reason
+       * `FixedItem` holds one: what a paid item's screen has to offer is the
+       * way out of being paid, and that is a link to the entry somebody has to
+       * strike.
+       *
+       * Not so the screen can enforce anything -- the domain refuses a paid
+       * item's correction and its removal on its own (ADR-0034) -- but so it
+       * can say why there is nothing to fill in, instead of offering a form
+       * that would refuse whatever was typed into it.
+       */
+      paidBy: string | null;
+    });
 
 /**
  * One Category of the plan, what it expected, and what it really cost (#11).
@@ -380,22 +414,28 @@ function standingInWords(standing: PaceStanding, reader: Reader): string {
   }
 }
 
-/** One item of a Space's plan, as its correction screen shows it. */
+/**
+ * One item of a Space's plan, as its correction screen shows it.
+ *
+ * Both kinds, since #48. It used to refuse a Fixed item outright, which made
+ * its correction screen a 404 -- the gap #13 left, said out loud rather than
+ * half-answered by a form shaped for the other kind. The form is built now,
+ * so what comes back says which kind it is and carries what that kind is
+ * asked.
+ */
 export async function readableBudgetItem(
   space: Space,
   itemId: string,
   reader: Reader,
 ): Promise<ReadableBudgetItem | null> {
   const item = await findBudgetItemInSpace(database(), space, itemId);
-  // A Fixed item reads as no item at all from here, and so its correction
-  // screen is a 404. It is a screen shaped for the other kind: it asks for a
-  // Category and an amount and nothing else, so opening one on a Fixed item
-  // would offer to save a row with its name, its day and its payment quietly
-  // left out. #13 gave the kind no correction screen of its own; this is that
-  // gap said out loud rather than half-answered.
-  if (!item || item.kind === "fixed") return null;
+  if (!item) return null;
 
-  return readable(item, namesFrom(await readableCatalogueFor(space.id)), reader);
+  const named = namesFrom(await readableCatalogueFor(space.id));
+
+  return item.kind === "fixed"
+    ? readableFixedToCorrect(item, named, reader)
+    : readable(item, named, reader);
 }
 
 /**
@@ -451,6 +491,40 @@ function dueInWords(notice: DueNotice): string {
   }
 }
 
+/**
+ * A Fixed item as its correction screen shows it, which is a different set of
+ * words from `readableFixed` above.
+ *
+ * That one draws a row in the Fijos list: a name, a line beneath it and a due
+ * notice, all of them already sentences. This one fills in a form, so it
+ * carries the figures those sentences were made of -- the minor units the
+ * keypad counts in, the day the choice list is picked from, the Category
+ * identifier the chips select by.
+ */
+function readableFixedToCorrect(
+  item: FixedItem,
+  named: Naming,
+  reader: Reader,
+): ReadableBudgetItem {
+  const category = named.get(item.categoryId);
+
+  return {
+    kind: "fixed",
+    id: item.id,
+    month: item.month,
+    category: category?.name ?? item.categoryId,
+    heading: category?.heading ?? null,
+    amount: formatMoney(item.amount, reader.locales),
+    minorUnits: item.amount.amount,
+    categoryId: item.categoryId,
+    name: item.name,
+    // The last two characters of a `CalendarDate`, which is `YYYY-MM-DD` and
+    // is checked to be one before it is ever built (`isCalendarDate`).
+    dueDay: Number(item.dueOn.slice(8)),
+    paidBy: isPaid(item) ? (item.payment?.movementId ?? null) : null,
+  };
+}
+
 function readable(
   item: VariableItem,
   named: Naming,
@@ -459,6 +533,7 @@ function readable(
   const category = named.get(item.categoryId);
 
   return {
+    kind: "variable",
     id: item.id,
     month: item.month,
     // The identifier showing rather than a blank row, the way the month's

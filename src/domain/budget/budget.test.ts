@@ -5,6 +5,7 @@ import { money } from "../money/money";
 import type { Movement } from "../movement/movement";
 import type { Space } from "../space/space";
 import {
+  amendFixedItem,
   amendItem,
   comparedToPlan,
   dueNotice,
@@ -18,6 +19,7 @@ import {
   paymentFor,
   planFixedItem,
   planItem,
+  unplan,
   UnplannableBudgetItemError,
   type FixedItem,
   type Payment,
@@ -1103,13 +1105,125 @@ describe("a month planned with both kinds of item", () => {
   });
 });
 
-describe("correcting an item", () => {
-  // There is no correction screen for a Fixed item yet, and this is what
-  // makes that a gap rather than a hole: the Variable item's correction
-  // cannot quietly strip a name, a due day and a payment off one.
-  it("refuses a Fixed item outright", () => {
+describe("correcting a Fixed item", () => {
+  // The Variable item's correction still refuses one, and that refusal is now
+  // about which door rather than about there being none: it asks for a
+  // Category and an amount and nothing else, so saving a Fixed item through it
+  // would leave its name and its day out of what it wrote back.
+  it("is not what the Variable item's correction does", () => {
     expect(() => amendItem(fixed(), { amount: 1 }, planning())).toThrow(
       UnplannableBudgetItemError,
+    );
+  });
+
+  it("changes any of the four questions it was planned with", () => {
+    expect(
+      amendFixedItem(
+        fixed(),
+        {
+          amount: 200_000_00,
+          categoryId: SUPER.id,
+          name: "Arriendo y expensas",
+          dueDay: 5,
+        },
+        planning(),
+      ),
+    ).toEqual(
+      fixed({
+        amount: money(200_000_00, "ARS"),
+        categoryId: SUPER.id,
+        name: "Arriendo y expensas",
+        dueOn: calendarDate("2026-09-05"),
+      }),
+    );
+  });
+
+  it("leaves standing every question it was not asked", () => {
+    expect(amendFixedItem(fixed(), {}, planning())).toEqual(fixed());
+  });
+
+  it("holds a correction to every rule the planning was held to", () => {
+    expect(() => amendFixedItem(fixed(), { amount: 0 }, planning()))
+      .toThrow(UnplannableBudgetItemError);
+    expect(() => amendFixedItem(fixed(), { categoryId: ELSEWHERE.id }, planning()))
+      .toThrow(UnplannableBudgetItemError);
+    expect(() => amendFixedItem(fixed(), { name: "   " }, planning()))
+      .toThrow(UnplannableBudgetItemError);
+  });
+
+  // The rule ADR-0023 wrote for the planning, asked again of the correction:
+  // the 30th of February is not a late February, it is a day that will not
+  // arrive, and moving it back two days behind somebody's back is worse than
+  // saying the plan cannot be written.
+  it("refuses a due day the month does not have", () => {
+    expect(() =>
+      amendFixedItem(
+        fixed({ month: month("2026-02"), dueOn: calendarDate("2026-02-01") }),
+        { dueDay: 30 },
+        planning(),
+      ),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  it("refuses an item planned in another Space", () => {
+    expect(() =>
+      amendFixedItem(
+        fixed({ spaceId: "space-de-otro" }),
+        { amount: 1 },
+        planning(),
+      ),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  // The decision this ticket had to make (ADR-0034). The item's amount is
+  // already in the ledger, and a plan does not own a ledger entry (ADR-0031),
+  // so the correction waits for the payment to be undone rather than reaching
+  // through it.
+  it("refuses one that is paid", () => {
+    expect(() =>
+      amendFixedItem(
+        fixed({ payment: paidBy("mov-1") }),
+        { amount: 1 },
+        planning(),
+      ),
+    ).toThrow(FixedItemAlreadyPaidError);
+  });
+
+  // Which is the way back out: striking the Movement puts the item back to
+  // pending (ADR-0031), and a pending item is corrected like any other.
+  it("corrects one whose payment was struck out", () => {
+    expect(
+      amendFixedItem(
+        fixed({ payment: struck("mov-1") }),
+        { amount: 200_000_00 },
+        planning(),
+      ),
+    ).toEqual(
+      fixed({ payment: struck("mov-1"), amount: money(200_000_00, "ARS") }),
+    );
+  });
+});
+
+describe("taking an item off the plan", () => {
+  it("lets a Variable item go", () => {
+    expect(() => unplan(item())).not.toThrow();
+  });
+
+  it("lets a pending Fixed item go", () => {
+    expect(() => unplan(fixed())).not.toThrow();
+  });
+
+  it("lets go of one whose payment was struck out", () => {
+    expect(() => unplan(fixed({ payment: struck("mov-1") }))).not.toThrow();
+  });
+
+  // The same decision as the correction, and deliberately the same rule
+  // rather than a second one: removing a paid item would leave a Movement in
+  // the ledger with nothing to say what it paid for, and the plan is not the
+  // screen that gets to destroy an entry of money that moved (ADR-0015).
+  it("refuses one that is paid", () => {
+    expect(() => unplan(fixed({ payment: paidBy("mov-1") }))).toThrow(
+      FixedItemAlreadyPaidError,
     );
   });
 });

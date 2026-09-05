@@ -52,6 +52,16 @@ export type GroupedListItemProps = {
   leading?: ReactNode;
   trailing?: ReactNode;
   /**
+   * What sits next to the row and not inside it: a second thing to do to the
+   * same line, such as marking a Fixed item paid on a row that opens it (#48).
+   *
+   * Outside the link or button rather than in `trailing`, because `trailing`
+   * is inside it -- and a button inside a link is not a control a keyboard or
+   * a screen reader can reach, whatever it looks like. The row keeps its own
+   * whole tap; this takes its own beside it.
+   */
+  beside?: ReactNode;
+  /**
    * Given a destination, the row becomes a link and takes a touch target. A
    * row that goes somewhere is a link and not a button for the reason
    * `ButtonLink` is one: it opens in a new tab, and it works before any
@@ -74,6 +84,7 @@ export type GroupedListItemProps = {
 export function GroupedListItem({
   leading,
   trailing,
+  beside,
   href,
   onClick,
   children,
@@ -101,6 +112,7 @@ export function GroupedListItem({
       ) : (
         <div className={styles.row}>{inner}</div>
       )}
+      {beside ? <span className={styles.beside}>{beside}</span> : null}
     </li>
   );
 }
