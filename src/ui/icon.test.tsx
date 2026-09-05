@@ -94,6 +94,30 @@ describe("Icon", () => {
       expect(drawn(backspace.container).getAttribute("stroke-width")).toBe("1.8");
       expect(drawn(check.container).getAttribute("stroke-width")).toBe("2.6");
     });
+
+    it("draws at the weight it was asked for", () => {
+      // The canvas compensates optically: the smaller an icon comes out, the
+      // heavier its line, so a small glyph does not fade beside its text. That
+      // is a fact about the screen the icon sits on, so the screen says it.
+      const { container } = render(<Icon name="plus" size={26} weight={2.4} />);
+
+      expect(drawn(container).getAttribute("stroke-width")).toBe("2.4");
+    });
+
+    it("lets the asking screen outweigh an icon's own exception", () => {
+      // Precedence, written down once: what the call site asks for beats the
+      // per-icon exception, which beats the common weight. Without this the two
+      // rules would have no answer for a `check` drawn small.
+      const { container } = render(<Icon name="check" size={13} weight={2.2} />);
+
+      expect(drawn(container).getAttribute("stroke-width")).toBe("2.2");
+    });
+
+    it("keeps an icon's own exception when no screen asks for a weight", () => {
+      const { container } = render(<Icon name="check" size={13} />);
+
+      expect(drawn(container).getAttribute("stroke-width")).toBe("2.6");
+    });
   });
 
   describe("what a screen reader hears", () => {
@@ -117,6 +141,26 @@ describe("Icon", () => {
     });
   });
 
+  describe("the two calendars", () => {
+    it("draws the tab's calendar with the day marked inside its grid", () => {
+      // Shorter, more rounded, and carrying a stroke inside the grid: what
+      // makes it read as a month with a day in it rather than as an empty box.
+      const { container } = render(<Icon name="calendar-day" />);
+      const svg = drawn(container);
+
+      expect(svg.innerHTML).toContain('rx="3"');
+      expect(svg.innerHTML).toContain("M8 2v4M16 2v4M3 10h18M8 15h3");
+    });
+
+    it("leaves the day pill's calendar as the canvas draws it", () => {
+      const { container } = render(<Icon name="calendar" />);
+      const svg = drawn(container);
+
+      expect(svg.innerHTML).toContain('rx="2"');
+      expect(svg.innerHTML).toContain("M16 2v4M8 2v4M3 10h18");
+    });
+  });
+
   it("draws something for every name it offers", () => {
     for (const name of iconNames) {
       const { container } = render(<Icon name={name} />);
@@ -128,6 +172,7 @@ describe("Icon", () => {
   it("offers every icon the canvas draws", () => {
     const canvas: readonly IconName[] = [
       "calendar",
+      "calendar-day",
       "list",
       "users",
       "target",

@@ -11,7 +11,7 @@ type Drawing = {
  * Every icon the design canvas draws, as geometry rather than as a file.
  *
  * They are written by hand and not installed: each one is two or three lines on
- * the same grid, and a package to hold sixteen of them would weigh more than
+ * the same grid, and a package to hold seventeen of them would weigh more than
  * the rest of the interface. Written once here so a screen names an icon
  * instead of pasting a path -- the same path pasted twice is two paths that
  * will eventually differ.
@@ -22,6 +22,20 @@ const icons = {
       <>
         <rect x="3" y="4" width="18" height="18" rx="2" />
         <path d="M16 2v4M8 2v4M3 10h18" />
+      </>
+    ),
+  },
+  // A second calendar, and not a variant of the one above: shorter, more
+  // rounded, and carrying a stroke inside the grid. That stroke is the whole
+  // difference -- it is what makes the drawing read as a month with a day in it
+  // rather than as an empty box. Named for what it draws and not for the tab it
+  // happens to sit in, so a second screen can reach for it without the name
+  // lying.
+  "calendar-day": {
+    draw: (
+      <>
+        <rect x="3" y="4" width="18" height="17" rx="3" />
+        <path d="M8 2v4M16 2v4M3 10h18M8 15h3" />
       </>
     ),
   },
@@ -131,7 +145,13 @@ export type IconName = keyof typeof icons;
 /** Every icon there is, for a gallery or a test that wants to walk them all. */
 export const iconNames = Object.keys(icons) as readonly IconName[];
 
-/** The weight all but two of them are drawn at. */
+/**
+ * The weight all but two of them are drawn at.
+ *
+ * Precedence, so the two rules never have to argue: what a screen asks for
+ * beats an icon's own exception below, which beats this. That is the answer for
+ * a `check` drawn small -- the screen that shrank it is the one that knows.
+ */
 const COMMON_WEIGHT = 2;
 
 /** The grid every icon is written on, and the size it comes out at unasked. */
@@ -141,6 +161,21 @@ export type IconProps = {
   name: IconName;
   /** Both width and height, in pixels: the shapes scale, they do not redraw. */
   size?: number;
+  /**
+   * The stroke width to draw it at, where the screen around it knows better
+   * than the icon does.
+   *
+   * The canvas compensates optically: the smaller an icon comes out, the
+   * heavier its line, so a 13px glyph does not fade beside the text it sits in.
+   * The same `plus` is drawn at 2.2 at 18px and at 2.4 at 26px. That is a fact
+   * about the screen and not about the drawing, which is why it is asked for
+   * here rather than derived from `size` -- four samples are not a curve, and a
+   * curve would have to argue with the per-icon exceptions below.
+   *
+   * Leave it off and the icon draws itself: its own exception, or the common
+   * weight.
+   */
+  weight?: number;
   /**
    * What a screen reader should say. Leave it off wherever the text beside the
    * icon already says it -- a tab labelled "Presupuesto" whose icon also says
@@ -157,11 +192,12 @@ export type IconProps = {
  * same icon sit on a light screen and a dark one, and go grey in an inactive
  * tab and green in the active one, without anything asking which theme it is.
  */
-export function Icon({ name, size = GRID, label }: IconProps) {
+export function Icon({ name, size = GRID, weight, label }: IconProps) {
   // Read back as a Drawing rather than as its own literal type: `satisfies`
   // keeps each entry exactly as written, so the ones drawn at the common
   // weight have no strokeWidth property to default at all.
   const { draw, strokeWidth = COMMON_WEIGHT }: Drawing = icons[name];
+  const stroke = weight ?? strokeWidth;
 
   return (
     <svg
@@ -170,7 +206,7 @@ export function Icon({ name, size = GRID, label }: IconProps) {
       viewBox={`0 0 ${GRID} ${GRID}`}
       fill="none"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
+      strokeWidth={stroke}
       // Round caps and nothing else. The canvas sets no stroke-linejoin
       // anywhere, so its corners are SVG's default mitre: rounding them here
       // would blunt the point of the alert triangle and the tick of the check
