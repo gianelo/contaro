@@ -101,4 +101,18 @@ describe("the numbers the entry screen reads off the canvas", () => {
       );
     });
   });
+
+  describe("an amount nobody has typed", () => {
+    it("is greyed the way both artboards grey it", () => {
+      // The other half of the disabled pair, and the half this file never
+      // read. In light it happens to be the dead button's ground and in dark
+      // it is not -- which is exactly why the two are named apart, and exactly
+      // the mistake that would go unseen with only the light artboard open
+      // (#41, ADR-0028).
+      expect(light).toContain("'#C6C6C8' : '#1C1C1E'");
+      expect(dark).toContain("'#48484A' : '#FFFFFF'");
+
+      expect(keypad).toContain("var(--color-disabled)");
+    });
+  });
 });

@@ -13,7 +13,7 @@ A person with access to a Space. Members are added by Invitation, addressed to a
 _Avoid_: User, Partner, Participant
 
 **Reader**:
-The Member a screen is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014). The day they are standing in is theirs too: "today" on any screen is their day, never the server's (ADR-0018). Both halves are the type `Reader` in `src/app/reader.ts`, built from a request by `readerOf` — so the word here and the code say the same thing, and whatever turns out to be theirs next has one place to go.
+The Member a screen is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014). The day they are standing in is theirs too: "today" on any screen is their day, never the server's (ADR-0018). Both halves are the type `Reader` in `src/app/reader.ts`, built from a request by `readerOf` — so the word here and the code say the same thing, and whatever turns out to be theirs next has one place to go. What is theirs and *not* a Reader's is the theme: it is chosen on a device rather than read off a request, it never reaches the server, and putting it here would mean sending a preference up on every request that has no use for it (ADR-0030).
 _Avoid_: Viewer, User, Audience
 
 **Invitation**:

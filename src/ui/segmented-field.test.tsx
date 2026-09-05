@@ -8,7 +8,7 @@ const halves = [
   { value: "income", label: "Ingreso" },
 ];
 
-describe("a choice with two answers", () => {
+describe("a closed choice, drawn as one track", () => {
   it("is one radio group, so a keyboard walks it and the form submits it", () => {
     // Buttons would be a row of independent things. Radios are one choice: the
     // arrow keys move within it, a screen reader says "1 of 2", and `name`
@@ -65,6 +65,28 @@ describe("a choice with two answers", () => {
     expect(
       screen.getByRole("radiogroup", { name: "Qué anotás" }),
     ).toBeInTheDocument();
+  });
+
+  it("carries a third answer as readily as a second", () => {
+    // A direction is two and a theme is three -- light, dark, and whatever the
+    // phone says (#41). The shape's claim is "these are all of them", and that
+    // claim is not about how many there are.
+    render(
+      <SegmentedField
+        name="theme"
+        legend="Apariencia"
+        options={[
+          { value: "system", label: "Automático" },
+          { value: "light", label: "Claro" },
+          { value: "dark", label: "Oscuro" },
+        ]}
+        value="system"
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    expect(screen.getByRole("radio", { name: "Automático" })).toBeChecked();
   });
 
   it("gives each half a target a thumb can hit", () => {

@@ -331,6 +331,16 @@ export const es = {
   "currency.MXN": "Peso mexicano",
   "currency.CAD": "Dólar canadiense",
 
+  // How the app is lit, which is the device's answer and not the Space's
+  // (#41). One word for the group and for the control inside it: they are the
+  // same question, and a second word for it would be a second thing to learn.
+  "appearance.label": "Apariencia",
+  // "Automático" and not "Sistema": the thing a person has in their hand is a
+  // phone, and this is the word their phone already uses for it.
+  "appearance.system": "Automático",
+  "appearance.light": "Claro",
+  "appearance.dark": "Oscuro",
+
   "account.label": "Tu sesión",
   "account.signOut": "Salir",
 

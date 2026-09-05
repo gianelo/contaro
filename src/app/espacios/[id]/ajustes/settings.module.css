@@ -1,0 +1,9 @@
+/*
+ * The gap between one group and the next, the way the Categories screen sets
+ * it: on the group above rather than as a gap on a flex parent, so the last
+ * group carries the screen's bottom padding and nothing has to know which one
+ * is last.
+ */
+.group {
+  padding-bottom: var(--space-8);
+}
