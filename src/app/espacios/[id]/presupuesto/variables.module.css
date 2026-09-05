@@ -1,8 +1,15 @@
-/* The name and the figure on one line, sitting on the same baseline: the
-   Category is 15px and the figure 14px, and aligning their boxes instead
-   would leave the figure floating a pixel high. */
+/*
+ * The name and the figure on one line, sitting on the same baseline: the
+ * Category is 15px and the figure 14px, and aligning their boxes instead
+ * would leave the figure floating a pixel high.
+ *
+ * Wrapping for the reason the card above wraps (ADR-0036, #69): this is the
+ * same pair of figures in a tighter line, and a pair too wide for the row drops
+ * under the Category rather than running off the side of it.
+ */
 .line {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4);
@@ -13,10 +20,26 @@
   font-weight: var(--weight-medium);
 }
 
+/*
+ * The figure takes the leftover width so it reads back from the row's right
+ * edge, on a line it shares with the Category and on a line of its own.
+ *
+ * The one place it may ever break is between "spent" and "/ planned", which is
+ * where a person would break it. That holds because both halves are unbreakable
+ * and the space between them is not: `Intl` joins a symbol to its digits with a
+ * non-breaking space, so the first half needs no rule here, and `.expectation`
+ * below is nowrapped so the second half needs one. Written down because the
+ * absence of a rule on the first half is a reliance and not an oversight.
+ *
+ * And it breaks rather than spills on the day one half alone is wider than the
+ * row, which is the card's third answer applied here (ADR-0036).
+ */
 .figure {
+  flex-grow: 1;
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
-  white-space: nowrap;
+  text-align: right;
+  overflow-wrap: break-word;
 }
 
 /* The expected half, quieter: it is the length being measured against and not
@@ -25,6 +48,7 @@
 .expectation {
   color: var(--color-text-tertiary);
   font-weight: var(--weight-regular);
+  white-space: nowrap;
 }
 
 .meter {
