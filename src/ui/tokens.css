@@ -98,16 +98,49 @@
   --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
   --color-member-second-ground: light-dark(#f3e3ee, #290f20);
 
+  /*
+   * The circle a Category wears at the start of a row on the month's list
+   * (#39). Two tints, named for what they look like rather than for what they
+   * mean, because they do not rank, classify or warn:
+   * `design/Movimientos.dc.html` draws three circles across five rows and
+   * reuses them, which tells one row from the next at a glance and is the only
+   * claim made for them. A job-sounding name on that would be a promise the
+   * screen never keeps.
+   *
+   * The green pair is the same two hexes as --color-accent and its soft
+   * ground, and is deliberately not written as var() of them, for the reason
+   * the first Member pair is not written as var() of --color-info: they agree
+   * by coincidence of hue and not of meaning, and restyling the brand must not
+   * repaint a Category's circle.
+   *
+   * The grey ground is the canvas's #EFEFF2, which is also the hex of
+   * --color-separator -- and is a ground here rather than a line, which is a
+   * different thing that happens to be the same colour today.
+   *
+   * There is no dark Movimientos artboard, so both dark halves are invented
+   * the way the status colours above were: the light hues lifted for contrast
+   * against a black ground, and the grounds dropped to the near-black the dark
+   * artboard fills a surface with.
+   */
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+
   /* Scrim behind a bottom sheet */
   --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
 
   /* Type scale */
   --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
     "Segoe UI", Roboto, sans-serif;
-  /* The badge on a Fixed item's row, which is the smallest type in the app
-   * (#13). Never load-bearing on its own: the badge says "Pagado" or
-   * "Pendiente" in words, so nothing depends on reading eleven pixels of
-   * colour. */
+  /* The initial inside the 21px avatar a row on the month's list carries
+   * (#39). Smaller than any type on any screen, and never read: the avatar is
+   * a labelled image and the whole name is on the label, so ten pixels of
+   * letter is a colour with a hint in it rather than something to read. */
+  --text-3xs: 10px;
+  /* The badge on a Fixed item's row, the smallest type meant to be read (#13).
+   * Never load-bearing on its own: the badge says "Pagado" or "Pendiente" in
+   * words, so nothing depends on reading eleven pixels of colour. */
   --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;
@@ -145,6 +178,10 @@
   --radius-md: 11px;
   --radius-lg: 13px;
   --radius-xl: 16px;
+  /* The two figures at the top of the month's list, which the canvas draws at
+   * 14px -- between --radius-lg and --radius-xl, and so named for its use the
+   * way --radius-sheet below is rather than wedged into the scale. */
+  --radius-card: 14px;
   --radius-sheet: 22px;
   --radius-pill: 999px;
 

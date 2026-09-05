@@ -1,0 +1,47 @@
+/*
+ * Two lines in one row: what it was spent on, and where it sits in the month.
+ * The Category is what a person scans for, so it is the one in reading weight.
+ */
+.category {
+  display: block;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+
+.beneath {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+/*
+ * Whose money it was and how much, as one cluster at the end of the row. The
+ * avatar sits before the amount and never after it: the figure is what the eye
+ * runs down the right-hand edge for, and something drawn after it would break
+ * that edge on the rows that have one and not on the rows that do not.
+ */
+.figure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/*
+ * The loudest thing on the row, which is the point of the row. It used to be
+ * 14px in the secondary grey -- quieter than the Category above it, which is
+ * backwards for the figure a person opened the screen to read. Larger and
+ * heavier than .category above, and never less: row.source.test.ts holds that.
+ */
+.amount {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/*
+ * Money coming in, in the accent colour -- on top of the written "+" that
+ * `amountOf` puts there and never instead of it. See ADR-0016.
+ */
+.income {
+  color: var(--color-accent);
+}

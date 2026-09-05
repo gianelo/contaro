@@ -1,20 +1,4 @@
 /*
- * Two lines in one row: what it was spent on, and where it sits in the month.
- * The Category is what a person scans for, so it is the one in reading weight.
- */
-.category {
-  display: block;
-  font-size: var(--text-md);
-  font-weight: var(--weight-medium);
-}
-
-.beneath {
-  display: block;
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-}
-
-/*
  * The month, with a step either side of it. The name is centred and the two
  * steps hold their width whether or not there is anywhere to step to, so the
  * heading does not move as a thumb walks back through the year.

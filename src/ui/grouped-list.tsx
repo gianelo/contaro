@@ -42,6 +42,13 @@ export function GroupedList({
 }
 
 export type GroupedListItemProps = {
+  /**
+   * What stands before the row's text: the circle a Movement's Category wears
+   * (#39). Rendered bare and with no class of its own, unlike `trailing`,
+   * because whatever is put here is one shape that already knows its own size
+   * -- a wrapper would be a second opinion about how wide the start of a row
+   * is, and the row's own gap already says.
+   */
   leading?: ReactNode;
   trailing?: ReactNode;
   /**

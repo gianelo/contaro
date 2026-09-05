@@ -21,11 +21,19 @@ import { categoriesTheSpaceCanSee } from "./categories";
 import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
 import { recordMovementInSpace } from "./movements";
-import { budgetItems } from "./schema";
+import { budgetItems, movements } from "./schema";
 
 type Database = Queries;
 
-/** Exactly the columns a domain `BudgetItem` is made of. */
+/**
+ * Exactly the columns of `budget_items` a domain `BudgetItem` is made of.
+ *
+ * Only this table, because this is also what the writes below hand to
+ * RETURNING, and RETURNING cannot name a column of another one. A row that
+ * has just been written is never paid -- an insert leaves `movement_id` null
+ * and a correction is refused on the kind that carries one -- so a write
+ * reads its own row back through `asPending`.
+ */
 const budgetItemColumns = {
   id: budgetItems.id,
   spaceId: budgetItems.spaceId,
@@ -38,6 +46,20 @@ const budgetItemColumns = {
   movementId: budgetItems.movementId,
 };
 
+/**
+ * The same columns, plus whether the Movement they point at is still standing.
+ *
+ * Every read of the plan goes through this and none through
+ * `budgetItemColumns`, because "paid" is not `movement_id` being set -- it is
+ * `movement_id` being set *and* the Movement it names not having been struck
+ * out (ADR-0031). Asking the ledger is what makes the two halves agree, and
+ * asking it in the same query is what stops a screen from having to.
+ */
+const budgetItemColumnsWithPayment = {
+  ...budgetItemColumns,
+  paymentStruckAt: movements.struckAt,
+};
+
 type BudgetItemRow = {
   id: string;
   spaceId: string;
@@ -48,7 +70,22 @@ type BudgetItemRow = {
   name: string | null;
   dueOn: string | null;
   movementId: string | null;
+  /** When the Movement this row points at was struck out, if it was. */
+  paymentStruckAt: Date | null;
 };
+
+/**
+ * A row a write just returned, which is never a paid one.
+ *
+ * An insert writes `movement_id` null and `amendItem` refuses the only kind
+ * that can carry one, so there is no Movement here to ask the ledger about.
+ * Said once rather than at each of the three call sites, so that stops being
+ * true in one place if it ever does.
+ */
+const asPending = (row: Omit<BudgetItemRow, "paymentStruckAt">) => ({
+  ...row,
+  paymentStruckAt: null,
+});
 
 /**
  * Plans one Variable item, if the Space can hold it.
@@ -84,7 +121,7 @@ export async function planBudgetItemInSpace(
     throw new Error("Inserting the Budget item returned no row.");
   }
 
-  return asBudgetItem(created, space);
+  return asBudgetItem(asPending(created), space);
 }
 
 /**
@@ -123,7 +160,7 @@ export async function planFixedItemInSpace(
     throw new Error("Inserting the Fixed item returned no row.");
   }
 
-  return asFixedItem(created, space);
+  return asFixedItem(asPending(created), space);
 }
 
 /**
@@ -140,6 +177,13 @@ export async function planFixedItemInSpace(
  * way, the database decides which of them wins and the loser's Movement is
  * rolled back with it. `movement_id` being UNIQUE is the same rule again, one
  * layer down.
+ *
+ * That condition is the pointer being where the read above found it, and not
+ * the pointer being null. An item whose payment was struck out is payable
+ * again (ADR-0031) and already holds a `movement_id`, so "still null" would
+ * refuse the one case this exists to allow. Compared this way it is the same
+ * guard either way: whoever changed the pointer since the read wins, and the
+ * loser is told it is paid rather than told to try again.
  *
  * Not found rather than forbidden: an item in a Space the asker is not in and
  * one that never existed read the same from here. Already paid is a different
@@ -172,7 +216,14 @@ export async function payFixedItemInSpace(
         and(
           eq(budgetItems.id, itemId),
           eq(budgetItems.spaceId, context.space.id),
-          isNull(budgetItems.movementId),
+          // Never paid, or paid by the struck Movement `paymentFor` just let
+          // through. The old pointer is released rather than kept, which is
+          // what leaves `budget_items_movement_pays_one_item` satisfiable:
+          // the struck Movement stays in the ledger as an entry (ADR-0015)
+          // with nothing pointing at it any more.
+          item.payment === null
+            ? isNull(budgetItems.movementId)
+            : eq(budgetItems.movementId, item.payment.movementId),
         ),
       )
       .returning({ id: budgetItems.id });
@@ -219,7 +270,7 @@ export async function amendBudgetItemInSpace(
     .where(and(eq(budgetItems.id, itemId), eq(budgetItems.spaceId, space.id)))
     .returning(budgetItemColumns);
 
-  return updated ? asBudgetItem(updated, space) : null;
+  return updated ? asBudgetItem(asPending(updated), space) : null;
 }
 
 /**
@@ -257,8 +308,12 @@ export async function findBudgetItemInSpace(
   if (!isIdentifier(itemId)) return null;
 
   const [row] = await db
-    .select(budgetItemColumns)
+    .select(budgetItemColumnsWithPayment)
     .from(budgetItems)
+    // LEFT, because most rows point at nothing: a Variable item never does
+    // and a pending Fixed one does not yet. An inner join would drop the
+    // whole pending half of a plan.
+    .leftJoin(movements, eq(movements.id, budgetItems.movementId))
     .where(and(eq(budgetItems.id, itemId), eq(budgetItems.spaceId, space.id)))
     .limit(1);
 
@@ -283,8 +338,9 @@ export async function budgetItemsInMonth(
   month: Month,
 ): Promise<readonly BudgetItem[]> {
   const rows = await db
-    .select(budgetItemColumns)
+    .select(budgetItemColumnsWithPayment)
     .from(budgetItems)
+    .leftJoin(movements, eq(movements.id, budgetItems.movementId))
     .where(
       and(eq(budgetItems.spaceId, space.id), eq(budgetItems.month, month)),
     )
@@ -316,8 +372,9 @@ export async function budgetItemsInMonthForSpaces(
   const byId = new Map(spaces.map((space) => [space.id, space]));
 
   const rows = await db
-    .select(budgetItemColumns)
+    .select(budgetItemColumnsWithPayment)
     .from(budgetItems)
+    .leftJoin(movements, eq(movements.id, budgetItems.movementId))
     .where(
       and(
         inArray(budgetItems.spaceId, [...byId.keys()]),
@@ -392,7 +449,12 @@ function asFixedItem(row: BudgetItemRow, space: Space): FixedItem {
     amount: money(row.amount, space.currency),
     name: row.name,
     dueOn: row.dueOn,
-    movementId: row.movementId,
+    // The pointer and the ledger's answer about it, together. `isPaid` is
+    // what reads them as one thing; nothing here decides whether it is paid.
+    payment:
+      row.movementId === null
+        ? null
+        : { movementId: row.movementId, struckAt: row.paymentStruckAt },
   };
 }
 

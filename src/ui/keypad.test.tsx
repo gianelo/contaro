@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_MOVEMENT_AMOUNT } from "@/domain/movement/movement";
-import { Keypad, nextAmount } from "./keypad";
+import { Keypad, Keys, Readout, nextAmount } from "./keypad";
 
 describe("what a thumb on the keypad does to the amount", () => {
   it("starts from nothing", () => {
@@ -150,5 +150,42 @@ describe("the keypad on the screen", () => {
     for (const key of screen.getAllByRole("button")) {
       expect(key.className).toMatch(/hitTarget/);
     }
+  });
+});
+
+/**
+ * The two halves, apart (#52).
+ *
+ * The entry screen draws the figure at the top and the keys at the foot, with
+ * the Category and the day between them, so no reordering of one component
+ * could reach it. `Keypad` is what is left for the screens that do draw them
+ * together — the budget forms, where the canvas puts them one under the other.
+ */
+describe("the figure and the keys, drawn apart", () => {
+  it("shows the readout without a single key", () => {
+    render(<Readout value={128_400} currency="ARS" locales={["es-AR"]} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("1.284,00");
+    expect(screen.getByText("ARS")).toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("shows the keys without a figure to read", () => {
+    render(<Keys value={12} onChange={vi.fn()} />);
+
+    expect(screen.getByRole("group", { name: "Teclado del monto" })).toBeInTheDocument();
+    expect(screen.queryByRole("status")).toBeNull();
+    // The keys say nothing about which money is being counted: that is the
+    // readout's half, and it is why they need no currency and no locales.
+    expect(screen.queryByText("ARS")).toBeNull();
+  });
+
+  it("hands back what the amount becomes, with no figure in between", async () => {
+    const onChange = vi.fn();
+    render(<Keys value={12} onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "7" }));
+
+    expect(onChange).toHaveBeenCalledWith(127);
   });
 });

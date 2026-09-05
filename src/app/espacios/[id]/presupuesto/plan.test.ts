@@ -44,7 +44,7 @@ const FIXED: FixedItem = {
   amount: money(1_800_000_00, "ARS"),
   name: "Arriendo",
   dueOn: calendarDate("2026-09-01"),
-  movementId: null,
+  payment: null,
 };
 
 const PAYMENT: Movement = {
@@ -293,7 +293,7 @@ describe("marking a Fixed item paid", () => {
           pay: async () => {
             throw new FixedItemAlreadyPaidError({
               ...FIXED,
-              movementId: "mov-0",
+              payment: { movementId: "mov-0", struckAt: null },
             });
           },
         }),

@@ -669,7 +669,9 @@ test("the month shows what came in and what went out, side by side", async ({
 
   // Both figures and never their difference: a month where a salary arrived
   // and the rent was paid is not a month where nothing happened.
-  const month = page.getByRole("group", { name: "Este mes" });
+  // Two cards and not two rows of a list any more (#39), so a region and not
+  // a group -- and still the two figures against the two words that name them.
+  const month = page.getByRole("region", { name: "Este mes" });
   await expect(month).toContainText(/Ingresos[\s\S]*\$\s?5\.000,00/);
   await expect(month).toContainText(/Gastos[\s\S]*\$\s?1\.200,00/);
 });
@@ -693,10 +695,40 @@ test("in a shared Space every Movement says whose money it was", async ({
   );
   await page.getByRole("button", { name: "Guardar" }).click();
 
-  // #8: it is the shared Space that makes this worth saying on every row.
-  await expect(page.getByRole("region", { name: "Movimientos" })).toContainText(
-    "Plata de Ana Comparte",
-  );
+  /*
+   * #8 said this is worth saying on every row; #39 changed what says it. The
+   * line of text became a coloured circle, which costs the row no width at all
+   * -- and it is a labelled image, so the fact is still there for anybody who
+   * cannot see the colour. The line itself is gone.
+   */
+  const movements = page.getByRole("region", { name: "Movimientos" });
+  await expect(
+    movements.getByRole("img", { name: "Ana Comparte" }),
+  ).toBeVisible();
+  await expect(movements).not.toContainText("Plata de");
+});
+
+test("a Category the canvas draws no icon for still gets a row a person can read", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Sin Icono", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "5000");
+  await page.getByRole("radio", { name: "Otros", exact: true }).click();
+  await page.getByRole("button", { name: "Guardar" }).click();
+
+  /*
+   * "Otros" is one of the seven shipped headings no artboard draws, and most
+   * of what a Member files money under will be like it. The circle is still
+   * there -- it is what keeps every row's text starting in the same place --
+   * and it carries the Category's own letter rather than one shared glyph that
+   * would draw every unmapped Category identically (#39).
+   */
+  const movements = page.getByRole("region", { name: "Movimientos" });
+  await expect(movements.getByText("O", { exact: true })).toBeVisible();
 });
 
 test("a personal Space does not say whose money it was on every row", async ({
@@ -711,11 +743,11 @@ test("a personal Space does not say whose money it was on every row", async ({
   await page.getByRole("radio", { name: "Otros", exact: true }).click();
   await page.getByRole("button", { name: "Guardar" }).click();
 
-  // Every Movement here is theirs, so a line saying so on every row says
-  // nothing and costs a row's worth of width.
-  await expect(
-    page.getByRole("region", { name: "Movimientos" }),
-  ).not.toContainText("Plata de");
+  // Every Movement here is theirs, so a circle saying so on every row says
+  // nothing and costs width the row has not got. Absent, and not a placeholder.
+  const movements = page.getByRole("region", { name: "Movimientos" });
+  await expect(movements).not.toContainText("Plata de");
+  await expect(movements.getByRole("img")).toHaveCount(0);
 });
 
 test("the month in view can be changed, and stops at the one being lived in", async ({

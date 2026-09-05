@@ -23,6 +23,9 @@ import type { ReadableBranch } from "@/i18n/category";
 import { dayLabel, monthLabel } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
 import type { ChipBranch } from "@/ui/branching-chip-field";
+import { incomeMark } from "@/i18n/category";
+import { letterMark, type CategoryMark } from "@/ui/category-mark";
+import { memberColour } from "@/ui/member-colour";
 import {
   namesFrom,
   readableCatalogueFor,
@@ -97,13 +100,33 @@ export type ReadableMovement = {
   categoryId: string | null;
   attributedTo: string;
   /**
-   * Whose money it was, named — or nothing at all in a Space with one Member,
-   * where every Movement is theirs and saying so on every row says nothing.
+   * What is drawn in the circle at the start of the row (#39).
+   *
+   * It arrives already decided, from the one place a Category is named. Income
+   * is not a Category and carries none (ADR-0016), so it wears a mark of its
+   * own rather than one looked up by an identifier it does not have.
    */
-  attribution: string | null;
+  mark: CategoryMark;
+  /**
+   * Whose money it was, as a circle can draw them — or nothing at all in a
+   * Space with one Member, where every Movement is theirs and saying so on
+   * every row says nothing.
+   *
+   * The name and the colour together, because an avatar needs both and neither
+   * can be worked out from a Member's identifier alone: the colour is the
+   * Space's answer about which of two seats they hold (ADR-0020), and a row
+   * has no idea who else is in the Space.
+   */
+  whose: Whose | null;
   /** Who typed it in. Shown and never offered as something to change. */
   recordedBy: string;
 };
+
+/** A Member as a row draws them: their name, and the colour their Space seated
+ * them in. The two travel together everywhere — an avatar needs both and can
+ * work out neither from an identifier — so they are one type rather than a pair
+ * of parameters that keep turning up side by side. */
+export type Whose = { name: string; colour: string };
 
 /** One day of the month and everything recorded on it, as a screen reads it. */
 export type ReadableDay = {
@@ -197,9 +220,9 @@ export async function readableMonth(
   ]);
 
   const named = namesFrom(catalogue);
-  const attributions = attributionsFrom(members);
+  const whose = whoseFrom(members);
   const asRead = (movement: Movement) =>
-    readable(movement, named, attributions, reader);
+    readable(movement, named, whose, reader);
 
   return {
     month,
@@ -227,11 +250,11 @@ export async function readableMovement(
   const movement = await findMovementInSpace(database(), space, movementId);
   if (!movement) return null;
 
-  // No attributions, and so no query for the Members: this is the correction
+  // Nobody to draw, and so no query for the Members: this is the correction
   // screen's reader, and that screen asks who the money belongs to with a
-  // picker rather than saying it in a line. `attribution` is a thing the
-  // month's list shows, and fetching a Space's Members to fill a field nobody
-  // reads is a round trip bought for nothing.
+  // picker rather than saying it in a circle. `whose` is a thing the month's
+  // list shows, and fetching a Space's Members to fill a field nobody reads is
+  // a round trip bought for nothing.
   return readable(
     movement,
     namesFrom(await readableCatalogueFor(space.id)),
@@ -241,25 +264,41 @@ export async function readableMovement(
 }
 
 /**
- * How each Member is named on a row, or nothing at all.
+ * How each Member is drawn on a row, or nothing at all.
  *
  * Empty in a personal Space, and deliberately: "In a shared Space each
  * Movement shows whose money it was" (#8), and in a Space of one the answer is
- * always the person reading it. A line that says the same thing on every row
- * is a line a thumb stops seeing, and it costs a row's worth of width.
+ * always the person reading it. A circle that says the same thing on every row
+ * is a circle a thumb stops seeing, and it costs the row width it has not got.
+ *
+ * The colours are worked out here, once, from the Space's own rows — and that
+ * is what keeps `memberColour`'s throw off this screen. It refuses to colour
+ * somebody the Space does not hold, because drawing a stranger as one of the
+ * Space's Members is a wrong statement rather than a missing one (ADR-0020).
+ * A Movement attributed to somebody who has since left simply finds nothing in
+ * this map and draws no avatar, which is the missing statement and the honest
+ * one. Asking for a colour per row would have put that question to an id the
+ * Space no longer holds, and taken the whole month's list down with it.
  */
-function attributionsFrom(
+export function whoseFrom(
   members: readonly SpaceMember[],
-): ReadonlyMap<string, string> {
+): ReadonlyMap<string, Whose> {
   if (members.length < 2) return new Map();
 
-  return new Map(members.map((member) => [member.id, member.name]));
+  const seated = members.map((member) => member.id);
+
+  return new Map(
+    members.map((member) => [
+      member.id,
+      { name: member.name, colour: memberColour(member.id, seated) },
+    ]),
+  );
 }
 
 function readable(
   movement: Movement,
   named: Naming,
-  attributions: ReadonlyMap<string, string>,
+  whose: ReadonlyMap<string, Whose>,
   reader: Reader,
 ): ReadableMovement {
   // A Movement whose Category is not in the catalogue can only come from a
@@ -268,21 +307,37 @@ function readable(
   // see is worse than one nobody can name.
   const category =
     movement.categoryId === null ? undefined : named.get(movement.categoryId);
-  const attributedTo = attributions.get(movement.attributedTo);
+  // Income is filed nowhere, so the word for it is the whole of its name. The
+  // empty string on the end is unreachable and is here for the type checker
+  // alone: `categoryId` is nullable because income makes it so, and an expense
+  // that reached this line has one (`filing`, plus the check in migration
+  // 0005). Written down rather than left as a mystery, because a fallback with
+  // no reason reads like a case somebody expected.
+  const name =
+    movement.direction === "income"
+      ? t("movements.income")
+      : (category?.name ?? movement.categoryId ?? "");
 
   return {
     id: movement.id,
     direction: movement.direction,
-    // Income is filed nowhere, so the word for it is the whole of its name.
-    // The empty string on the end is unreachable and is here for the type
-    // checker alone: `categoryId` is nullable because income makes it so, and
-    // an expense that reached this line has one (`filing`, plus the check in
-    // migration 0005). Written down rather than left as a mystery, because a
-    // fallback with no reason reads like a case somebody expected.
-    category:
+    category: name,
+    // The Category's own mark, the arrow for income, and — for a Movement
+    // whose Category a migration retired — the letter of whatever the row is
+    // showing instead, which is the identifier. That row already keeps its
+    // money on the screen with its identifier where the name should be, and a
+    // circle carrying the same first character is the same wrong word twice
+    // rather than a hole beside it.
+    // The Category's own mark, and the arrow for income. A Movement whose
+    // Category a migration retired finds neither: its name is already showing
+    // an identifier nobody can read, and the first character of a uuid in the
+    // circle beside it would be a second unreadable thing rather than a mark.
+    // So the circle comes out empty and keeps the column, which is the honest
+    // picture of a row that has lost its name.
+    mark:
       movement.direction === "income"
-        ? t("movements.income")
-        : (category?.name ?? movement.categoryId ?? ""),
+        ? incomeMark
+        : (category?.mark ?? letterMark("")),
     heading: category?.heading ?? null,
     amount: formatMoney(movement.amount, reader.locales),
     minorUnits: movement.amount.amount,
@@ -290,9 +345,7 @@ function readable(
     occurredOn: movement.occurredOn,
     categoryId: movement.categoryId,
     attributedTo: movement.attributedTo,
-    attribution: attributedTo
-      ? t("movements.attributed", { member: attributedTo })
-      : null,
+    whose: whose.get(movement.attributedTo) ?? null,
     recordedBy: movement.recordedBy,
   };
 }

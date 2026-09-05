@@ -45,6 +45,12 @@ On the entry screen the direction sits **under** the keypad, not above it. Story
 
 Income is marked with a written `+` and never with a colour. This product has one accent colour and it already means "this can be tapped" — every row on the month's list is a link — so tinting an amount with it overloads the one signal the screen has. A sign is read out by a screen reader, survives a black-and-white printout, and is visible to somebody who cannot tell the two greens apart.
 
+**Reopened by #39, and only half of it moved.** The canvas colours income as well as signing it — on the two stat cards at the top of the month's list, and on the amount at the end of an income row — and the user was asked directly, because the paragraph above refuses it in as many words. They chose the canvas.
+
+What the refusal got right is untouched: the `+` stays. The reason it was written was that a difference carried by colour alone is one somebody cannot see, and that reason survives a colour being added *on top of* the sign rather than instead of it. It is the same rule the glossary already applies to a Category over its plan — "said in colour, in words and in an icon at once, never in colour alone" — so this is not a new principle, it is this screen catching up with one the rest of the product already follows.
+
+What was traded away is the second argument, that the accent means "this can be tapped" and nothing else. That cost is real and is being paid knowingly: on the month's list the accent now means two things, and what keeps them apart is that one of them is a whole row and the other is a few characters at the end of it. If that turns out to read wrong on a screen full of income, the way out is a `--color-income` of its own rather than going back to an uncoloured figure — the canvas is legible and the argument for the sign is not the argument against the colour.
+
 `movementsByDay` groups a month by the day money moved, most recent first, and days with nothing in them are absent rather than empty. A day is what a person remembers about money; an empty row is a row a thumb scrolls past, and a month of thirty of them buries the four that matter.
 
 The month can be walked backwards without limit and forwards only as far as the month being lived in (`monthsAround`). Nothing can have happened after today — `recordMovement` refuses a day that has not — so every later month is guaranteed empty, and offering them is offering a corridor of blank screens with month names on them.

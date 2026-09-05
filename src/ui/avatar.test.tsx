@@ -1,39 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { Avatar, initialOf } from "./avatar";
+import { Avatar } from "./avatar";
 import { memberColour } from "./member-colour";
 
 const gian = "member-1";
 const ana = "member-2";
 const both = [gian, ana];
-
-describe("the letter a person is drawn as", () => {
-  it("is the first letter of their name, in capitals", () => {
-    expect(initialOf("gian")).toBe("G");
-  });
-
-  it("ignores the space somebody typed before their name", () => {
-    expect(initialOf("  Ana  ")).toBe("A");
-  });
-
-  // "Ángela" is an A with a hat on, not an A. Uppercasing the letter the name
-  // really starts with keeps the accent, because that is the letter she wrote.
-  it("keeps the accent on a letter that carries one", () => {
-    expect(initialOf("ángela")).toBe("Á");
-  });
-
-  // One letter and not one code unit: a name beginning outside the basic
-  // plane would otherwise be drawn as half a character.
-  it("takes one whole character and never half of one", () => {
-    expect(initialOf("𝒮ol")).toBe("𝒮");
-  });
-
-  // Not "U" for undefined and not a crash: a Member with no name is a row
-  // that went wrong upstream, and the circle says nothing rather than a lie.
-  it("has nothing to draw for a name that is not there", () => {
-    expect(initialOf("   ")).toBe("");
-  });
-});
 
 describe("the avatar", () => {
   it("draws the initial of the person it is about", () => {
@@ -79,5 +51,29 @@ describe("the avatar", () => {
     render(<Avatar name="Gian" colour={memberColour(gian, both)} size="sm" />);
 
     expect(screen.getByRole("img").className).toContain("sm");
+  });
+
+  // The third size, and the smallest: whose money a Movement was, sitting
+  // before the amount on the month's list (#39). It is a size and not a new
+  // component because it is the same circle saying the same thing -- only the
+  // room it has to say it in has changed.
+  it("comes in the smallest size a row on the month's list carries", () => {
+    render(<Avatar name="Ana" colour={memberColour(ana, both)} size="xs" />);
+
+    expect(screen.getByRole("img").className).toContain("xs");
+  });
+
+  /*
+   * Still a labelled image at 21px, and that is the whole reason a ten-pixel
+   * letter is allowed to be that small: nobody is meant to read it. On a row
+   * in a shared Space this circle is the only thing that says whose money it
+   * was -- the "Plata de Ana" line it replaced is gone -- so a circle that
+   * said nothing to a screen reader would have deleted the fact rather than
+   * drawn it.
+   */
+  it("still says the whole name at the size nobody can read", () => {
+    render(<Avatar name="Ana Junta" colour={memberColour(ana, both)} size="xs" />);
+
+    expect(screen.getByRole("img", { name: "Ana Junta" })).toBeInTheDocument();
   });
 });

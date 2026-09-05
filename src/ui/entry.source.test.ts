@@ -10,6 +10,7 @@ const keypad = read("src/ui/keypad.module.css");
 const segmented = read("src/ui/segmented-field.module.css");
 const light = read("design/Main.dc.html");
 const dark = read("design/CargarGastoOscuro.dc.html");
+const form = read("src/app/espacios/[id]/movimientos/form.tsx");
 
 /** The one inline style on the artboard that draws a key. */
 const key = /class="k"[^>]*style="([^"]*)"/.exec(light)?.[1];
@@ -114,5 +115,66 @@ describe("the numbers the entry screen reads off the canvas", () => {
 
       expect(keypad).toContain("var(--color-disabled)");
     });
+  });
+});
+
+/**
+ * The order the entry screen comes down in, read off the canvas and off the
+ * form and compared (#52).
+ *
+ * Everything above pins a number. A number is what a stylesheet can be wrong
+ * about, and #37 was wrong about none of them: it shipped ten green criteria
+ * with the direction under the figure and the keys against it, because the
+ * one thing nothing read back was the order the blocks come in.
+ *
+ * So each block is named by something only that block contains, in each of
+ * the two files, and the sequence the artboard puts them in is compared with
+ * the sequence the form puts them in. Landmarks and not whole blocks: what is
+ * held here is the order, and the numbers are held above.
+ */
+const BLOCKS = [
+  // The segmented control's groove: the only 9px corner on the artboard.
+  { block: "the direction", onTheCanvas: "border-radius: 9px", inTheForm: "<SegmentedField" },
+  { block: "the figure", onTheCanvas: "font-size: 52px", inTheForm: "<Readout" },
+  // The day line's corner, which is 11px and nothing else on the screen is.
+  { block: "the day line", onTheCanvas: "border-radius: 11px", inTheForm: "<When" },
+  { block: "the Category", onTheCanvas: "CATEGORÍA", inTheForm: "<BranchingChipField" },
+  { block: "the keys", onTheCanvas: 'class="k"', inTheForm: "<Keys" },
+  { block: "Save", onTheCanvas: "Guardar", inTheForm: 'type="submit"' },
+] as const;
+
+type Block = (typeof BLOCKS)[number];
+
+/** The blocks named in the order the given file happens to put them in. */
+const sequenceIn = (source: string, landmarkOf: (block: Block) => string) =>
+  [...BLOCKS]
+    .sort((a, b) => source.indexOf(landmarkOf(a)) - source.indexOf(landmarkOf(b)))
+    .map((block) => block.block);
+
+describe("the order the blocks come down the entry screen", () => {
+  it("finds every block in both files", () => {
+    // Without this a renamed landmark would leave a -1 that sorts first, and
+    // the comparison below would agree about a file it never read.
+    for (const block of BLOCKS) {
+      expect(light, `the canvas no longer draws ${block.block}`).toContain(
+        block.onTheCanvas,
+      );
+      expect(form, `the form no longer draws ${block.block}`).toContain(
+        block.inTheForm,
+      );
+    }
+  });
+
+  it("draws them in the sequence the canvas draws them", () => {
+    expect(sequenceIn(form, (block) => block.inTheForm)).toEqual(
+      sequenceIn(light, (block) => block.onTheCanvas),
+    );
+  });
+
+  it("keeps the figure and the keys as two components", () => {
+    // The reason this ticket is a ticket: with one `Keypad` there is nowhere
+    // for the day line and the Category to go. A `<Keypad` back in this file
+    // would be the split quietly undone.
+    expect(form).not.toContain("<Keypad");
   });
 });

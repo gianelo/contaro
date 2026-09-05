@@ -1,14 +1,15 @@
 import styles from "./avatar.module.css";
+import { initialOf } from "./initial";
 import { cx } from "./cx";
 
 /**
- * The two sizes a person is drawn at: alone at the top of a screen, or stacked
- * against whoever else is in the Space.
+ * The three sizes a person is drawn at: alone at the top of a screen, stacked
+ * against whoever else is in the Space, or beside an amount on a row.
  *
  * Named for where they are used rather than for their pixels, so the day the
- * canvas redraws a 28px circle at 26 this stays the same two words.
+ * canvas redraws a 28px circle at 26 this stays the same three words.
  */
-export type AvatarSize = "lg" | "sm";
+export type AvatarSize = "lg" | "sm" | "xs";
 
 export type AvatarProps = {
   /** Whose circle this is. Drawn as one letter, said in full. */
@@ -24,18 +25,6 @@ export type AvatarProps = {
 };
 
 /**
- * The letter a name is drawn as.
- *
- * `Array.from` and not `name[0]`: a name beginning outside the basic plane is
- * two code units, and half of one is not a letter. Uppercased with the locale's
- * rules so an accent survives — "Ángela" starts with an Á, and drawing her as
- * an A is drawing somebody else.
- *
- * A name that is only spaces has no letter, and this returns none rather than
- * inventing one. It is a row that went wrong upstream; an empty circle says so
- * honestly, and the full name is still on the avatar for anyone listening.
- */
-/**
  * The colour the Reader wears where there is no Space to seat them in.
  *
  * Here and not in `member-colour.ts`, because it is not a seat: that module
@@ -44,10 +33,6 @@ export type AvatarProps = {
  * guarantee had an exception living next to it.
  */
 export const readerColour: string = styles.reader;
-
-export function initialOf(name: string): string {
-  return Array.from(name.trim())[0]?.toLocaleUpperCase("es") ?? "";
-}
 
 /**
  * A person, as one coloured circle.

@@ -36,6 +36,19 @@
 }
 
 /*
+ * Whose money a Movement was, sitting before the amount on the month's list
+ * (#39). The smallest circle there is, and the only one with no room for
+ * anything but a hint of a letter -- the whole name is on the label, which is
+ * what lets ten pixels be enough. It replaced a line of text that said "Plata
+ * de Ana" and cost the row its whole second line to do it.
+ */
+.xs {
+  width: 21px;
+  height: 21px;
+  font-size: var(--text-3xs);
+}
+
+/*
  * What lifts a circle off the one behind it once they overlap. The surface
  * colour and not white, so the gap is still a gap at night.
  */
