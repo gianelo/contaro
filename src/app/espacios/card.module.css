@@ -1,0 +1,113 @@
+/*
+ * A Space on the list a Member lands on. One card per Space, and the one being
+ * used outlined in the accent.
+ */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  /*
+   * A transparent border and not none, so the accent one below swaps a colour
+   * rather than adding 2px of height to whichever card is being used.
+   */
+  border: 2px solid transparent;
+}
+
+/* The Space last opened. Never the only thing saying so -- see the badge. */
+.lastOpened {
+  border-color: var(--color-accent);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.naming {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  /* Takes the room the avatars and the badge do not, and lets a long name
+     ellipsize rather than push the badge off the card. */
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The way in, and the whole card is it. A real box laid over the card rather
+ * than a pseudo-element stretched off the name: what a finger meets and what a
+ * browser measures are then the same thing, which is what e2e/hit-targets
+ * checks and what a ::after would quietly pass by being invisible to it.
+ *
+ * Over the card and not under it, so every part of the card is the tap. The
+ * cost is that the card's words cannot be selected with a mouse, which is the
+ * same cost every tappable card pays and no cost at all on a phone.
+ */
+.cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.who {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * What the month cost against what it was planned to. Above the fold of the
+ * card and under a line, because it is the answer to a different question from
+ * the one the head answers: not "which Space is this" but "where do I stand".
+ */
+.standing {
+  display: flex;
+  gap: var(--space-9);
+  margin: var(--space-7) 0 0;
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-separator);
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--text-2xs);
+  color: var(--color-text-tertiary);
+}
+
+/* What really happened: the loud one, in the ink the card is written in. */
+.spent {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+
+/*
+ * What was planned. Quieter on purpose: it is the thing being measured
+ * against, and two figures shouting at each other is a card that says which
+ * of them to read first by saying nothing.
+ */
+.expected {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}

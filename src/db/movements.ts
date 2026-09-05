@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import {
   calendarDate,
   firstDayOf,
@@ -17,6 +17,7 @@ import {
   type Recording,
 } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
+import { bySpace } from "./by-space";
 import { categoriesTheSpaceCanSee } from "./categories";
 import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
@@ -231,6 +232,45 @@ export async function movementsInMonth(
     .orderBy(desc(movements.occurredOn), desc(movements.createdAt));
 
   return rows.map((row) => asMovement(row, space));
+}
+
+/**
+ * The same month's Movements for several Spaces at once, grouped by the Space
+ * they belong to.
+ *
+ * The Space list needs this for every Space a Member is in, and asking
+ * `movementsInMonth` once per Space would make landing on that screen cost a
+ * query per card — a list whose price goes up with how many Spaces somebody
+ * has. One `IN` reads them all, and the index the month's list already uses
+ * (`movements_space_id_occurred_on_idx`) serves it.
+ *
+ * Whole Spaces and not their ids, for the reason the single-Space reader takes
+ * one: every amount can only be read in the currency its own Space is
+ * denominated in. `bySpace` is what holds each row to its own (ADR-0007).
+ */
+export async function movementsInMonthForSpaces(
+  db: Database,
+  spaces: readonly Space[],
+  month: Month,
+): Promise<ReadonlyMap<string, readonly Movement[]>> {
+  if (spaces.length === 0) return new Map();
+
+  const byId = new Map(spaces.map((space) => [space.id, space]));
+
+  const rows = await db
+    .select(movementColumns)
+    .from(movements)
+    .where(
+      and(
+        inArray(movements.spaceId, [...byId.keys()]),
+        gte(movements.occurredOn, firstDayOf(month)),
+        lte(movements.occurredOn, lastDayOf(month)),
+        standing,
+      ),
+    )
+    .orderBy(desc(movements.occurredOn), desc(movements.createdAt));
+
+  return bySpace(rows, byId, asMovement);
 }
 
 /**

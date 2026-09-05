@@ -1,0 +1,37 @@
+/*
+ * The head of the Space list: the person, and what the screen wants from them.
+ */
+.greeting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-9) 0 var(--space-8);
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/*
+ * The biggest thing on the screen, which is what a greeting is here. A step
+ * down from the old --text-title: this heading now sits beside a 44px circle
+ * rather than alone on a line, and 32px against it reads as a banner.
+ */
+.hello {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}

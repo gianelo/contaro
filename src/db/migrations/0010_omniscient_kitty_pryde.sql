@@ -1,0 +1,2 @@
+ALTER TABLE "space_members" ADD COLUMN "last_opened_at" timestamp with time zone;--> statement-breakpoint
+CREATE INDEX "space_members_last_opened_idx" ON "space_members" USING btree ("member_id","last_opened_at" DESC NULLS LAST);

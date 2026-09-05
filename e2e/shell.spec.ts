@@ -7,8 +7,9 @@ test("the app runs and renders the shell in Spanish", async ({ page }) => {
   // of them (#5).
   await expect(page).toHaveURL(/\/espacios$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  // The screen greets whoever landed on it rather than naming itself (#38).
   await expect(
-    page.getByRole("heading", { name: "Espacios", level: 1 }),
+    page.getByRole("heading", { name: "Hola, Ana", level: 1 }),
   ).toBeVisible();
 });
 

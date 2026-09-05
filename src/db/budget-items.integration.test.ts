@@ -11,10 +11,12 @@ import { createDatabase, databaseUrl } from "./connection";
 import { memberFromGoogle } from "./members";
 import { createSpaceForMember } from "./spaces";
 import { addCategoryToSpace, catalogueForSpace } from "./categories";
+import { expected } from "@/domain/budget/budget";
 import { movementsInMonth } from "./movements";
 import {
   amendBudgetItemInSpace,
   budgetItemsInMonth,
+  budgetItemsInMonthForSpaces,
   findBudgetItemInSpace,
   payFixedItemInSpace,
   planBudgetItemInSpace,
@@ -351,4 +353,92 @@ it("creates one Movement when two thumbs mark the same item paid at once", async
   } finally {
     await other.sql.end();
   }
+});
+
+/*
+ * The Space list reads every Space's plan at once (#38), so that landing on it
+ * costs the same whether somebody has one Space or four.
+ */
+
+it("reads several Spaces' plans in one go, each under its own Space", async () => {
+  const casa = await aSpaceWithACategory("Plan Casa", "ARS");
+  const viaje = await aSpaceWithACategory("Plan Viaje", "USD");
+
+  await planBudgetItemInSpace(db, casa.space, {
+    spaceId: casa.space.id,
+    month: SEPTEMBER,
+    categoryId: casa.categoryId,
+    amount: 240_000_00,
+  });
+  await planBudgetItemInSpace(db, viaje.space, {
+    spaceId: viaje.space.id,
+    month: SEPTEMBER,
+    categoryId: viaje.categoryId,
+    amount: 800_00,
+  });
+
+  const grouped = await budgetItemsInMonthForSpaces(
+    db,
+    [casa.space, viaje.space],
+    SEPTEMBER,
+  );
+
+  expect(expected(grouped.get(casa.space.id) ?? [], "ARS")).toEqual(
+    money(240_000_00, "ARS"),
+  );
+  expect(expected(grouped.get(viaje.space.id) ?? [], "USD")).toEqual(
+    money(800_00, "USD"),
+  );
+});
+
+it("holds a batch to the month it was asked about", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Plan Mes");
+
+  await planBudgetItemInSpace(db, space, {
+    spaceId: space.id,
+    month: SEPTEMBER,
+    categoryId,
+    amount: 100_000_00,
+  });
+
+  const grouped = await budgetItemsInMonthForSpaces(db, [space], OCTOBER);
+
+  expect(grouped.get(space.id) ?? []).toHaveLength(0);
+});
+
+// The acceptance criterion a blank card would fail: a Space nobody has planned
+// a month for still owes a figure, and zero in its own money is one.
+it("leaves a Space nobody has planned for with nothing, which totals zero", async () => {
+  const { space } = await aSpaceWithACategory("Plan Vacio");
+
+  const grouped = await budgetItemsInMonthForSpaces(db, [space], SEPTEMBER);
+
+  expect(expected(grouped.get(space.id) ?? [], "ARS")).toEqual(
+    money(0, "ARS"),
+  );
+});
+
+it("asks nothing at all when there are no Spaces to ask about", async () => {
+  await expect(
+    budgetItemsInMonthForSpaces(db, [], SEPTEMBER),
+  ).resolves.toEqual(new Map());
+});
+
+// The floor under the domain. Every test above goes through `planItem` or
+// `planFixedItem`; this one goes round them, straight to SQL, which is the
+// path a migration written in a hurry or a psql session takes.
+
+it("refuses, in the database itself, a Budget item that names no kind", async () => {
+  // The Space, the Category and the amount are all fine, so 0009's
+  // `DEFAULT 'variable'` would have let this row in as a Variable item. 0011
+  // dropped it (#47): the kind `planItem` and `planFixedItem` each say by name
+  // is said here too.
+  const { space, categoryId } = await aSpaceWithACategory("Sin especie");
+
+  await expect(
+    sql`
+      INSERT INTO budget_items (space_id, month, category_id, amount)
+      VALUES (${space.id}, '2026-09', ${categoryId}, 240000)
+    `,
+  ).rejects.toThrow(/null value in column "kind"/);
 });

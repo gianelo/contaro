@@ -8,10 +8,14 @@ import { hitTarget } from "./hit-target";
 export type SegmentedFieldProps = {
   name: string;
   /**
-   * What the choice is, for somebody who cannot see the two halves side by
-   * side. It names the group and is never printed: the canvas draws no heading
-   * above the control, because two halves labelled "Gasto" and "Ingreso" say
-   * what the question is to anybody looking at them.
+   * What the choice is, for somebody who cannot see the halves side by side.
+   * It names the group and is never printed here.
+   *
+   * Whether the question needs printing at all is the caller's to answer, and
+   * the two callers answer it differently. "Gasto" and "Ingreso" say what the
+   * question is to anybody looking at them, and the canvas draws no heading
+   * above them. "Automático | Claro | Oscuro" does not -- automatic what? --
+   * so `Appearance` puts the same words in a heading of its own (#41).
    */
   legend: string;
   options: readonly Choice[];
@@ -21,8 +25,13 @@ export type SegmentedFieldProps = {
 };
 
 /**
- * A choice with two answers, drawn as one track with the chosen half raised
- * out of it.
+ * A closed choice, drawn as one track with the chosen answer raised out of it.
+ *
+ * Two answers or three, and no further: the track divides its width evenly, so
+ * a fourth answer inside a 390px column leaves four labels nobody can read. A
+ * direction is two -- "Gasto | Ingreso" -- and a theme is three (#41): light,
+ * dark, and whatever the phone says. What the shape claims is "these are all
+ * of them", and that claim was never about how many there are.
  *
  * The other shape this could take is `ChipField`, and that is what it was:
  * two pills, the chosen one filled with the accent. The difference is what the

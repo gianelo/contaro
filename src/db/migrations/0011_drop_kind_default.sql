@@ -1,0 +1,21 @@
+-- The contraction half of the expand/contract in 0009 (#47).
+--
+-- `DEFAULT 'variable'` existed for one deploy and has served it: ADR-0008 runs
+-- migrations from an Action while Vercel deploys in parallel, so for a few
+-- minutes the code of #10 -- which had never heard of this column -- was still
+-- inserting against the new schema. Every row already in the table was a
+-- Variable item, so 'variable' backfilled the truth and kept those writes
+-- working.
+--
+-- From the deploy after #13 nothing writing here is unaware of the column, and
+-- the default turns from a bridge into a guess. The two kinds are not
+-- variations of one thing: one is an expectation Movements count against, the
+-- other a known amount somebody marks paid. `planItem` and `planFixedItem`
+-- each say which kind they wrote, so nothing in the domain ever omits it -- and
+-- a column default answers for every write that goes round the domain, with a
+-- guess, exactly as `DEFAULT 'expense'` did for a direction before 0007.
+--
+-- The column stays NOT NULL, so a write that names no kind is now refused
+-- instead of guessed at. No row changes: dropping a default touches the rule
+-- for future inserts and never the rows already written.
+ALTER TABLE "budget_items" ALTER COLUMN "kind" DROP DEFAULT;

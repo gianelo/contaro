@@ -21,4 +21,17 @@ describe("the Ajustes screen", () => {
 
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });
+
+  it("carries how the app is lit, under what the Space holds", () => {
+    // The tab bar's Ajustes is the only settings screen there is, so this is
+    // where the theme goes (#41). It sits below the Space's own things and not
+    // above them: the screen is one Space's, and this choice is the device's.
+    render(<Settings spaceId={casa} />);
+
+    const groups = screen.getAllByRole("group");
+    expect(groups.map((group) => group.textContent)).toEqual([
+      expect.stringContaining("Categorías"),
+      expect.stringContaining("Apariencia"),
+    ]);
+  });
 });

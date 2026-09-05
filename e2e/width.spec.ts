@@ -33,7 +33,9 @@ test("no card touches the glass", async ({ page, context, baseURL }) => {
   await page.goto("/espacios");
 
   const viewport = page.viewportSize()!;
-  const card = await box(page.getByRole("list").first());
+  // A Space is a card of its own now rather than a row in one list (#38), so
+  // the thing with a radius to be rounded against the glass is the article.
+  const card = await box(page.locator("article").first());
 
   // A 16px radius has nothing to be rounded against when the card runs edge to
   // edge (#36). The gutter is the same on both sides or it is not a gutter.

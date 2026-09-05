@@ -13,7 +13,7 @@ A person with access to a Space. Members are added by Invitation, addressed to a
 _Avoid_: User, Partner, Participant
 
 **Reader**:
-The Member a screen is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014). The day they are standing in is theirs too: "today" on any screen is their day, never the server's (ADR-0018). Both halves are the type `Reader` in `src/app/reader.ts`, built from a request by `readerOf` — so the word here and the code say the same thing, and whatever turns out to be theirs next has one place to go.
+The Member a screen is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014). The day they are standing in is theirs too: "today" on any screen is their day, never the server's (ADR-0018). Both halves are the type `Reader` in `src/app/reader.ts`, built from a request by `readerOf` — so the word here and the code say the same thing, and whatever turns out to be theirs next has one place to go. What is theirs and *not* a Reader's is the theme: it is chosen on a device rather than read off a request, it never reaches the server, and putting it here would mean sending a preference up on every request that has no use for it (ADR-0030).
 _Avoid_: Viewer, User, Audience
 
 **Invitation**:
@@ -47,6 +47,10 @@ _Avoid_: Source, Kind, Type
 **Space currency**:
 The single currency a Space is denominated in, chosen when the Space is created and never changed afterwards. Every Movement and every report in that Space uses it.
 _Avoid_: Base currency, Default currency
+
+**Last opened**:
+The moment a Member last went into one of their Spaces, and by it the one Space of theirs the list marks as the one being used — "Activo" on its card (ADR-0029). It belongs to a Member and a Space together and never to the Space alone: two Members of one shared Space each came back to it at their own moment. A Member who has joined a Space and never opened it has no such moment, and a Member who has opened none has no Space being used.
+_Avoid_: Active, Current, Selected, Default space
 
 **Category**:
 The bucket an *expense* is classified under, such as food, rent or leisure. Categories come from a global catalogue that every Space sees, which a Space can extend with its own; a Category may hold subcategories. Income carries none: the dimension exists to be measured against a Budget, and a Budget is a plan of expenses (ADR-0016).

@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   spaceVisibleTo,
   spacesVisibleTo,
@@ -166,6 +166,69 @@ export async function listSpacesForMember(
   });
 
   return spacesVisibleTo(memberId, listed);
+}
+
+/**
+ * Writes down that this Member has just opened this Space (#38).
+ *
+ * What the Space list reads back as "Activo". A moment and not a flag: a
+ * boolean would have to be unset somewhere else, and the two writes would
+ * eventually disagree about which Space is the one being used. A timestamp has
+ * only ever to be written.
+ *
+ * The membership rule is not asked here, and does not need to be: the pair is
+ * the primary key, so a Member who is not in this Space updates no rows at all
+ * and the call is a no-op rather than a leak.
+ */
+export async function markSpaceOpened(
+  db: Database,
+  spaceId: string,
+  memberId: string,
+): Promise<void> {
+  // An id from a URL is any string at all, and Postgres refuses a malformed
+  // uuid with an error rather than an empty update.
+  if (!UUID.test(spaceId)) return;
+
+  await db
+    .update(spaceMembers)
+    .set({ lastOpenedAt: sql`now()` })
+    .where(
+      and(
+        eq(spaceMembers.spaceId, spaceId),
+        eq(spaceMembers.memberId, memberId),
+      ),
+    );
+}
+
+/**
+ * The Space this Member opened last, or none if they never have.
+ *
+ * One id and not a moment per Space: exactly one Space is the one being used,
+ * so the list is asked "which is it" rather than handed every timestamp to
+ * compare for itself. A Member who has only ever landed on the list has opened
+ * nothing, and that comes back as null rather than as their oldest Space —
+ * a badge nothing supports is worse than no badge.
+ *
+ * Rows never opened are left out rather than sorted last, so the answer cannot
+ * come back as a Space whose `last_opened_at` is null.
+ */
+export async function lastOpenedSpace(
+  db: Database,
+  memberId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ spaceId: spaceMembers.spaceId })
+    .from(spaceMembers)
+    .where(
+      and(
+        eq(spaceMembers.memberId, memberId),
+        isNotNull(spaceMembers.lastOpenedAt),
+      ),
+    )
+    .orderBy(desc(spaceMembers.lastOpenedAt))
+    .limit(1);
+
+  return row?.spaceId ?? null;
 }
 
 /**
