@@ -42,39 +42,34 @@ export function nextAmount(amount: number, key: KeyPress): number {
   return pushed > MAX_MOVEMENT_AMOUNT ? amount : pushed;
 }
 
-export type KeypadProps = {
+export type ReadoutProps = {
   /** The amount so far, in minor units. */
   value: number;
   /** The Space's currency. Never the reader's: ADR-0001. */
   currency: CurrencyCode;
   /** How the reader reads numbers. Never the Space's: ADR-0014. */
   locales: readonly string[];
-  onChange: (amount: number) => void;
 };
 
-/** What the canvas draws the erase key's icon at. */
-const ERASE_SIZE = 27;
-
 /**
- * The amount, and the keys that build it.
+ * The amount, as the money it is.
  *
- * The figure above the keys is cut from the same formatting the month's list
- * uses, so what a person watches themselves type is character for character
- * what they will read back afterwards. A keypad that showed a raw number would
- * be a keypad whose result is a small surprise.
+ * Cut from the same formatting the month's list uses, so what a person watches
+ * themselves type is character for character what they will read back
+ * afterwards. A keypad that showed a raw number would be a keypad whose result
+ * is a small surprise.
  *
  * It is set at two sizes because the two halves are not equally interesting:
  * the digits are what somebody is watching appear, and the symbol only says
  * which money they are. Both still come from one `moneyParts`, so neither can
  * drift from the other or from the list (ADR-0007, ADR-0014).
  */
-export function Keypad({ value, currency, locales, onChange }: KeypadProps) {
+export function Readout({ value, currency, locales }: ReadoutProps) {
   const { symbol, amount } = moneyParts(money(value, currency), locales);
 
   return (
-    <div className={styles.keypad}>
-      <div className={styles.readout}>
-        <p
+    <div className={styles.readout}>
+      <p
         // Announced as it changes, so the amount is followed by a person who
         // cannot see it — which on a keypad with no text field is the only way
         // to know what has been typed.
@@ -96,32 +91,73 @@ export function Keypad({ value, currency, locales, onChange }: KeypadProps) {
         typing, so announcing it after every press would read out the one thing
         that did not.
       */}
-        <p className={styles.currency}>{currency}</p>
-      </div>
+      <p className={styles.currency}>{currency}</p>
+    </div>
+  );
+}
 
-      <div className={styles.keys} role="group" aria-label={t("movements.keypad")}>
-        {KEYS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onChange(nextAmount(value, key))}
-            className={cx(hitTarget, styles.key)}
-          >
-            {key}
-          </button>
-        ))}
+export type KeysProps = {
+  /** The amount so far, in minor units. */
+  value: number;
+  onChange: (amount: number) => void;
+};
 
+/** What the canvas draws the erase key's icon at. */
+const ERASE_SIZE = 27;
+
+/**
+ * The keys that build the amount.
+ *
+ * Apart from the figure they build, because the entry screen draws the two at
+ * opposite ends of the page with the Category and the day between them (#52).
+ * They carry no currency and no locales, which is the split saying what it is:
+ * a key press is a number pushed in, and which money that number counts is the
+ * readout's half of the job.
+ */
+export function Keys({ value, onChange }: KeysProps) {
+  return (
+    <div className={styles.keys} role="group" aria-label={t("movements.keypad")}>
+      {KEYS.map((key) => (
         <button
+          key={key}
           type="button"
-          aria-label={t("movements.keypad.erase")}
-          onClick={() => onChange(nextAmount(value, "erase"))}
+          onClick={() => onChange(nextAmount(value, key))}
           className={cx(hitTarget, styles.key)}
         >
-          {/* Unlabelled: the name is on the button, and an icon that named
-              itself too would have the key read out twice. */}
-          <Icon name="backspace" size={ERASE_SIZE} />
+          {key}
         </button>
-      </div>
+      ))}
+
+      <button
+        type="button"
+        aria-label={t("movements.keypad.erase")}
+        onClick={() => onChange(nextAmount(value, "erase"))}
+        className={cx(hitTarget, styles.key)}
+      >
+        {/* Unlabelled: the name is on the button, and an icon that named
+            itself too would have the key read out twice. */}
+        <Icon name="backspace" size={ERASE_SIZE} />
+      </button>
+    </div>
+  );
+}
+
+export type KeypadProps = ReadoutProps & KeysProps;
+
+/**
+ * The amount and the keys under it, as one block.
+ *
+ * What is left of the keypad after #52 took the entry screen's two halves
+ * apart: the screens that plan a budget do draw them together, one under the
+ * other, which is what their canvas asks for and what the gap in `.keypad`
+ * is. The entry screen reaches for `Readout` and `Keys` directly instead,
+ * because nothing can sit between two halves of one component.
+ */
+export function Keypad({ value, currency, locales, onChange }: KeypadProps) {
+  return (
+    <div className={styles.keypad}>
+      <Readout value={value} currency={currency} locales={locales} />
+      <Keys value={value} onChange={onChange} />
     </div>
   );
 }

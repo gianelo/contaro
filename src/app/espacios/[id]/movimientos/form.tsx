@@ -8,7 +8,7 @@ import { t } from "@/i18n";
 import { Button } from "@/ui/button";
 import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
 import { SegmentedField } from "@/ui/segmented-field";
-import { Keypad } from "@/ui/keypad";
+import { Keys, Readout } from "@/ui/keypad";
 import { When } from "./when";
 import { nothingWrongYet, type MovementFormState } from "./record";
 import styles from "./form.module.css";
@@ -54,12 +54,19 @@ export type MovementFormProps = {
  * The screen the whole product rests on: the amount on a keypad, the Category
  * one tap away, save.
  *
- * The order down the page is the order a person answers in (story 18 in #1):
- * the amount first, because it is the only part they might forget on the way
- * home from the till; the Category next, one tap from its headings, with what
- * a heading holds offered after it and demanded of nobody (#45); the day and
- * the attribution last and folded away, because in the ordinary case they are
- * already right and asking about them would be asking nothing.
+ * The order down the page is the order `design/Main.dc.html` draws it, which
+ * is the order a person answers in (story 18 in #1): what kind of movement
+ * this is, because it decides what else is asked; then the amount, because it
+ * is the only part they might forget on the way home from the till; then the
+ * day and the attribution, folded into one line because in the ordinary case
+ * they are already right and asking about them would be asking nothing; then
+ * the Category, one tap from its headings, with what a heading holds offered
+ * after it and demanded of nobody (#45).
+ *
+ * The keys come last, after the chips, apart from the figure they build —
+ * which is why `Readout` and `Keys` are two components and not one (#52).
+ * Nothing can sit between the halves of a single component, and the day line
+ * and the Category sit between these two.
  *
  * Recording and correcting are one form, because they are one screen with one
  * set of answers. The only difference is which action it submits to and what
@@ -151,19 +158,12 @@ export function MovementForm({
       */}
       <input type="hidden" name="amount" value={amount} />
 
-      <Keypad
-        value={amount}
-        currency={currency}
-        locales={locales}
-        onChange={setAmount}
-      />
-
       {/*
-        Under the keypad, not above it. Story 18 in #1 puts the amount first
-        because it is the only part a person might forget on the way home from
-        the till, and a question above it is a question between them and the
-        number. It sits above the Category because it decides whether there is
-        a Category to ask about at all.
+        Above the figure, which is where the canvas draws it and what #37 got
+        wrong on the ticket's word (#52). It is one word answered before any
+        number is typed, and it decides whether there is a Category to ask
+        about at all -- so it belongs above the block it changes the shape of,
+        not underneath the figure it never touches.
 
         A correction cannot change it -- which way the money went is what kind
         of Movement this is, not a field on one -- so there is no control
@@ -188,6 +188,14 @@ export function MovementForm({
           required
         />
       )}
+
+      {/*
+        The figure, read where it is typed. Story 18 in #1 puts the amount
+        first because it is the only part a person might forget on the way
+        home from the till -- and the keys that build it are at the foot, four
+        blocks below, which is the whole of #52.
+      */}
+      <Readout value={amount} currency={currency} locales={locales} />
 
       <When
         day={day}
@@ -215,6 +223,15 @@ export function MovementForm({
           required
         />
       ) : null}
+
+      {/*
+        Last, after the chips, which is where the canvas draws them and what
+        #37 left against the figure. It is the order that is copied here and
+        not the artboard's own geometry: the canvas grows a spacer above the
+        keys to pin them to the bottom of a 844px frame, and this screen is as
+        tall as what is on it.
+      */}
+      <Keys value={amount} onChange={setAmount} />
 
       {state.error ? (
         <p role="alert" className={styles.error}>
