@@ -57,9 +57,12 @@ test("a Member invites their partner, who takes the seat and lands in the Space"
   await betos.getByRole("button", { name: "Entrar" }).click();
 
   await expect(betos).toHaveURL(new RegExp(`/espacios/${casa.id}$`));
+  // The Budget screen names itself, and the Space he has just joined is the
+  // quiet line under the title (#40).
   await expect(
-    betos.getByRole("heading", { name: "Casa compartida", level: 1 }),
+    betos.getByRole("heading", { name: "Presupuesto", level: 1 }),
   ).toBeVisible();
+  await expect(betos.getByText(/^Casa compartida · /)).toBeVisible();
 
   // And now both of them are in it, which is what every later screen reads.
   await page.reload();

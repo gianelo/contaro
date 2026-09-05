@@ -73,6 +73,11 @@ export const es = {
   "space.new.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
   "space.new.error.failed": "No pudimos crear el espacio. Probá de nuevo.",
 
+  // The quiet line under a screen that names itself (#40): which Space you are
+  // in, and the money everything on it is written in. The Space is first
+  // because it is the one a person is checking; the currency qualifies it.
+  "space.beneath": "{space} \u00b7 {currency}",
+
   "space.month": "Este mes",
   // Two screens, two words for one figure, on purpose. The Budget tab shows
   // one number and reads "lo que va gastado"; the month's list shows two side
@@ -85,12 +90,22 @@ export const es = {
   "space.month.choose": "Elegir el mes",
   "space.month.previous": "Mes anterior",
   "space.month.next": "Mes siguiente",
+  // The pill at the top of the Budget screen (#40). The month first, because
+  // the accessible name has to start with the word a person can see on it.
+  "space.month.pill": "{month}, elegir el mes",
+  "space.month.inView": "Mes que est\u00e1s viendo",
 
-  // The month's plan (#10). "Presupuesto" is the tab; inside it the plan is
-  // read as what the month is expected to cost, which is why the total is
-  // "Planeado" beside the "Gastado" above it rather than a second "Presupuesto".
+  // The month's plan (#10). "Presupuesto" is the tab and, since #40, the
+  // screen's own title; the list under it is "El plan del mes", because the
+  // rows are the plan and a second "Presupuesto" over them would name the
+  // screen twice.
   "budget.title": "El plan del mes",
-  "budget.planned": "Planeado",
+  // What the month was planned to cost, beside what it really cost (#40). A
+  // pair of nouns on one card, the way the month's list writes "Ingresos" and
+  // "Gastos": each one is only readable against the other. It replaced
+  // "Planeado", which was a participle because it was the last row of a list
+  // of things somebody had planned rather than half of a comparison.
+  "budget.budgeted": "Presupuestado",
   // The comparison, one line per Category (#11). Named for the kind of item
   // it is about rather than for the grouping, which is what makes room for
   // the Fijos beside it (#13), and it is what the canvas titles it.

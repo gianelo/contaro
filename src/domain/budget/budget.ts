@@ -725,6 +725,69 @@ export function expected(
 }
 
 /**
+ * The whole month's spending against the whole of its plan (#40).
+ *
+ * The pair of figures the summary card draws, where `comparedToPlan` gives one
+ * pair per Category. They are different questions and the difference is in the
+ * numerator: a Category's row is driven by the plan, so spending on a Category
+ * nobody planned for has no row and belongs in none. The month's own total has
+ * no such filter — "Gastado" on that card is what the month cost, the same
+ * figure the month's list prints at the top of its days, and a total that
+ * quietly dropped the unplanned half would disagree with it.
+ */
+export type MonthComparison = {
+  /** What the month cost: every expense in it, planned for or not. */
+  spent: Money;
+  /** What the month was planned to cost: every item, of either kind. */
+  expected: Money;
+  /**
+   * How much of the plan has gone, as a share of it: 0.87 is most of the way
+   * through. Past 1 on a month that went over, which the meter clamps.
+   *
+   * Null, and not zero, on a month nobody has planned: there is no plan to be
+   * a share of, and the meter draws nothing rather than an empty length.
+   */
+  share: number | null;
+  /** How far past the plan, or null while the month is inside it. */
+  over: Money | null;
+};
+
+/**
+ * What the month cost, what it was planned to cost, and how those two stand.
+ *
+ * The arithmetic is here rather than in the reader that formats them, for the
+ * reason `CategoryComparison.share` is: a screen doing sums on `Money.amount`
+ * is a screen that can disagree with the figures beside it.
+ *
+ * A month nobody has planned answers `null` twice rather than zero twice. Zero
+ * would say "you have spent all of a plan of nothing" and draw a full meter on
+ * a month whose plan does not exist; the plan's own empty state has already
+ * said the true thing, in words.
+ */
+export function monthAgainstPlan(
+  items: readonly BudgetItem[],
+  movements: readonly Movement[],
+  currency: CurrencyCode,
+): MonthComparison {
+  const cost = spent(movements, currency);
+  const plan = expected(items, currency);
+
+  if (plan.amount === 0) {
+    return { spent: cost, expected: plan, share: null, over: null };
+  }
+
+  return {
+    spent: cost,
+    expected: plan,
+    share: cost.amount / plan.amount,
+    over:
+      cost.amount > plan.amount
+        ? money(cost.amount - plan.amount, currency)
+        : null,
+  };
+}
+
+/**
  * Two currencies are never added up. A plan in one money measured against
  * spending in another is not a comparison, and converting behind a person's
  * back is the one thing ADR-0007 exists to prevent.

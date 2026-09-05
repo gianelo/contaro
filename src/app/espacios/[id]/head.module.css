@@ -1,0 +1,56 @@
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) 0 var(--space-10);
+}
+
+/*
+ * The title and whatever shares its row. The title takes what is left, so the
+ * month pill sits at the far end of the row where a thumb reaching for it
+ * already is, and a long Space name pushes against the pill rather than
+ * wrapping under it.
+ */
+.headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+/*
+ * -0.6px, which #40 asked to have decided against the rest of the product
+ * rather than copied off the artboard. The product has exactly two other
+ * headings at --text-title -- the sign-in screen and the UI gallery -- and
+ * both carry -0.6px, so this is the rule and not a third opinion. (The Space
+ * list's greeting carries -0.4px at --text-2xl, which is a different size and
+ * so not the same decision.) The value happening to match the artboard is the
+ * agreement, not the argument.
+ */
+.title {
+  margin: 0;
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.6px;
+  min-width: 0;
+}
+
+/*
+ * Only where something shares the row. The title yields to the pill rather
+ * than the other way round -- the pill is a control with a fixed shape and a
+ * Space name is any length -- but a title alone on its row has the whole width
+ * and should wrap onto a second line rather than lose its end. `:only-child`
+ * is exactly that question asked of the row: `beside` renders nothing on the
+ * nine screens that pass none.
+ */
+.title:not(:only-child) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.beneath {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}

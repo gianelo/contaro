@@ -4,6 +4,7 @@
    than a screen wide at any readable size — and centring would leave the mark
    floating between two lines instead of sitting on the first. */
 .line {
+  margin: 0;
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);

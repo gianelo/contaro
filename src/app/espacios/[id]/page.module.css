@@ -1,53 +1,7 @@
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4) 0 var(--space-10);
-}
-
-.title {
-  font-size: var(--text-title);
-  font-weight: var(--weight-bold);
-}
-
-.currency {
-  font-size: var(--text-md);
-  color: var(--color-text-secondary);
-}
-
 .plan {
   display: flex;
   flex-direction: column;
   padding-top: var(--space-6);
-}
-
-.months {
-  display: grid;
-  /* The two side columns take their width from the steps in them, and every
-     step composes `hitTarget`. So the touch size still has exactly one place
-     to be set, and the month's name does not slide as a thumb walks the year.
-     Both steps are always there, unlike the month's list: a plan can be walked
-     forwards (`monthsToPlan`). */
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  margin-bottom: var(--space-7);
-}
-
-.month {
-  margin: 0;
-  text-align: center;
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-}
-
-.step {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  color: var(--color-accent);
-  font-size: var(--text-lg);
-  text-decoration: none;
 }
 
 .category {

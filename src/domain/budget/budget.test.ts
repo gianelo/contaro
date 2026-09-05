@@ -13,6 +13,7 @@ import {
   FixedItemAlreadyPaidError,
   isPaid,
   MAX_FIXED_ITEM_NAME_LENGTH,
+  monthAgainstPlan,
   paceOf,
   paymentFor,
   planFixedItem,
@@ -740,6 +741,82 @@ describe("what a comparison leaves out", () => {
         "ARS",
       ).map(({ categoryId }) => categoryId),
     ).toEqual([SUPER.id]);
+  });
+});
+
+describe("the month against the whole of its plan", () => {
+  // What the summary card at the top of the Budget screen draws (#40): one
+  // pair of figures for the whole month, where `comparedToPlan` gives one pair
+  // per Category.
+  it("measures every expense of the month against every item planned for it", () => {
+    expect(
+      monthAgainstPlan(
+        // Both kinds, because both are what the month expects to cost: 400.000
+        // of groceries and 180.000 of rent.
+        [item({ amount: money(400_000_00, "ARS") }), fixed()],
+        [expense({ amount: money(290_000_00, "ARS") })],
+        "ARS",
+      ),
+    ).toEqual({
+      spent: money(290_000_00, "ARS"),
+      expected: money(580_000_00, "ARS"),
+      share: 0.5,
+      over: null,
+    });
+  });
+
+  it("counts what went on a Category nobody planned for", () => {
+    // The card says "Gastado" and not "gastado on the plan". `comparedToPlan`
+    // is driven by the plan's rows and rightly drops the rest; this is the
+    // month's own total, and a month whose spending all went somewhere
+    // unplanned has still spent it.
+    expect(
+      monthAgainstPlan(
+        [item({ amount: money(400_000_00, "ARS") })],
+        [expense({ categoryId: MATE.id, amount: money(100_000_00, "ARS") })],
+        "ARS",
+      ).spent,
+    ).toEqual(money(100_000_00, "ARS"));
+  });
+
+  it("leaves what came in out of what went out", () => {
+    expect(
+      monthAgainstPlan(
+        [item({ amount: money(400_000_00, "ARS") })],
+        [
+          expense({ amount: money(100_000_00, "ARS") }),
+          expense({
+            id: "mov-salary",
+            direction: "income",
+            categoryId: null,
+            amount: money(5_320_000_00, "ARS"),
+          }),
+        ],
+        "ARS",
+      ).spent,
+    ).toEqual(money(100_000_00, "ARS"));
+  });
+
+  it("is over by the difference once the plan is passed", () => {
+    expect(
+      monthAgainstPlan(
+        [item({ amount: money(400_000_00, "ARS") })],
+        [expense({ amount: money(500_000_00, "ARS") })],
+        "ARS",
+      ),
+    ).toMatchObject({ over: money(100_000_00, "ARS"), share: 1.25 });
+  });
+
+  it("has nothing to measure against on a month nobody planned", () => {
+    // A share of no plan is a division by nothing, and "over a plan of
+    // nothing" is not what a month nobody has planned is: it is a month with
+    // no plan, which the meter draws by not being there at all.
+    expect(monthAgainstPlan([], [expense()], "ARS")).toEqual({
+      spent: money(60_000_00, "ARS"),
+      expected: money(0, "ARS"),
+      share: null,
+      over: null,
+    });
   });
 });
 

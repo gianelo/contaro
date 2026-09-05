@@ -53,6 +53,25 @@ async function plan(page: Page, spaceId: string, digits: string) {
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
 
+/**
+ * Moves to another month through the pill at the top of the screen (#40).
+ *
+ * Two taps for any month of the year, where the `‹ Septiembre ›` walker it
+ * replaced took one tap and one page load per month stepped over. Picked by
+ * where the row goes rather than by the month's name, so this does not have to
+ * hold a second copy of how Spanish names a month.
+ */
+async function chooseMonth(page: Page, spaceId: string, month: string) {
+  await page.getByRole("button", { name: /elegir el mes$/ }).click();
+  await page
+    .getByRole("dialog")
+    .locator(`a[href="/espacios/${spaceId}?mes=${month}"]`)
+    .click();
+  // A client-side navigation, so the URL is read once it has landed rather
+  // than in the same breath as the tap.
+  await page.waitForURL(new RegExp(`\\?mes=${month}$`));
+}
+
 /** One expense, recorded the way a person records one on the way home. */
 async function spend(page: Page, spaceId: string, digits: string) {
   await page.goto(`/espacios/${spaceId}/movimientos`);
@@ -64,6 +83,63 @@ async function spend(page: Page, spaceId: string, digits: string) {
     new RegExp(`/espacios/${spaceId}/movimientos\\?mes=`),
   );
 }
+
+test("the Budget screen names itself and holds the month's two figures", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Elsa Encabeza", context, baseURL!);
+  const { thisMonth, next } = months();
+
+  await page.goto(`/espacios/${space.id}`);
+
+  // The screen says what it is, and which Space you are in is the quiet line
+  // under it, with the money everything below is written in (#40).
+  await expect(
+    page.getByRole("heading", { name: "Presupuesto", level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Casa de Elsa Encabeza · Peso argentino (ARS)"),
+  ).toBeVisible();
+
+  // The month is a pill on the title's row, and picking one is a single act
+  // rather than a walk: the sheet holds the whole year at once.
+  await page.getByRole("button", { name: /elegir el mes$/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Elegir el mes" });
+  await expect(
+    sheet.locator(`a[href="/espacios/${space.id}?mes=${thisMonth}"]`),
+  ).toBeVisible();
+  // Including a month that has not started, which is what a plan needs and a
+  // ledger does not (ADR-0019).
+  await expect(
+    sheet.locator(`a[href="/espacios/${space.id}?mes=${next}"]`),
+  ).toBeVisible();
+  // Escape rather than the scrim: a year of months fills the sheet, so the
+  // middle of the scrim -- which is where a click lands -- is behind it.
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+
+  // A month nobody has planned still owes both figures, and draws no meter:
+  // there is no plan to be a share of.
+  const summary = page.getByRole("region", { name: "Este mes" });
+  await expect(summary).toContainText("Gastado");
+  await expect(summary).toContainText("Presupuestado");
+  await expect(summary.locator("[data-meter-fill]")).toHaveCount(0);
+
+  // Planned and spent, the card draws the month against its plan -- #11's last
+  // criterion, which never shipped because the card it names arrives here.
+  await plan(page, space.id, "40000000");
+  await spend(page, space.id, "10000000");
+  await page.goto(`/espacios/${space.id}`);
+
+  await expect(summary).toContainText("$ 100.000,00");
+  await expect(summary).toContainText("$ 400.000,00");
+  await expect(summary.locator("[data-meter-fill]")).toHaveAttribute(
+    "style",
+    /width:\s*25%/,
+  );
+});
 
 test("a Member plans the month and reads it back", async ({
   page,
@@ -85,9 +161,13 @@ test("a Member plans the month and reads it back", async ({
   // second, the way the month's list writes a row.
   await expect(budget).toContainText("Supermercado");
   await expect(budget).toContainText("Comida");
-  // The item, and the plan's total: the total of exactly the rows above it.
-  await expect(budget).toContainText("Planeado");
   await expect(budget).toContainText("$ 240.000,00");
+
+  // And the plan's total is on the card at the top of the screen now, beside
+  // the figure it is meant to be read against (#40).
+  const summary = page.getByRole("region", { name: "Este mes" });
+  await expect(summary).toContainText("Presupuestado");
+  await expect(summary).toContainText("$ 240.000,00");
 });
 
 test("correcting an item opens on the branch its Category sits in", async ({
@@ -204,15 +284,13 @@ test("a Member plans next month before it starts", async ({
 }) => {
   const { space } = await aMemberWithASpace("Dani Adelanta", context, baseURL!);
 
+  const { thisMonth, next } = months();
+
   await page.goto(`/espacios/${space.id}`);
 
   // Forwards, which the month's list does not offer: a Movement is money that
   // already moved, and a plan is what a month is expected to cost.
-  await page.getByRole("link", { name: "Mes siguiente" }).click();
-  // The step is a client-side navigation, so the URL is read once it has
-  // landed rather than in the same breath as the tap.
-  await page.waitForURL(/\?mes=\d{4}-\d{2}$/);
-  const next = new URL(page.url()).searchParams.get("mes")!;
+  await chooseMonth(page, space.id, next);
 
   await plan(page, space.id, "9000000");
   await expect(page).toHaveURL(new RegExp(`\\?mes=${next}$`));
@@ -221,7 +299,7 @@ test("a Member plans next month before it starts", async ({
   await expect(budget).toContainText("$ 90.000,00");
 
   // And this month is untouched by it.
-  await page.getByRole("link", { name: "Mes anterior" }).click();
+  await chooseMonth(page, space.id, thisMonth);
   await expect(budget).toContainText("Todavía no planeaste este mes.");
 });
 
@@ -292,14 +370,14 @@ test("a Member plans the rent and marks it paid", async ({
   // say "Todavía no planeaste este mes." and show no total at all, because the
   // empty state and the total were both asked of the Variable half alone.
   await expect(page.getByText("Todavía no planeaste este mes.")).toHaveCount(0);
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await expect(budget).toContainText("Planeado");
-  await expect(budget).toContainText("$ 1.800.000,00");
+  const summary = page.getByRole("region", { name: "Este mes" });
+  await expect(summary).toContainText("Presupuestado");
+  await expect(summary).toContainText("$ 1.800.000,00");
 
-  // Both kinds add into the month's total, which is the total of exactly the
-  // rows above it (#13).
+  // Both kinds add into the month's total, because both are what the month
+  // expects to cost (#13).
   await plan(page, space.id, "24000000");
-  await expect(budget).toContainText("$ 2.040.000,00");
+  await expect(summary).toContainText("$ 2.040.000,00");
 
   // Marking it paid confirms first, because it brings money into existence in
   // the ledger -- and the recap names the Space the money lands in and whose
@@ -410,6 +488,27 @@ function today() {
   return { day, days: new Date(Date.UTC(year, month, 0)).getUTCDate() };
 }
 
+/**
+ * The month the run is standing in and the one after it, written `YYYY-MM` in
+ * the zone the suite is pinned to. Calendar arithmetic and nothing the screen
+ * decides, the way `today` above is.
+ */
+function months() {
+  const inBogota = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date());
+
+  const [year, month] = inBogota.split("-").map(Number) as [number, number];
+  const after = new Date(Date.UTC(year, month, 1));
+
+  return {
+    thisMonth: inBogota,
+    next: after.toISOString().slice(0, 7),
+  };
+}
+
 test("a Member reads whether the month is ahead of its pace", async ({
   page,
   context,
@@ -420,7 +519,7 @@ test("a Member reads whether the month is ahead of its pace", async ({
 
   await page.goto(`/espacios/${space.id}`);
 
-  const summary = page.getByRole("group", { name: "Este mes" });
+  const summary = page.getByRole("region", { name: "Este mes" });
 
   // A month with nothing planned has no pace: there is nothing anybody meant
   // to spread across it, and "vas justo en el ritmo" would be a reassurance
@@ -444,8 +543,11 @@ test("a Member reads whether the month is ahead of its pace", async ({
 
   // The pace as it stands, to be compared against itself across the payment
   // below. Read off the screen rather than written out here, because what
-  // this asserts is that it does not move — not what it says.
-  const before = await summary.textContent();
+  // this asserts is that it does not move — not what it says. The sentence and
+  // not the whole card: planning the rent does move "Presupuestado", which is
+  // the plan growing and exactly what that figure is for.
+  const sentence = summary.locator("p");
+  const before = await sentence.textContent();
 
   // "Paying a Fixed item does not move the pace figure" (#14). Marking one
   // paid creates a real Movement (ADR-0023), and the pace has to be blind to
@@ -462,5 +564,5 @@ test("a Member reads whether the month is ahead of its pace", async ({
   await expect(page).toHaveURL(new RegExp(`/espacios/${space.id}\\?mes=`));
 
   await expect(summary).toContainText("arriba del ritmo");
-  expect(await summary.textContent()).toBe(before);
+  expect(await sentence.textContent()).toBe(before);
 });

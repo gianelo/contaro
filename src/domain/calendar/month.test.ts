@@ -159,20 +159,45 @@ describe("the months a screen can move to", () => {
   });
 });
 
-describe("the months a plan can walk to", () => {
+describe("the months a plan can be opened on", () => {
   // The opposite of `monthsAround`, and on purpose: a Movement is money that
   // has already moved, so forwards is a corridor of blank screens. A Budget is
   // a plan, and the month after this one is exactly the month a person plans.
-  it("goes forwards from the month being lived in", () => {
-    expect(monthsToPlan(month("2026-09"))).toEqual({
-      previous: month("2026-08"),
-      next: month("2026-10"),
-    });
+  it("offers the whole year the month in view falls in", () => {
+    expect(monthsToPlan(month("2026-09"))).toEqual([
+      "2025-12",
+      "2026-01",
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+      "2026-07",
+      "2026-08",
+      "2026-09",
+      "2026-10",
+      "2026-11",
+      "2026-12",
+      "2027-01",
+    ]);
   });
 
-  it("crosses a year in both directions", () => {
-    expect(monthsToPlan(month("2026-01")).previous).toBe("2025-12");
-    expect(monthsToPlan(month("2026-12")).next).toBe("2027-01");
+  it("offers the month either side of that year, so December reaches January", () => {
+    // The 28th of December is exactly when somebody plans January, and the
+    // year the pill is standing in would otherwise stop one month short of it.
+    expect(monthsToPlan(month("2026-12"))).toContain("2027-01");
+    expect(monthsToPlan(month("2026-01"))).toContain("2025-12");
+  });
+
+  it("offers the same months wherever in a year it is asked from", () => {
+    // The pill is about the year, not about the month: walking within one is
+    // what it exists to replace, so it cannot slide as a thumb moves inside it.
+    expect(monthsToPlan(month("2026-01"))).toEqual(monthsToPlan(month("2026-12")));
+  });
+
+  it("always offers the month being read", () => {
+    // Otherwise the control could not say which month it is standing on.
+    expect(monthsToPlan(month("2026-09"))).toContain("2026-09");
   });
 });
 

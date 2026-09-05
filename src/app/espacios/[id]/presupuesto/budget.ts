@@ -5,12 +5,13 @@ import { movementsInMonth } from "@/db/movements";
 import {
   comparedToPlan,
   dueNotice,
-  expected,
   isPaid,
+  monthAgainstPlan,
   paceOf,
   type BudgetItem,
   type DueNotice,
   type FixedItem,
+  type MonthComparison,
   type PaceStanding,
   type VariableItem,
 } from "@/domain/budget/budget";
@@ -19,7 +20,6 @@ import {
   monthSoFar,
   monthsToPlan,
   type Month,
-  type MonthsToPlan,
 } from "@/domain/calendar/month";
 import type { Category } from "@/domain/category/category";
 import type { CurrencyCode } from "@/domain/money/currency";
@@ -153,13 +153,47 @@ export type ReadableFixedItem = {
   due: string | null;
 };
 
+/** One month the pill at the top of the screen offers (#40). */
+export type ReadableMonthChoice = {
+  month: Month;
+  /** The month as a person reads it: "Septiembre", "Enero 2027". */
+  label: string;
+  /** Whether it is the month the screen is currently showing. */
+  inView: boolean;
+};
+
+/**
+ * The month's two figures and how they stand, as the summary card draws them
+ * (#40).
+ *
+ * One shape and not four fields on `ReadableBudget`, because they are one
+ * thing: what the month cost, what it was planned to cost, and the single
+ * comparison between them that the meter is a picture of. Splitting them up
+ * would let a screen draw the meter of one month beside the figures of
+ * another.
+ */
+export type ReadableMonthSummary = {
+  /** What the month has cost: every expense in it, planned for or not. */
+  spent: string;
+  /** What it was planned to cost -- both kinds of item together (#13). */
+  planned: string;
+  /**
+   * How much of the plan has gone, as a share of it, or nothing at all on a
+   * month nobody has planned: there is no plan to be a share of, and the card
+   * draws no meter rather than an empty one.
+   */
+  filled: number | null;
+  /** Whether the month has passed what it planned to spend. */
+  over: boolean;
+};
+
 /** One Space's Budget for a month, as the screen showing it needs to know it. */
 export type ReadableBudget = {
   month: Month;
   /** The month named at the top of the screen: "Septiembre". */
   label: string;
-  /** Where the control at the top of the screen can go from here. */
-  around: MonthsToPlan;
+  /** Every month the pill at the top of the screen can be moved to. */
+  choices: readonly ReadableMonthChoice[];
   /**
    * The Variable items, in the order they were planned. Several on one
    * Category stay several here: they are how a person thinks in weeks, and
@@ -185,10 +219,10 @@ export type ReadableBudget = {
    */
   variables: readonly ReadableComparison[];
   /**
-   * What the whole month's plan adds up to, in the Space's money -- both kinds
-   * together, because both are what the month expects to cost (#13).
+   * The card at the top of the screen: the month's spending, the whole of its
+   * plan, and how the two stand (#40).
    */
-  expected: string;
+  summary: ReadableMonthSummary;
   /**
    * Whether the month is ahead of or behind an even spread of its Variable
    * items, or nothing where there is no such question to answer (#14).
@@ -227,7 +261,11 @@ export async function readableBudget(
   return {
     month,
     label: monthLabel(month, monthOf(reader.today)),
-    around: monthsToPlan(month),
+    choices: monthsToPlan(month).map((offered) => ({
+      month: offered,
+      label: monthLabel(offered, monthOf(reader.today)),
+      inView: offered === month,
+    })),
     items: planned
       .filter((item): item is VariableItem => item.kind === "variable")
       .map((item) => readable(item, named, reader)),
@@ -247,10 +285,14 @@ export async function readableBudget(
       over: over === null ? null : formatMoney(over, reader.locales),
       filled: share,
     })),
-    // Read off the items rather than summed in SQL, so what the screen shows
-    // is the total of exactly the rows beneath it and can never disagree with
-    // them.
-    expected: formatMoney(expected(planned, space.currency), reader.locales),
+    // Both halves of the card from one answer, so the meter can never be a
+    // picture of figures other than the two printed above it. Read off the
+    // items and the Movements rather than summed in SQL, the way every other
+    // total on this screen is.
+    summary: readableSummary(
+      monthAgainstPlan(planned, spending, space.currency),
+      reader,
+    ),
     pace: readablePace(
       planned,
       spending,
@@ -259,6 +301,22 @@ export async function readableBudget(
       month,
       reader,
     ),
+  };
+}
+
+/** The month against its plan, written the way its reader reads numbers. */
+function readableSummary(
+  against: MonthComparison,
+  reader: Reader,
+): ReadableMonthSummary {
+  return {
+    spent: formatMoney(against.spent, reader.locales),
+    planned: formatMoney(against.expected, reader.locales),
+    filled: against.share,
+    // A boolean here and the amount in the domain, unlike a Category's row:
+    // the card says how far past in the two figures it already prints, so
+    // nothing on it has to write the difference out.
+    over: against.over !== null,
   };
 }
 

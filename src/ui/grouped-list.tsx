@@ -58,7 +58,15 @@ export type GroupedListItemProps = {
    * JavaScript has loaded.
    */
   href?: string;
-  /** Given a handler, the row becomes a button and takes a touch target. */
+  /**
+   * Given a handler and no destination, the row becomes a button and takes a
+   * touch target.
+   *
+   * Given one *beside* an `href`, it is what the row also does on its way:
+   * the month picker closes its own sheet as a month is chosen, because a
+   * client-side navigation leaves the picker mounted and its sheet would
+   * otherwise stay open across the screen it just opened.
+   */
   onClick?: () => void;
   children: ReactNode;
 };
@@ -83,7 +91,7 @@ export function GroupedListItem({
   return (
     <li className={styles.item}>
       {href !== undefined ? (
-        <Link href={href} className={actionable}>
+        <Link href={href} onClick={onClick} className={actionable}>
           {inner}
         </Link>
       ) : onClick ? (

@@ -1,17 +1,15 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 import { ButtonLink } from "@/ui/button";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
-import { cx } from "@/ui/cx";
-import { hitTarget } from "@/ui/hit-target";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
+import { MonthPill } from "./month-pill";
 import { SpaceScreen } from "./screen";
 import { currentSpace, viewingMember } from "./space";
-import { monthInView, readableMonth, spaceMembers } from "./movimientos/month";
+import { monthInView, spaceMembers } from "./movimientos/month";
 import { readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
-import { Pace } from "./presupuesto/pace";
+import { MonthSummary } from "./presupuesto/summary";
 import { Variables } from "./presupuesto/variables";
 import styles from "./page.module.css";
 
@@ -41,13 +39,12 @@ export default async function SpacePage({
   // started spending in.
   const reader = readerOf(await headers());
   const month = monthInView(mes, reader.today);
-  // What the month has actually cost, and what it was planned to. Deliberately
-  // not side by side: this ticket builds the plan and #11 measures spending
-  // against it, and two figures in one group is that comparison made by eye
-  // before anybody decided what "over" means. The plan's total sits with the
-  // plan, as the total of the rows above it.
-  const [{ spent }, plan, members, memberId] = await Promise.all([
-    readableMonth(space, month, reader),
+  // What the month has actually cost and what it was planned to, side by side
+  // at last: #10 kept them in separate lists so that neither read as a
+  // comparison before #11 decided what "over" means, and #11 decided it. Both
+  // come out of the one reader, so the meter drawn between them can never be a
+  // picture of figures other than the two above it (#40).
+  const [plan, members, memberId] = await Promise.all([
     readableBudget(space, month, reader),
     spaceMembers(space.id),
     // Who is reading, so the confirmation on a Fixed item can say who will be
@@ -79,43 +76,38 @@ export default async function SpacePage({
   const nothingPlanned = plan.items.length === 0 && plan.fixed.length === 0;
 
   return (
-    <SpaceScreen space={space} tab="budget">
-      {/*
+    <SpaceScreen
+      space={space}
+      tab="budget"
+      /*
+        The screen names itself and the Space becomes the line under it (#40).
+        It is the tab's own word, so what a thumb pressed and what it landed on
+        are the same word rather than two names for one place.
+      */
+      title={t("nav.budget")}
+      /*
         Forwards as well as back, unlike the month's list. A Movement is money
         that has already moved, so its list stops at the month being lived in;
         a plan is what a Space expects to spend, and the month after this one
         is exactly the month somebody plans on the 28th (`monthsToPlan`).
+      */
+      beside={
+        <MonthPill
+          label={plan.label}
+          choices={plan.choices.map((choice) => ({
+            ...choice,
+            href: at(choice.month),
+          }))}
+        />
+      }
+    >
+      {/*
+        The two figures the month is about, and the meter between them: what it
+        cost, what it was planned to cost, and how far through the plan that
+        is. The pace rides inside the card, directly under the figures it is
+        about, which is where the canvas draws it.
       */}
-      <nav className={styles.months} aria-label={t("space.month.choose")}>
-        <Link
-          href={at(plan.around.previous)}
-          className={cx(hitTarget, styles.step)}
-          aria-label={t("space.month.previous")}
-        >
-          ‹
-        </Link>
-        <h2 className={styles.month}>{plan.label}</h2>
-        <Link
-          href={at(plan.around.next)}
-          className={cx(hitTarget, styles.step)}
-          aria-label={t("space.month.next")}
-        >
-          ›
-        </Link>
-      </nav>
-
-      <GroupedList label={t("space.month")}>
-        <GroupedListItem trailing={spent}>
-          {t("space.month.spent")}
-        </GroupedListItem>
-        {/*
-          How that spending is going against the calendar (#14), in the same
-          group and directly under the figure it is about — which is where the
-          canvas draws it. One line of words and never a second meter, and it
-          draws nothing at all on a month nobody is standing in.
-        */}
-        <Pace pace={plan.pace} />
-      </GroupedList>
+      <MonthSummary summary={plan.summary} pace={plan.pace} />
 
       {/*
         What the month already owes on days it knows about, and what has been
@@ -161,21 +153,13 @@ export default async function SpacePage({
           ))
         )}
         {/*
-          What the whole month's plan adds up to — the Fijos above as well as
-          the rows beside it, because both are what the month expects to cost
-          (#13). It stopped being "the total of exactly the rows above it" the
-          moment the other kind existed, and saying so is better than a figure
-          nobody can add up by eye: what it totals is the plan, and the plan is
-          both sections. #40 moves it into the summary card the canvas draws.
-
-          Only where something is planned: a plan of nothing adds up to
-          nothing, which the empty state has already said in words.
+          What the whole month's plan adds up to is no longer a row here: it is
+          "Presupuestado" on the card at the top of the screen, beside the
+          figure it was always meant to be read against (#40). A total at the
+          foot of this list was the only place it could go while the two
+          figures were deliberately kept apart, and it never was the total of
+          exactly the rows above it -- the Fijos section is part of the plan too.
         */}
-        {nothingPlanned ? null : (
-          <GroupedListItem trailing={plan.expected}>
-            {t("budget.planned")}
-          </GroupedListItem>
-        )}
       </GroupedList>
 
       {/*
