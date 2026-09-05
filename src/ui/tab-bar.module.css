@@ -31,7 +31,6 @@
      apart instead of two. */
   font-weight: var(--weight-regular);
   color: var(--color-text-tertiary);
-  text-decoration: none;
 }
 
 .active {
@@ -54,5 +53,4 @@
   /* The raise. It overflows the bar upwards, which works because nothing
      between here and the shell sets overflow -- see ADR-0025. */
   margin-top: -18px;
-  text-decoration: none;
 }
