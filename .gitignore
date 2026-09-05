@@ -9,6 +9,7 @@ next-env.d.ts
 .env.local
 
 .codegraph/
+.atl/
 
 coverage/
 test-results/
