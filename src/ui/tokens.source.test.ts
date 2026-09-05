@@ -31,6 +31,13 @@ const named = [
   "color-member-first-ground",
   "color-member-second-ink",
   "color-member-second-ground",
+  // The two tints a Category's circle comes in (#39). No dark Movimientos
+  // artboard exists, so both dark halves were invented -- which is exactly the
+  // case where a token quietly gains one palette and not the other.
+  "color-category-green-ink",
+  "color-category-green-ground",
+  "color-category-grey-ink",
+  "color-category-grey-ground",
 ];
 
 describe("the tokens the canvas asks for", () => {

@@ -7,7 +7,9 @@ import { hitTarget } from "@/ui/hit-target";
 import { readerOf } from "@/app/reader";
 import { SpaceScreen } from "../screen";
 import { currentSpace } from "../space";
-import { monthInView, readableMonth, type ReadableMovement } from "./month";
+import { monthInView, readableMonth } from "./month";
+import { MovementRow } from "./row";
+import { MonthTotals } from "./totals";
 import styles from "./page.module.css";
 
 /**
@@ -69,19 +71,7 @@ export default async function SpaceMovementsPage({
         )}
       </nav>
 
-      {/*
-        Both figures and never their difference. "What came in" and "what went
-        out" are two questions, and a single net number shows a month where a
-        salary arrived and the rent was paid as though nothing had happened.
-      */}
-      <GroupedList label={t("space.month")}>
-        <GroupedListItem trailing={inView.earned}>
-          {t("space.month.income")}
-        </GroupedListItem>
-        <GroupedListItem trailing={inView.spent}>
-          {t("space.month.expenses")}
-        </GroupedListItem>
-      </GroupedList>
+      <MonthTotals earned={inView.earned} spent={inView.spent} />
 
       {/*
         One region holding the days, so "the month's Movements" is still one
@@ -96,57 +86,17 @@ export default async function SpaceMovementsPage({
         ) : (
           inView.days.map((day) => (
             <GroupedList key={day.day} label={day.label}>
-              {day.movements.map((movement) => {
-                const second = beneath(movement);
-
-                return (
-                  <GroupedListItem
-                    key={movement.id}
-                    href={`/espacios/${space.id}/movimientos/${movement.id}`}
-                    trailing={amountOf(movement)}
-                  >
-                    <span className={styles.category}>{movement.category}</span>
-                    {/*
-                      Absent rather than empty: an expense on a heading in a
-                      personal Space has nothing to say here, and a blank span
-                      still takes a line's worth of height under the name.
-                    */}
-                    {second ? (
-                      <span className={styles.beneath}>{second}</span>
-                    ) : null}
-                  </GroupedListItem>
-                );
-              })}
+              {day.movements.map((movement) => (
+                <MovementRow
+                  key={movement.id}
+                  movement={movement}
+                  href={`/espacios/${space.id}/movimientos/${movement.id}`}
+                />
+              ))}
             </GroupedList>
           ))
         )}
       </section>
     </SpaceScreen>
   );
-}
-
-/**
- * The second line of a row: whose money it was, and what it sits under.
- *
- * The day is not here any more — it is the heading above the row now, and
- * repeating it on every row of a group is repeating the one thing already
- * said. In a personal Space `attribution` is empty and an expense keeps only
- * its heading, which is a row that says exactly as much as it has to.
- */
-function beneath(movement: ReadableMovement): string {
-  return [movement.attribution, movement.heading].filter(Boolean).join(" · ");
-}
-
-/**
- * The figure at the end of a row, marked when the money came in.
- *
- * A written "+" and not a colour. The one accent colour this product has
- * already means "this can be tapped" — every row here is a link — and a
- * difference carried by colour alone is one somebody cannot see. The sign is
- * read out by a screen reader and survives a black-and-white printout.
- */
-function amountOf(movement: ReadableMovement): string {
-  return movement.direction === "income"
-    ? t("movements.amount.income", { amount: movement.amount })
-    : movement.amount;
 }

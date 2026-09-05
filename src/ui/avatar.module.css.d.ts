@@ -7,6 +7,7 @@ declare const styles: {
   readonly avatar: string;
   readonly lg: string;
   readonly sm: string;
+  readonly xs: string;
   readonly ringed: string;
   readonly reader: string;
 };

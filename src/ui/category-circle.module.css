@@ -1,0 +1,32 @@
+/*
+ * A Category as one circle, 30px across with a 15px glyph in it, exactly as
+ * `design/Movimientos.dc.html` draws it. The ink and the ground come from the
+ * tint below; everything here is the shape they are poured into.
+ */
+.circle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  /* Only the letter half of a mark reads this; an icon takes its size from the
+     prop and its colour from `currentColor`, which is the tint's ink. */
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  /* The circle stays round whatever letter lands in it, and a letter with a
+     descender does not push it off centre. */
+  line-height: 1;
+  user-select: none;
+}
+
+.green {
+  color: var(--color-category-green-ink);
+  background: var(--color-category-green-ground);
+}
+
+.grey {
+  color: var(--color-category-grey-ink);
+  background: var(--color-category-grey-ground);
+}

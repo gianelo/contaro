@@ -1,0 +1,44 @@
+/*
+ * The month's two numbers, side by side and equal: neither is the headline.
+ * A month is what came in and what went out, and the screen shows both and
+ * never their difference (ADR-0016).
+ */
+.totals {
+  display: flex;
+  gap: var(--space-5);
+  margin-bottom: var(--space-7);
+}
+
+.card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-6) var(--space-7);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+}
+
+.label {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.figure {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+
+/*
+ * What came in, in the accent colour.
+ *
+ * ADR-0016 refused a colour on income and this reopens it, deliberately: the
+ * reason it gave was that a difference carried by colour alone is one somebody
+ * cannot see, and here the two figures are told apart by the words above them
+ * first. The colour is what makes the pair readable at a glance rather than
+ * what makes it readable at all. The amount on a row keeps its written "+"
+ * for the same reason.
+ */
+.income {
+  color: var(--color-accent);
+}

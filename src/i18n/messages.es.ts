@@ -195,13 +195,10 @@ export const es = {
   // (#8), so this is the whole of its name.
   "movements.income": "Ingreso",
   // The one mark that tells money coming in from money going out at a glance.
-  // A written sign and not a colour: a difference carried by colour alone is a
-  // difference somebody cannot see, and this product's one accent colour
-  // already means "this can be tapped".
+  // A written sign, and since #39 a colour as well: the sign is what somebody
+  // who cannot tell the two greens apart reads, and the colour is what makes
+  // the row scannable for everybody else. Never the colour on its own.
   "movements.amount.income": "+{amount}",
-  // Shown on a row only where the Space has somebody else in it. In a personal
-  // Space every Movement is yours, and saying so on every row says nothing.
-  "movements.attributed": "Plata de {member}",
   "movements.keypad": "Teclado del monto",
   "movements.keypad.erase": "Borrar el último número",
   "movements.category": "Categoría",
