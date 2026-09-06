@@ -332,7 +332,14 @@ test("the tab bar inside a Space stays inside that Space", async ({
   await expect(
     page.getByRole("link", { name: "Movimientos" }),
   ).toHaveAttribute("aria-current", "page");
+  // Which Space you are in, said on the quiet line rather than in the title:
+  // the month's list names itself now, and the Space moved onto the line
+  // ADR-0033 built for exactly this (#61). It is still the promise this test
+  // is about -- the tab bar landed you inside Casa and the screen says so.
   await expect(
-    page.getByRole("heading", { name: "Casa", level: 1 }),
+    page.getByRole("heading", { name: "Movimientos", level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Casa · Peso argentino (ARS)"),
   ).toBeVisible();
 });

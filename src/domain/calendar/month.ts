@@ -226,48 +226,24 @@ export function nextMonth(of: Month): Month {
   return stepped(of, 1);
 }
 
-/** Where a screen reading one month can go from it. */
-export type MonthsAround = {
-  previous: Month;
-  /** The month after, or nothing where there is nothing yet to read. */
-  next: Month | null;
-};
-
 /**
- * The months either side of the one being read, as far as there is anything to
- * read in them.
- *
- * Backwards is unbounded: a Space has a first month, this does not know which,
- * and an empty month behind you is an honest answer to "what did I spend in
- * March". Forwards stops at the month being lived in, because a Movement is
- * money that has already moved (`recordMovement` refuses a day that has not
- * happened) — so every month past this one is guaranteed empty, and offering
- * them is offering a corridor of blank screens with month names on them.
- *
- * Written `YYYY-MM`, so `>=` compares months the way a calendar orders them.
- */
-export function monthsAround(inView: Month, today: Month): MonthsAround {
-  return {
-    previous: previousMonth(inView),
-    next: inView >= today ? null : nextMonth(inView),
-  };
-}
-
-/**
- * Every month a plan can be opened on from the one being read: the twelve of
- * the year it falls in, and the month either side of that year.
+ * Every month a screen inside a Space can be opened on from the one being
+ * read: the twelve of the year it falls in, and the month either side of that
+ * year.
  *
  * A list and not two steps, which is the difference between choosing a month
  * and walking to it: reaching March from September was six taps, and every one
  * of them loaded a screen nobody wanted to look at (#40). All fourteen are one
  * tap from the pill at the top of the screen.
  *
- * Forwards as well as back, which is the mirror image of `monthsAround` and is
- * the whole point of the pair. That one stops at the month being lived in
- * because a Movement is money that has already moved, so every month past this
- * one is guaranteed empty. A Budget is the opposite kind of thing: it is what a
- * Space expects to spend, and the month after this one is exactly the month a
- * person plans on the 28th.
+ * Forwards as well as back, on the plan and on the ledger alike (#61). The
+ * `‹ Septiembre ›` walker this replaced stopped forwards at the month being
+ * lived in, because a Movement is money that has already moved and so every
+ * month past this one is guaranteed empty — but that bound was paying for a
+ * step, and a step cost a screen load. A picker costs nothing for a row nobody
+ * taps, and the plan needs the month after this one anyway: it is exactly the
+ * month a person plans on the 28th. So both screens take the same fourteen,
+ * out of this one function (ADR-0039).
  *
  * The year is the unit because that is the unit a person reads a calendar in,
  * and it is fixed by the month in view rather than centred on it: a window that

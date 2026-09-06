@@ -6,6 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { createMember, createSpaceFor, startSession } from "./session";
+import { openMonths } from "./months";
 import { createDatabase, databaseUrl } from "../src/db/connection";
 import { categoriesTheSpaceCanSee } from "../src/db/categories";
 import {
@@ -205,10 +206,10 @@ test("not one link in the app is underlined", async ({
     // this Space (#9). Every one of the rows #58 names is in this number; on
     // a Space with nothing planned it would be five, which is the tab bar.
     [`/espacios/${space.id}`]: 10,
-    // The same five, the one Movement's row, and the step back to last month.
-    // Only back: a Movement is money that has already moved, so the month
-    // being lived in has nothing in front of it (`monthsAround`).
-    [`/espacios/${space.id}/movimientos`]: 7,
+    // The same five and the one Movement's row. The step back to last month
+    // went with the rest of the walker (#61): the month is a pill now, and a
+    // pill is a button until it is opened.
+    [`/espacios/${space.id}/movimientos`]: 6,
     // Cancelar and nothing else. The entry screen drops the tab bar: it is
     // one question asked at a till, and the way out of it is answering it.
     [`/espacios/${space.id}/movimientos/nuevo`]: 1,
@@ -244,9 +245,7 @@ test("not one link in the app is underlined", async ({
   // rather than through the page — the screen underneath is still visible, so
   // counting the page would count the Budget screen's ten a second time.
   await page.goto(`/espacios/${space.id}`);
-  await page.getByRole("button", { name: /elegir el mes$/ }).click();
-  const sheet = page.getByRole("dialog", { name: "Elegir el mes" });
-  await expect(sheet).toBeVisible();
+  const sheet = await openMonths(page);
   await read("el mes", sheet);
 
   expect(underlined).toEqual([]);

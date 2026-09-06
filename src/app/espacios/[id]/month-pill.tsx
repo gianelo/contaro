@@ -20,15 +20,19 @@ const CHECK = 17;
  * One month the pill offers, already named and already pointed somewhere.
  *
  * Deliberately not `ReadableMonthChoice` with an `href` bolted on, though the
- * fields line up today. That type is the Budget reader's, and this component
- * lives a directory above it because the canvas draws the same pill on the
- * month's list: importing the plan's reader here would make the ledger's head
- * depend on the Budget to render. The month is a `string` for the same reason
- * -- a branded `Month` is the calendar's word, and what this needs is a key.
+ * fields line up today. That type used to be the Budget reader's, and this
+ * component lived a directory above it because the canvas draws the same pill
+ * on the month's list: importing the plan's reader here would have made the
+ * ledger's head depend on the Budget to render. #61 moved it to `months.ts`
+ * for that same reason once the ledger actually needed it, so the import would
+ * be legal now -- and it stays refused, because what a reader hands out and
+ * what a component is handed are two questions. This one is answered by the
+ * screen that owns the URL. The month is a `string` for the same kind of
+ * reason: a branded `Month` is the calendar's word, and what this needs is a key.
  */
 export type MonthChoice = {
   month: string;
-  /** The month as a person reads it: "Septiembre", "Enero 2027". */
+  /** The month as a person reads it: "Septiembre", "Enero de 2027". */
   label: string;
   /** Where picking it goes: the same screen, on that month. */
   href: string;

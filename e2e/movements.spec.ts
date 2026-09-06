@@ -6,6 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { box } from "./layout";
+import { chooseMonth, months, openMonths } from "./months";
 import {
   createMember,
   createSpaceFor,
@@ -78,6 +79,63 @@ async function categorise(page: Page, heading: string, under?: string) {
     await page.getByRole("radio", { name: `${under}, ${heading}` }).click();
   }
 }
+
+test("the month's list names itself and chooses its month through the pill", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Marta Lista", context, baseURL!);
+  const { thisMonth, previous, next } = months();
+
+  await page.goto(`/espacios/${space.id}/movimientos`);
+
+  // The screen says what it is, and which Space you are in drops to the quiet
+  // line under it with the money everything below is written in (#61, and the
+  // second application of ADR-0033).
+  await expect(
+    page.getByRole("heading", { name: "Movimientos", level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Casa de Marta Lista · Peso argentino (ARS)"),
+  ).toBeVisible();
+
+  // The `‹ Septiembre ›` walker is gone: there is one way to change the month
+  // in this product, and two ways would be two things to keep in step.
+  await expect(page.getByRole("link", { name: "Mes anterior" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Mes siguiente" })).toHaveCount(0);
+
+  const sheet = await openMonths(page);
+
+  const at = (month: string) =>
+    sheet.locator(`a[href="/espacios/${space.id}/movimientos?mes=${month}"]`);
+
+  /*
+   * Fourteen, and every one of them a ledger URL. That the plan reaches the
+   * same fourteen is not asserted here and could not honestly be: the two
+   * screens share `monthChoices`, and `months.test.ts` is where that one
+   * function is held to the number. This is the half a browser can prove --
+   * the ledger's pill offers fourteen months of its own screen, forwards
+   * included, which is the bound ADR-0039 removed.
+   */
+  await expect(sheet.getByRole("link")).toHaveCount(14);
+  await expect(at(thisMonth)).toBeVisible();
+  await expect(at(previous)).toBeVisible();
+  await expect(at(next)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+
+  await chooseMonth(
+    page,
+    `/espacios/${space.id}/movimientos?mes=${previous}`,
+    previous,
+  );
+  // And it lands on the ledger it names, rather than on the plan: the pill is
+  // the same component on both screens and the href is the screen's own.
+  await expect(
+    page.getByRole("region", { name: "Movimientos" }),
+  ).toBeVisible();
+});
 
 test("a Member records an expense in a few taps and finds it in the month", async ({
   page,
@@ -808,12 +866,25 @@ test("a personal Space does not say whose money it was on every row", async ({
   await expect(movements.getByRole("img")).toHaveCount(0);
 });
 
-test("the month in view can be changed, and stops at the one being lived in", async ({
+/**
+ * The round trip the `‹ Septiembre ›` walker used to make, now made through
+ * the pill (#61).
+ *
+ * It used to end with "and stops at the one being lived in", which was the
+ * walker's forward bound: a `›` on this month would have loaded a screen
+ * guaranteed empty. A picker charges nothing for a row nobody taps, so the
+ * bound went with the walker and the month ahead is offered here like any
+ * other (ADR-0039). What is left is what the test was always really about:
+ * a month away from the one holding the money reads empty, and coming back
+ * brings the money back.
+ */
+test("the month in view is changed through the pill, and comes back", async ({
   page,
   context,
   baseURL,
 }) => {
   const { space } = await aMemberWithASpace("Tere Navega", context, baseURL!);
+  const { thisMonth, previous, next } = months();
 
   await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
   await type(page, "7000");
@@ -823,13 +894,19 @@ test("the month in view can be changed, and stops at the one being lived in", as
   const movements = page.getByRole("region", { name: "Movimientos" });
   await expect(movements).toContainText(/\$\s?70,00/);
 
-  // Nothing can have happened after today, so there is nowhere forward to go.
-  await expect(page.getByRole("link", { name: "Mes siguiente" })).toHaveCount(0);
+  /** This screen's own month rows, for the shared two taps. */
+  const choose = (month: string) =>
+    chooseMonth(page, `/espacios/${space.id}/movimientos?mes=${month}`, month);
 
-  await page.getByRole("link", { name: "Mes anterior" }).click();
+  await choose(previous);
   await expect(movements).toContainText("Todavía no anotaste ningún movimiento acá.");
 
-  await page.getByRole("link", { name: "Mes siguiente" }).click();
+  // Forwards past the month being lived in, which the walker refused and the
+  // pill offers: it reads empty, honestly, and nothing is wrong on it.
+  await choose(next);
+  await expect(movements).toContainText("Todavía no anotaste ningún movimiento acá.");
+
+  await choose(thisMonth);
   await expect(movements).toContainText(/\$\s?70,00/);
 });
 

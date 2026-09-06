@@ -7,6 +7,7 @@ import {
 } from "@playwright/test";
 import { createMember, createSpaceFor, startSession } from "./session";
 import { box, hitTargetOf, overlapping, withinTheGutter } from "./layout";
+import { chooseMonth, months, openMonths } from "./months";
 
 // Deliberately not the signed-in fixture: planning money needs a session
 // belonging to a Member the database really has.
@@ -60,25 +61,6 @@ async function plan(page: Page, spaceId: string, digits: string) {
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
 
-/**
- * Moves to another month through the pill at the top of the screen (#40).
- *
- * Two taps for any month of the year, where the `‹ Septiembre ›` walker it
- * replaced took one tap and one page load per month stepped over. Picked by
- * where the row goes rather than by the month's name, so this does not have to
- * hold a second copy of how Spanish names a month.
- */
-async function chooseMonth(page: Page, spaceId: string, month: string) {
-  await page.getByRole("button", { name: /elegir el mes$/ }).click();
-  await page
-    .getByRole("dialog")
-    .locator(`a[href="/espacios/${spaceId}?mes=${month}"]`)
-    .click();
-  // A client-side navigation, so the URL is read once it has landed rather
-  // than in the same breath as the tap.
-  await page.waitForURL(new RegExp(`\\?mes=${month}$`));
-}
-
 /** One expense, recorded the way a person records one on the way home. */
 async function spend(page: Page, spaceId: string, digits: string) {
   await page.goto(`/espacios/${spaceId}/movimientos`);
@@ -112,8 +94,7 @@ test("the Budget screen names itself and holds the month's two figures", async (
 
   // The month is a pill on the title's row, and picking one is a single act
   // rather than a walk: the sheet holds the whole year at once.
-  await page.getByRole("button", { name: /elegir el mes$/ }).click();
-  const sheet = page.getByRole("dialog", { name: "Elegir el mes" });
+  const sheet = await openMonths(page);
   await expect(
     sheet.locator(`a[href="/espacios/${space.id}?mes=${thisMonth}"]`),
   ).toBeVisible();
@@ -297,7 +278,7 @@ test("a Member plans next month before it starts", async ({
 
   // Forwards, which the month's list does not offer: a Movement is money that
   // already moved, and a plan is what a month is expected to cost.
-  await chooseMonth(page, space.id, next);
+  await chooseMonth(page, `/espacios/${space.id}?mes=${next}`, next);
 
   await plan(page, space.id, "9000000");
   await expect(page).toHaveURL(new RegExp(`\\?mes=${next}$`));
@@ -306,7 +287,7 @@ test("a Member plans next month before it starts", async ({
   await expect(budget).toContainText("$ 90.000,00");
 
   // And this month is untouched by it.
-  await chooseMonth(page, space.id, thisMonth);
+  await chooseMonth(page, `/espacios/${space.id}?mes=${thisMonth}`, thisMonth);
   await expect(budget).toContainText("Todavía no planeaste este mes.");
 });
 
@@ -572,27 +553,6 @@ function today() {
   // Day zero of the next month is the last day of this one, whatever length
   // it happens to be.
   return { day, days: new Date(Date.UTC(year, month, 0)).getUTCDate() };
-}
-
-/**
- * The month the run is standing in and the one after it, written `YYYY-MM` in
- * the zone the suite is pinned to. Calendar arithmetic and nothing the screen
- * decides, the way `today` above is.
- */
-function months() {
-  const inBogota = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Bogota",
-    year: "numeric",
-    month: "2-digit",
-  }).format(new Date());
-
-  const [year, month] = inBogota.split("-").map(Number) as [number, number];
-  const after = new Date(Date.UTC(year, month, 1));
-
-  return {
-    thisMonth: inBogota,
-    next: after.toISOString().slice(0, 7),
-  };
 }
 
 test("a Member reads whether the month is ahead of its pace", async ({

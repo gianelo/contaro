@@ -86,10 +86,13 @@ export default async function SpacePage({
       */
       title={t("nav.budget")}
       /*
-        Forwards as well as back, unlike the month's list. A Movement is money
-        that has already moved, so its list stops at the month being lived in;
-        a plan is what a Space expects to spend, and the month after this one
-        is exactly the month somebody plans on the 28th (`monthsToPlan`).
+        Forwards as well as back, and the month's list reaches the same months
+        out of the same function since #61 (`monthChoices`). It used to stop
+        at the month being lived in, because a Movement is money that has
+        already moved and a chevron there loaded a screen guaranteed empty --
+        but that bound was paying for a step, and a picker charges nothing for
+        a row nobody taps (ADR-0039). The plan needed the month ahead anyway:
+        it is exactly the month somebody plans on the 28th.
       */
       beside={
         <MonthPill

@@ -1,16 +1,13 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 import { t } from "@/i18n";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
-import { cx } from "@/ui/cx";
-import { hitTarget } from "@/ui/hit-target";
 import { readerOf } from "@/app/reader";
+import { MonthPill } from "../month-pill";
 import { SpaceScreen } from "../screen";
 import { currentSpace } from "../space";
 import { monthInView, readableMonth } from "./month";
 import { MovementRow } from "./row";
 import { MonthTotals } from "./totals";
-import styles from "./page.module.css";
 
 /**
  * One Space's Movements for a month (#7, #8).
@@ -18,7 +15,8 @@ import styles from "./page.module.css";
  * The month is read a day at a time, because a day is what a person remembers
  * about money — "el jueves fui al súper" — and a flat list of thirty rows is a
  * list nobody can place themselves in. Above it are the two figures the month
- * is actually about, and the control that changes which month this is.
+ * is actually about, and above those the head: the screen's own name, and the
+ * pill that says which month this is and changes it (#61).
  */
 export default async function SpaceMovementsPage({
   params,
@@ -42,35 +40,33 @@ export default async function SpaceMovementsPage({
   const at = (asked: string) => `/espacios/${space.id}/movimientos?mes=${asked}`;
 
   return (
-    <SpaceScreen space={space} tab="movements">
-      <nav className={styles.months} aria-label={t("space.month.choose")}>
-        <Link
-          href={at(inView.around.previous)}
-          className={cx(hitTarget, styles.step)}
-          aria-label={t("space.month.previous")}
-        >
-          ‹
-        </Link>
-        <h2 className={styles.month}>{inView.label}</h2>
-        {/*
-          A month later than this one is guaranteed empty -- a Movement is
-          money that has already moved -- so there is nothing to go to. The
-          space is held rather than collapsed, so the month's name does not
-          slide sideways on the last month of the list.
-        */}
-        {inView.around.next ? (
-          <Link
-            href={at(inView.around.next)}
-            className={cx(hitTarget, styles.step)}
-            aria-label={t("space.month.next")}
-          >
-            ›
-          </Link>
-        ) : (
-          <span className={cx(hitTarget, styles.step)} aria-hidden="true" />
-        )}
-      </nav>
-
+    <SpaceScreen
+      space={space}
+      tab="movements"
+      /*
+        The screen names itself and the Space becomes the quiet line under it
+        (#61). It is the tab's own word, so what a thumb pressed and what it
+        landed on are the same word rather than two names for one place.
+      */
+      title={t("nav.movements")}
+      /*
+        The same pill the plan wears, offering the same months out of the same
+        function (`monthChoices`). It replaces the `‹ Septiembre ›` walker,
+        which was one tap and one page load per month stepped over -- and the
+        walker's forward bound went with it: it existed because every step
+        forward cost a screen landing on a month guaranteed empty, and a
+        picker charges nothing for a row nobody taps (ADR-0039).
+      */
+      beside={
+        <MonthPill
+          label={inView.label}
+          choices={inView.choices.map((choice) => ({
+            ...choice,
+            href: at(choice.month),
+          }))}
+        />
+      }
+    >
       <MonthTotals earned={inView.earned} spent={inView.spent} />
 
       {/*
