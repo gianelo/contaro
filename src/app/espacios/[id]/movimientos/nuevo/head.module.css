@@ -41,6 +41,7 @@
  * act on, so it reads as a caption and never as a control.
  */
 .shared {
+  margin: 0;
   align-self: center;
   display: flex;
   align-items: center;
