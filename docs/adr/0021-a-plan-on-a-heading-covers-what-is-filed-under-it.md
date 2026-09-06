@@ -22,6 +22,8 @@ Income never reaches it — it carries no Category at all (ADR-0016) — and two
 
 A Space that plans **both** a heading and something under it gets two lines, and one shop appears in both of them. That is not double counting: neither line is a total, each is one Category measured against its own expectation, and the shop really is inside both. The month's own total (`expected`, `spent`) is unaffected, because it never goes through this.
 
+The rollup is about spending and about nothing else, which ADR-0043 had to make explicit once each of those two lines opened to show the items behind it. A tray holds the items whose Category **is** that row's, matched exactly: an item written on "Comida · Súper" is in the child's tray and not the heading's, because it was written down once and its amount is counted once, in the child's expectation. The heading's meter still measures the shops filed underneath it, so on that one row the plan and the spending are gathered by different rules — deliberately, because "which shops count against this figure" and "which items add up to it" are different questions and only the first rolls up.
+
 The alert follows the same rollup: a heading is over when everything filed under it adds up past what the heading expected. That is the only reading that matches "the alert fires on the Category's monthly total".
 
 If the catalogue ever grows a third level, `countsAgainst` is the one place that has to learn about it, and it will have to walk rather than look up. Do not spread the walk into the readers.

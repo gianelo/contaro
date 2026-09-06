@@ -1,4 +1,66 @@
 /*
+ * One Category: the comparison, and the tray of items that opens under it
+ * (#63). The `<li>` is the whole disclosure rather than only the row, so the
+ * line that separates one Category from the next belongs here and not to the
+ * summary -- a separator drawn under the row would cut the tray off from the
+ * figure it explains.
+ *
+ * The rule is the same declaration `grouped-list.module.css` puts on its own
+ * `.item`, and it is written out again rather than composed from there. Both
+ * files draw one line between two rows of one card and neither is the other's
+ * definition of it: this list's rows are disclosures that component does not
+ * draw, and a `composes` across the two would tie a shared list's internals to
+ * one screen's markup.
+ */
+.item:not(:last-child) {
+  border-bottom: 1px solid var(--color-separator);
+}
+
+/*
+ * The comparison, which is also what opens the tray. The row's own padding is
+ * the grouped list's, because it is one of that list's rows and has to line up
+ * with the Fijos rows above it.
+ *
+ * `list-style: none` and the WebKit pseudo-element together: a `<summary>`
+ * carries a disclosure triangle by default, and it is drawn by two different
+ * mechanisms in the browsers this ships to -- a list marker in modern ones,
+ * `::-webkit-details-marker` in Safari. Both have to go, because the chevron
+ * at the end of the row is the one that says it opens and a triangle at the
+ * start would be a second answer pointing the other way.
+ */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-7);
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:active {
+  background: var(--color-fill-pressed);
+}
+
+/*
+ * The comparison itself: the figures, the meter and the alert, stacked. It
+ * takes the row's width and the chevron takes what it needs.
+ *
+ * `display: block` here and on `.meter` below because both are spans. A
+ * `<summary>` takes phrasing content, so this row is built from spans that
+ * are told to be boxes rather than from the divs that would have said it
+ * themselves -- the drawing is the same, the markup is legal. `.line` and
+ * `.alert` need nothing said here: they were already flex.
+ */
+.body {
+  display: block;
+  flex-grow: 1;
+}
+
+/*
  * The name and the figure on one line, sitting on the same baseline: the
  * Category is 15px and the figure 14px, and aligning their boxes instead
  * would leave the figure floating a pixel high.
@@ -52,6 +114,7 @@
 }
 
 .meter {
+  display: block;
   margin-top: var(--space-5);
 }
 
@@ -68,4 +131,175 @@
   color: var(--color-destructive);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
+}
+
+/*
+ * The chevron at the end of the row, and the one thing on this screen that
+ * says whether the tray is open.
+ *
+ * It turns rather than being swapped for a second drawing: `chevron-right`
+ * laid over on its side is `chevron-down` to the pixel, so a rotation is the
+ * same shape the canvas draws in the open state and one element fewer to keep
+ * in step. It is also the half of the state that survives everything -- a
+ * person who cannot tell the two greys below apart still reads the direction,
+ * and `<summary>` has already said "expanded" to a screen reader out loud.
+ *
+ * It turns and does not animate turning. Nothing else in this app transitions
+ * anything, and the one file that started would also be the file that owed a
+ * `prefers-reduced-motion` answer nobody else here has had to give.
+ *
+ * The greys: the open one is exactly `--color-text-tertiary`. The closed one
+ * the canvas draws (#C7C7CC) has no token of its own, and `--color-disabled`
+ * (#c6c6c8) is the nearest the palette has -- a step off in red and green and
+ * four in blue, which is a difference nobody reading a 16px chevron is going
+ * to find. It is also already the quietest ink on the palette, which is what
+ * this chevron is for. Reached for rather than added to `tokens.css`, because
+ * one chevron on one screen is not yet a colour the product means; a raw hex
+ * is not the alternative, since it would have no dark half at all.
+ */
+.chevron {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--color-disabled);
+}
+
+details[open] .chevron {
+  transform: rotate(90deg);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The tray: what the figure above it is made of.
+ *
+ * `--color-background` and not `--color-fill`, which is the recessed ground
+ * every other panel in this app sits on. The two are the same grey in light
+ * and only one of them still works in dark: `--color-fill` is the very
+ * `--color-surface` the card is painted in there, so the tray would be a
+ * panel with no edges. This is the screen's own ground, so the tray reads as
+ * a notch cut into the card in both themes -- which is what the canvas draws
+ * it as, one shade off (#F7F7FA against the #F2F2F7 of the screen behind it).
+ */
+.tray {
+  background: var(--color-background);
+  border-top: 1px solid var(--color-separator);
+}
+
+/*
+ * The heading over the items, indented past the row above so the tray reads as
+ * hanging off it rather than as a section of its own.
+ *
+ * 26px is the row's own left padding plus a step, which is exactly how the
+ * canvas draws it, so it is written as that sum rather than as a number: the
+ * day the list's gutter changes, the indent follows it instead of drifting.
+ */
+.trayLabel {
+  padding: var(--space-5) var(--space-7) var(--space-3)
+    calc(var(--space-7) + var(--space-6));
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.plan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * One item: what it is called, what it expects to cost, and the chevron that
+ * says it opens. Indented to the heading above it, and separated by the same
+ * line the card's own rows are -- the canvas draws these a shade darker
+ * (#E7E7EC) because they sit on a darker ground, and `--color-separator` is
+ * the token that means "the line between two rows of one card", which is what
+ * these are.
+ *
+ * The vertical padding is a step below the canvas's 11px, which the scale has
+ * no value for -- the same rounding `grouped-list.module.css` does for its 3px
+ * gap. It settles nothing on its own anyway: `hitTarget` is composed on the
+ * row and 44px is taller than either number.
+ */
+.planRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-7) var(--space-5)
+    calc(var(--space-7) + var(--space-6));
+  border-top: 1px solid var(--color-separator);
+  color: var(--color-disabled);
+  cursor: pointer;
+}
+
+.planRow:active {
+  background: var(--color-fill-pressed);
+}
+
+/*
+ * The name and the amount, and the line they are allowed to give way on.
+ *
+ * ADR-0036 on the tray's own row: an amount is written in full or the line it
+ * sits on gives way, and it is never cut. `Intl` joins a symbol to its digits
+ * with a non-breaking space, so an amount has nothing to wrap at -- and the
+ * card this whole list sits in is `overflow: hidden`
+ * (`grouped-list.module.css`), so a row that negotiated nothing would not even
+ * spill where somebody could see the problem. `ARS 1.234.567,89` under a long
+ * name would simply stop existing at the card's edge.
+ *
+ * So the pair wraps, exactly as the comparison's figures do twelve rules
+ * above. What is different here is where the wrap may happen: that row is one
+ * figure whose two halves must stay a comparison, and this row is a name and
+ * an amount that mean nothing to each other, so the amount is free to drop
+ * onto a line of its own with no rule keeping it company.
+ *
+ * The chevron is not in this box. It is the row's other child, so it holds its
+ * line whatever happens in here -- see `.planChevron`.
+ */
+.planText {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-grow: 1;
+}
+
+/* The name takes the leftover width, so the amount reads back from the right
+   edge the way the Category's figure above it does. Ordinary ink, because the
+   colour on the row is the chevron's. */
+.planName {
+  flex-grow: 1;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/*
+ * What it expects to cost, in the weight the Fijos row writes its amount in:
+ * it is the one figure on the line and the reason the row is worth reading.
+ *
+ * And on the day the amount alone is wider than the row, it breaks rather than
+ * spills. `break-word` and never `anywhere`, for the reason `.figure` above
+ * gives: `anywhere` would drop the row's own minimum width to a single digit,
+ * the line would stop wrapping at all, and the pair would go back to being
+ * squeezed -- the failure this rule exists to prevent, arrived at from the
+ * other side.
+ */
+.planAmount {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+/*
+ * The chevron holds its line however wide the amount gets.
+ *
+ * Outside `.planText` rather than the third thing wrapping inside it: it is
+ * what says the row goes somewhere, and a row whose only affordance had been
+ * pushed onto a second line under a long amount would stop looking tappable
+ * exactly when it got hardest to read. `flex-shrink: 0` because a chevron
+ * narrowed to make room is a chevron drawn at a size nobody chose.
+ */
+.planChevron {
+  display: flex;
+  flex-shrink: 0;
 }

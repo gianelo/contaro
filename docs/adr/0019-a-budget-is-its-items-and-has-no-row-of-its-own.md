@@ -26,4 +26,6 @@ The plan's month walks forwards as well as back (`monthsToPlan`), where the mont
 
 Several items on one Category are deliberately **not** a unique-key violation. They are how a person plans a month in weeks, and they behave as a single item of their combined amount: `expectedByCategory` is where that is said, once, and it is what #11 measures spending against. The rows stay several so all of them can still be corrected.
 
+Where they stay several is under the Category's own comparison row, since ADR-0043. The screen used to draw them as a list of their own beside the comparison, which meant one Category name printed twice with a different figure against each; they are now the tray that row opens, which is the same sentence this paragraph makes — a Category's figure is its items added up — drawn instead of only written down.
+
 Do not "fix" this later by adding a `budgets` table so that a month can carry a status. The month is what carries a status, and a plan is what a Space has written down about it.

@@ -95,11 +95,6 @@ export const es = {
   "space.month.pill": "{month}, elegir el mes",
   "space.month.inView": "Mes que est\u00e1s viendo",
 
-  // The month's plan (#10). "Presupuesto" is the tab and, since #40, the
-  // screen's own title; the list under it is "El plan del mes", because the
-  // rows are the plan and a second "Presupuesto" over them would name the
-  // screen twice.
-  "budget.title": "El plan del mes",
   // What the month was planned to cost, beside what it really cost (#40). A
   // pair of nouns on one card, the way the month's list writes "Ingresos" and
   // "Gastos": each one is only readable against the other. It replaced
@@ -111,6 +106,20 @@ export const es = {
   // the Fijos beside it (#13), and it is what the canvas titles it.
   // `GroupedList` puts it in capitals.
   "budget.variables": "Variables",
+  // The heading over what opens under one of those rows (#63): the items the
+  // figure on the row is made of.
+  //
+  // "de esta categoría" is the whole of it. The screen used to head these same
+  // items "El plan del mes", in a list of their own beside the Categories --
+  // so a month with four weeks of groceries on it drew "Comida · Súper" twice,
+  // under two headings, and neither one said what the other was for. This
+  // names what it is: not the month's plan, one Category's share of it, hung
+  // under the figure it adds up to.
+  //
+  // "El plan" and not "Los gastos previstos", which is what a Budget item is
+  // called everywhere a person is asked for one (#82, ADR-0040): those rows
+  // are the items, and this line is the thing they make together.
+  "budget.variables.plan": "El plan de esta categor\u00eda",
   // The amount is written out and not only shown in red, so a person who
   // cannot see the colour is still told (#11).
   "budget.over": "Te pasaste {amount}",

@@ -27,20 +27,28 @@ export type MeterProps = {
  *
  * The one place this bites is a gallery, where meters stand with no figure
  * at all; that is why the gallery labels each of them itself.
+ *
+ * Two spans told to be boxes, rather than the two divs this was. A meter is
+ * drawn beside the figure it repeats, and one of the places that figure now
+ * sits is inside a `<summary>` (ADR-0043), which takes phrasing content and
+ * nothing else. A div there is markup no validator accepts, and the fix
+ * belongs here rather than at that call site: the element a shape is built
+ * from is this component's business, and a caller who had to wrap it to make
+ * it legal would be a caller that knows what this renders.
  */
 export function Meter({ filled, over = false, height = 7 }: MeterProps) {
   return (
-    <div
+    <span
       aria-hidden
       className={cx(styles.track, over && styles.over)}
       style={{ height }}
     >
-      <div
+      <span
         data-meter-fill
         className={styles.fill}
         style={{ width: `${lengthOf(filled)}%` }}
       />
-    </div>
+    </span>
   );
 }
 
