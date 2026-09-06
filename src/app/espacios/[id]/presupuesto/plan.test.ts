@@ -369,7 +369,7 @@ describe("marking a Fixed item paid", () => {
 
   it("says nothing was created when it was already paid", () => {
     expect(refusalMessage({ kind: "already-paid" })).toBe(
-      "Ese ítem ya estaba pagado.",
+      "Ese gasto fijo ya estaba pagado.",
     );
   });
 });

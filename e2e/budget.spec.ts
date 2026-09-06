@@ -52,7 +52,7 @@ async function categorise(page: Page, heading: string, under?: string) {
 
 /** One Variable item, planned the way a person plans one. */
 async function plan(page: Page, spaceId: string, digits: string) {
-  await page.getByRole("link", { name: "Agregar un ítem" }).click();
+  await page.getByRole("link", { name: "Agregar un gasto previsto" }).click();
   await type(page, digits);
   // The same two steps the entry screen asks for, because it is the same
   // question: picking a Category (#45).
@@ -324,7 +324,7 @@ async function planFixed(
   digits: string,
   dueDay: string,
 ) {
-  await page.getByRole("link", { name: "Agregar un fijo" }).click();
+  await page.getByRole("link", { name: "Agregar un gasto fijo" }).click();
   await type(page, digits);
   await page.getByLabel("Cómo se llama").fill(name);
   await page.getByLabel("Qué día del mes vence").selectOption(dueDay);
@@ -472,7 +472,7 @@ test("a Member corrects the rent, and cannot while it is paid", async ({
   // The row opens the item, the way a Variable row already did.
   await fijos.getByRole("link", { name: /Arriendo/ }).click();
   await expect(
-    page.getByRole("heading", { name: "Corregir el fijo" }),
+    page.getByRole("heading", { name: "Corregir el gasto fijo" }),
   ).toBeVisible();
 
   // All four questions, opened on the answers the item already has. The
@@ -502,7 +502,7 @@ test("a Member corrects the rent, and cannot while it is paid", async ({
   // no form at all, and the one thing that undoes it named as somewhere to go
   // (ADR-0034).
   await fijos.getByRole("link", { name: /Arriendo/ }).click();
-  await expect(page.getByText("Este ítem ya está pagado")).toBeVisible();
+  await expect(page.getByText("Este gasto fijo ya está pagado")).toBeVisible();
   await expect(page.getByRole("button", { name: "Guardar" })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Sacar del plan" }),

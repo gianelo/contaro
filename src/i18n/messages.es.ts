@@ -131,9 +131,18 @@ export const es = {
   // The empty state says what to do, not that there is nothing: a month
   // nobody has planned yet is the ordinary state of every first of the month.
   "budget.empty": "Todav\u00eda no planeaste este mes.",
-  "budget.item.new": "Agregar un \u00edtem",
-  "budget.item.new.title": "Nuevo \u00edtem",
-  "budget.item.edit.title": "Corregir el \u00edtem",
+  // What a Budget item is called where a person reads it (#82, ADR-0040).
+  // "Ítem" was never chosen for it: it is the container word `CONTEXT.md`'s
+  // own avoid list already refuses under Line, Entry and Row, and it names
+  // where the thing is drawn rather than what it is. "Gasto previsto" is that
+  // definition put in Spanish, and it shares "gasto" with a Movement on
+  // purpose -- previsto against gastado is the comparison a Budget exists
+  // for, and the adjective is the whole of the difference. Cupo, tope and
+  // límite read warmer and were refused for promising the enforcement a
+  // Budget deliberately does not have.
+  "budget.item.new": "Agregar un gasto previsto",
+  "budget.item.new.title": "Nuevo gasto previsto",
+  "budget.item.edit.title": "Corregir el gasto previsto",
   "budget.item.category": "Categor\u00eda",
   "budget.item.amount": "Cu\u00e1nto esper\u00e1s gastar",
   "budget.item.save": "Guardar",
@@ -141,12 +150,12 @@ export const es = {
   "budget.item.remove": "Sacar del plan",
   "budget.item.remove.working": "Sacando\u2026",
 
-  "budget.fixed.edit.title": "Corregir el fijo",
+  "budget.fixed.edit.title": "Corregir el gasto fijo",
   // Why the four questions are not on the screen, and what to do about it. The
   // way out is named as a place to go and not only as an instruction: a
   // sentence telling somebody to undo something they cannot reach from here is
   // a dead end with good manners.
-  "budget.fixed.paid.title": "Este \u00edtem ya est\u00e1 pagado",
+  "budget.fixed.paid.title": "Este gasto fijo ya est\u00e1 pagado",
   "budget.fixed.paid.body":
     "Para corregirlo o sacarlo del plan, primero anul\u00e1 el movimiento que lo pag\u00f3.",
   "budget.fixed.paid.movement": "Ver el movimiento",
@@ -156,8 +165,11 @@ export const es = {
   // named for the kind of item rather than for the grouping. `GroupedList`
   // puts it in capitals.
   "budget.fixed": "Fijos",
-  "budget.fixed.new": "Agregar un fijo",
-  "budget.fixed.new.title": "Nuevo \u00edtem fijo",
+  // The kind is said whole -- "un gasto fijo", not "un fijo" -- so the two
+  // ways into the plan read as two kinds of one thing rather than as two
+  // unrelated things (#82).
+  "budget.fixed.new": "Agregar un gasto fijo",
+  "budget.fixed.new.title": "Nuevo gasto fijo",
   "budget.fixed.name": "C\u00f3mo se llama",
   "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
   "budget.fixed.amount": "Cu\u00e1nto es",
@@ -206,10 +218,15 @@ export const es = {
   // places for one rule, and only one of them refuses anything.
   "budget.error.name": "Pon\u00e9le un nombre de hasta {max} caracteres.",
   "budget.error.dueDay": "Eleg\u00ed un d\u00eda que ese mes tenga.",
-  "budget.error.gone": "Ese \u00edtem ya no est\u00e1.",
-  "budget.error.alreadyPaid": "Ese \u00edtem ya estaba pagado.",
+  // The noun is said whole here rather than as a bare "gasto" plus a clause:
+  // now that "gasto" also names a Movement, a person told a gasto is gone has
+  // two places it could have gone from. Saying "gasto previsto" answers that
+  // and keeps the shape its two siblings have -- "Ese movimiento ya no está",
+  // "Esa invitación ya no está" (#82).
+  "budget.error.gone": "Ese gasto previsto ya no est\u00e1.",
+  "budget.error.alreadyPaid": "Ese gasto fijo ya estaba pagado.",
   "budget.error.signedOut": "Se cerr\u00f3 tu sesi\u00f3n. Entr\u00e1 de nuevo.",
-  "budget.error.failed": "No pudimos guardar el \u00edtem. Prob\u00e1 de nuevo.",
+  "budget.error.failed": "No pudimos guardar el gasto previsto. Prob\u00e1 de nuevo.",
 
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",
