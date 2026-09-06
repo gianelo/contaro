@@ -32,6 +32,7 @@ const PLANNED: BudgetItem = {
   month: month("2026-09"),
   categoryId: "cat-super",
   amount: money(240_000_00, "ARS"),
+  name: "Súper de la semana",
 };
 
 const TODAY = calendarDate("2026-09-18");
@@ -73,6 +74,7 @@ const draft: BudgetItemDraft = {
   month: "2026-09",
   categoryId: "cat-super",
   amount: 240_000_00,
+  name: "Súper de la semana",
 };
 
 const ports = (changes: Partial<BudgetPorts> = {}): BudgetPorts => ({
@@ -135,6 +137,24 @@ describe("planning an item from the screen", () => {
     expect(outcome).toEqual({ kind: "rejected", field: "amount" });
   });
 
+  // Both kinds are asked what the row is called since #79, so both can be
+  // refused over it -- and the screen is owed the field rather than a shrug.
+  it("names a refused name as the name", async () => {
+    const outcome = await handlePlanBudgetItem(
+      ports({
+        plan: async () => {
+          throw new UnplannableBudgetItemError(
+            "name",
+            "it is not called anything",
+          );
+        },
+      }),
+      draft,
+    );
+
+    expect(outcome).toEqual({ kind: "rejected", field: "name" });
+  });
+
   // A dropped connection is ours, and saying "the amount is wrong" would send
   // somebody to correct a field that was never the problem.
   it("keeps our failures apart from the person's", async () => {
@@ -152,12 +172,33 @@ describe("planning an item from the screen", () => {
 });
 
 describe("correcting and removing an item", () => {
-  it("corrects what a Category is expected to cost", async () => {
+  it("corrects all three of a Variable item's questions", async () => {
     expect(
       await handleAmendBudgetItem(ports(), CASA.id, PLANNED.id, {
         amount: 300_000_00,
+        name: "Súper de la segunda semana",
+        categoryId: "cat-super",
       }),
     ).toEqual({ kind: "planned", item: PLANNED });
+  });
+
+  // The three answers reach the store as three, and the name among them: a
+  // correction that quietly dropped one would leave the row called what it
+  // was called before somebody retyped it (#79).
+  it("hands the store every answer the form carried", async () => {
+    const amend = vi.fn(async () => PLANNED);
+
+    await handleAmendBudgetItem(ports({ amend }), CASA.id, PLANNED.id, {
+      amount: 300_000_00,
+      name: "Súper de la segunda semana",
+      categoryId: "cat-super",
+    });
+
+    expect(amend).toHaveBeenCalledWith(CASA, PLANNED.id, {
+      amount: 300_000_00,
+      name: "Súper de la segunda semana",
+      categoryId: "cat-super",
+    });
   });
 
   it("reads an item of another Space as one that never existed", async () => {

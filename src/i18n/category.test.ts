@@ -16,6 +16,17 @@ const shippedSlugs = [
   ).matchAll(/,\s*'([a-z][a-z.]*)',\s*NULL\)/g),
 ].map((match) => match[1]!);
 
+/**
+ * Every slug the naming migration freezes a Spanish label for, read out of the
+ * CASE that freezes them.
+ */
+const frozenSlugs = [
+  ...readFileSync(
+    path.join(migrations, "0012_every_item_is_called_something.sql"),
+    "utf8",
+  ).matchAll(/WHEN '([a-z][a-z.]*)' THEN /g),
+].map((match) => match[1]!);
+
 const shipped = (slug: string, parentId: string | null = null): Category => ({
   id: slug,
   spaceId: null,
@@ -65,6 +76,26 @@ describe("naming a Category to a person", () => {
       .map((key) => key.slice("category.".length));
 
     expect(named.sort()).toEqual([...shippedSlugs].sort());
+  });
+
+  it("freezes a name for every shipped Category the naming migration can meet", () => {
+    // 0012 names every nameless item after its Category, and a shipped
+    // Category has no name in the database — only a slug — so the migration
+    // borrows the catalogue's Spanish once, in a CASE of its own. A slug
+    // missing from that CASE falls through to the item's Category identifier
+    // and shows a UUID on somebody's plan forever, with nothing said. This is
+    // what stops that: the arms of the CASE and the seed are one list.
+    //
+    // The list and never the words. What 0012 froze is a record of what a row
+    // was drawn as the day it ran (ADR-0042), and `category.*` is free to be
+    // reworded away from it — asserting the two still read the same would
+    // forbid exactly the rewording that ADR allows.
+    //
+    // Checked against one slug read by eye first, for the reason the seed's
+    // list is: a regex that quietly stopped matching would pass over two
+    // empty lists.
+    expect(frozenSlugs).toContain("food.groceries");
+    expect([...frozenSlugs].sort()).toEqual([...shippedSlugs].sort());
   });
 });
 

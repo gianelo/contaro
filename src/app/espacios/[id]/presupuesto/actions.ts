@@ -148,6 +148,10 @@ export async function planBudgetItemAction(
     // domain by name. Repairing either here would hide the bug rather than the
     // typo.
     amount: Number(answer(form, "amount")),
+    // Raw, the way the Fixed item's is: `planItem` is what trims it and what
+    // refuses a blank one, and a name repaired here would be a row called
+    // something nobody typed.
+    name: answer(form, "name"),
   });
 
   report("Planning a Budget item", outcome);
@@ -179,6 +183,7 @@ export async function amendBudgetItemAction(
     {
       categoryId: answer(form, "categoryId"),
       amount: Number(answer(form, "amount")),
+      name: answer(form, "name"),
     },
   );
 

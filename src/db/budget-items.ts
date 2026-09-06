@@ -123,6 +123,7 @@ export async function planBudgetItemInSpace(
       categoryId: checked.categoryId,
       amount: checked.amount.amount,
       kind: checked.kind,
+      name: checked.name,
     })
     .returning(budgetItemColumns);
 
@@ -273,6 +274,7 @@ export async function amendBudgetItemInSpace(
     .set({
       categoryId: corrected.categoryId,
       amount: corrected.amount.amount,
+      name: corrected.name,
     })
     // The Space is in the WHERE and not only in the read above, so a
     // correction cannot outlive the check that allowed it.
@@ -529,23 +531,25 @@ function asBudgetItem(row: BudgetItemRow, space: Space): BudgetItem {
         month: whichMonth(row),
         categoryId: row.categoryId,
         amount: money(row.amount, space.currency),
+        name: whichName(row),
       };
 }
 
 /**
  * The Fixed half of the same reading, and the same refusal to guess.
  *
- * A row that says it is fixed and carries no name or no due day is a row the
- * check constraint cannot have written (`budget_items_carries_what_its_kind_carries`),
- * so reaching here means the constraint is gone rather than that the item is
- * incomplete. Filling either in would put a plan on the screen that nobody
- * planned; throwing says which row is wrong and stops.
+ * A row that says it is fixed and carries no due day is a row the check
+ * constraint cannot have written
+ * (`budget_items_carries_what_its_kind_carries`), so reaching here means the
+ * constraint is gone rather than that the item is incomplete. Filling it in
+ * would put a plan on the screen that nobody planned; throwing says which row
+ * is wrong and stops.
  */
 function asFixedItem(row: BudgetItemRow, space: Space): FixedItem {
-  if (row.name === null || row.dueOn === null) {
-    throw new Error(
-      `Fixed item ${row.id} carries no ${row.name === null ? "name" : "due day"}.`,
-    );
+  const name = whichName(row);
+
+  if (row.dueOn === null) {
+    throw new Error(`Fixed item ${row.id} carries no due day.`);
   }
   if (!isCalendarDate(row.dueOn)) {
     throw new Error(
@@ -560,7 +564,7 @@ function asFixedItem(row: BudgetItemRow, space: Space): FixedItem {
     month: whichMonth(row),
     categoryId: row.categoryId,
     amount: money(row.amount, space.currency),
-    name: row.name,
+    name,
     dueOn: row.dueOn,
     // The pointer and the ledger's answer about it, together. `isPaid` is
     // what reads them as one thing; nothing here decides whether it is paid.
@@ -587,4 +591,26 @@ function whichMonth(row: BudgetItemRow): Month {
   }
 
   return row.month;
+}
+
+/**
+ * What a row is called, or a refusal.
+ *
+ * Asked once for both kinds, because both are called something (#79). The
+ * column is still nullable -- that is the expand half of ADR-0008, waiting on
+ * the deploy that sets it `NOT NULL` -- so a null is a shape TypeScript can
+ * still see and the reading has to answer for it.
+ *
+ * It answers by refusing. A row with no name is one the check constraint
+ * cannot have written and the trigger under it would have named anyway, so
+ * reaching here means both are gone rather than that the item is nameless.
+ * Filling one in would put a line on the screen that nobody planned; throwing
+ * says which row is wrong and stops.
+ */
+function whichName(row: BudgetItemRow): string {
+  if (row.name === null) {
+    throw new Error(`Budget item ${row.id} carries no name.`);
+  }
+
+  return row.name;
 }

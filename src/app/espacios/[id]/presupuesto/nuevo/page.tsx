@@ -54,6 +54,10 @@ export default async function NewBudgetItemPage({
         locales={locales}
         initial={{
           amount: 0,
+          // Empty, and never a Category's name filled in for somebody: a row
+          // called "Supermercado" is the identical row #79 was about, and one
+          // guessed into the field is one nobody notices they kept.
+          name: "",
           // Nothing chosen: the Category is the one answer nobody can guess
           // for a person, so the picker starts empty and `required` has teeth.
           categoryId: "",

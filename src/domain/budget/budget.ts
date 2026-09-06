@@ -29,7 +29,8 @@ import { spent, type Movement, type MovementDraft } from "../movement/movement";
 import type { Space } from "../space/space";
 
 /**
- * One expected expense inside a Budget: an amount for a Category, in a month.
+ * One expected expense inside a Budget: an amount for a Category, in a month,
+ * called something.
  *
  * What both kinds carry, and the whole of what they have in common. Every
  * figure a month is read by — what it expects, what each Category expects — is
@@ -42,14 +43,25 @@ type PlannedAmount = {
   month: Month;
   categoryId: string;
   amount: Money;
+  /**
+   * What the row is called. An item is read by its name and not by its
+   * Category: four weeks of groceries under "Súper" are four rows a person has
+   * to tell apart, and the Category is the quieter second line.
+   *
+   * Asked of both kinds, because the argument never was about the kind. Left
+   * off the Variable one, those four weeks were four identical rows — a plan a
+   * person could read down but not correct, because nothing on the screen said
+   * which of them was the week they meant.
+   */
+  name: string;
 };
 
 /**
  * An expectation a Category's Movements count against, such as food or leisure.
  *
- * It carries no due date and no paid state, and that is the difference between
- * the kinds rather than an omission: nobody pays "comida", they shop under it
- * eleven times, and there is nothing on one to mark.
+ * It carries no due date and no paid state, and that is the whole of the
+ * difference between the kinds rather than an omission: nobody pays "comida",
+ * they shop under it eleven times, and there is nothing on one to mark.
  */
 export type VariableItem = PlannedAmount & { kind: "variable" };
 
@@ -87,12 +99,6 @@ export type Payment = {
 export type FixedItem = PlannedAmount & {
   kind: "fixed";
   /**
-   * What the row is called. A Fixed item is read by its name and not by its
-   * Category: three subscriptions under "Suscripciones" are three rows a
-   * person has to tell apart, and the Category is the quieter second line.
-   */
-  name: string;
-  /**
    * The day it falls due. Always inside `month`, because it is built out of it
    * (`dayOf`) rather than typed — so a plan cannot hold a due date belonging
    * to a month it is not on.
@@ -120,24 +126,26 @@ export type NewFixedItem = Omit<FixedItem, "id">;
 /**
  * What arrives from the entry screen: strings and a number, none of them
  * trusted. The month is a plain string because a URL carries any string at
- * all, and the amount is minor units because the keypad counts in them.
+ * all, and the amount is minor units because the keypad counts in them. The
+ * name is asked for whichever kind is being planned, because both are read by
+ * one.
  */
 export type BudgetItemDraft = {
   spaceId: string;
   month: string;
   categoryId: string;
   amount: number;
+  name: string;
 };
 
 /**
- * The same answers plus the two only a Fixed item is asked for.
+ * The same answers plus the one only a Fixed item is asked for.
  *
  * `dueDay` and not a date: the screen already knows which month is being
  * planned, so asking for a whole date would be offering a person the chance to
  * contradict it. A day of the month cannot disagree with the month it is on.
  */
 export type FixedItemDraft = BudgetItemDraft & {
-  name: string;
   dueDay: number;
 };
 
@@ -149,18 +157,18 @@ export type FixedItemDraft = BudgetItemDraft & {
 export type BudgetItemAmendment = {
   categoryId?: string;
   amount?: number;
+  name?: string;
 };
 
 /**
- * The same, plus the two more questions a Fixed item was planned with.
+ * The same, plus the one more question a Fixed item was planned with.
  *
  * Its own type, and the reason is the one that keeps a Variable item from
- * being marked paid: a Variable item has no name and no due day, so a
- * correction carrying either is not a correction of one. Said in the type,
- * that is a refusal nobody has to remember to write.
+ * being marked paid: a Variable item has no due day, so a correction carrying
+ * one is not a correction of one. Said in the type, that is a refusal nobody
+ * has to remember to write.
  */
 export type FixedItemAmendment = BudgetItemAmendment & {
-  name?: string;
   dueDay?: number;
 };
 
@@ -235,14 +243,17 @@ export function planItem(
     month: whichMonth(draft.month),
     categoryId: category(draft.categoryId, planning),
     amount: amount(draft.amount, planning.space.currency),
+    name: name(draft.name),
   };
 }
 
 /**
- * The longest a Fixed item's name may be. The same ceiling a Space's name has,
- * and for the same reason: it is a label on a row, not a description.
+ * The longest a Budget item's name may be. One ceiling and not one per kind,
+ * because the name is one field on one shape and a row is a row. The same
+ * ceiling a Space's name has, and for the same reason: it is a label on a row,
+ * not a description.
  */
-export const MAX_FIXED_ITEM_NAME_LENGTH = 60;
+export const MAX_BUDGET_ITEM_NAME_LENGTH = 60;
 
 /**
  * A Fixed item planned, held to every rule a Variable one is held to and to
@@ -424,10 +435,9 @@ export function dueNotice(
  *
  * A Fixed item is refused outright, and the refusal is here rather than left
  * to the type alone. It is about which door and no longer about there being
- * none: `amendFixedItem` is where one is corrected (#48). This form asks for a
- * Category and an amount and nothing else, so a Fixed item saved through it
- * would answer two questions it was never asked -- silently, by leaving its
- * name and its day out of what it wrote back.
+ * none: `amendFixedItem` is where one is corrected (#48). This form never asks
+ * for a due day, so a Fixed item saved through it would answer a question it
+ * was never asked -- silently, by leaving its day out of what it wrote back.
  */
 export function amendItem(
   item: BudgetItem,
@@ -453,6 +463,7 @@ export function amendItem(
       changes.amount === undefined
         ? item.amount
         : amount(changes.amount, planning.space.currency),
+    name: changes.name === undefined ? item.name : name(changes.name),
   };
 }
 
@@ -902,7 +913,8 @@ function whichMonth(proposed: string): Month {
 }
 
 /**
- * A Fixed item's name, or a refusal.
+ * A Budget item's name, or a refusal. One helper for both kinds, so what a row
+ * may be called cannot come to mean two things.
  *
  * Trimmed the way a Space's is, and refused when the trimming leaves nothing:
  * the name is the whole of what the row is called, and a blank one is a line
@@ -914,10 +926,10 @@ function name(proposed: string): string {
   if (trimmed.length === 0) {
     throw new UnplannableBudgetItemError("name", "it is not called anything");
   }
-  if (trimmed.length > MAX_FIXED_ITEM_NAME_LENGTH) {
+  if (trimmed.length > MAX_BUDGET_ITEM_NAME_LENGTH) {
     throw new UnplannableBudgetItemError(
       "name",
-      `its name is longer than ${MAX_FIXED_ITEM_NAME_LENGTH} characters`,
+      `its name is longer than ${MAX_BUDGET_ITEM_NAME_LENGTH} characters`,
     );
   }
 

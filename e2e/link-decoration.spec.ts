@@ -141,6 +141,10 @@ async function aSpaceWithRowsOnIt(context: BrowserContext, baseURL: string) {
       month,
       categoryId: groceries,
       amount: 24_000_000,
+      // Called something, like every item since #79: the name is the row's
+      // first line and the Category dropped to the one beneath it, so a row
+      // without one is not a row this spec could find anything to underline on.
+      name: "Súper de la semana",
     });
 
     // Dated today rather than on a chosen day of the month: a Movement is

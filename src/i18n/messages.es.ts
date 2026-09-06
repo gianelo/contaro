@@ -143,7 +143,25 @@ export const es = {
   "budget.item.new": "Agregar un gasto previsto",
   "budget.item.new.title": "Nuevo gasto previsto",
   "budget.item.edit.title": "Corregir el gasto previsto",
+  // Asked of both kinds, and one key because it is one question (#79). A gasto
+  // previsto of either kind is read by what it is called rather than by what
+  // it is filed under: four weeks of groceries on one Category are four rows a
+  // person has to tell apart, and the Category is what they have in common
+  // rather than what separates them. It was "budget.fixed.name" while only the
+  // Fixed form asked it, which said the difference was the kind -- and it
+  // never was.
+  "budget.item.name": "C\u00f3mo se llama",
   "budget.item.category": "Categor\u00eda",
+  // "Supermercado · Comida": the Category and the heading it sits under, on
+  // the quiet line under the name, exactly where "budget.fixed.beneath" writes
+  // the Category and the day. The separator is copy and not markup, so this
+  // line is punctuated in the file the rest of its words live in. That is not
+  // yet true of both lines: `fixed.tsx` still writes a middot into JSX to hang
+  // the due notice off the end of its own, and until it stops, the two can
+  // come to be punctuated differently. A wart, and not the rule. Category
+  // first: it is the
+  // more precise of the two, and it is what the row was called until #79.
+  "budget.item.beneath": "{category} \u00b7 {heading}",
   "budget.item.amount": "Cu\u00e1nto esper\u00e1s gastar",
   "budget.item.save": "Guardar",
   "budget.item.save.working": "Guardando\u2026",
@@ -170,7 +188,6 @@ export const es = {
   // unrelated things (#82).
   "budget.fixed.new": "Agregar un gasto fijo",
   "budget.fixed.new.title": "Nuevo gasto fijo",
-  "budget.fixed.name": "C\u00f3mo se llama",
   "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
   "budget.fixed.amount": "Cu\u00e1nto es",
   // The badge at the end of a row. Two words, and never a colour on its own:
@@ -213,7 +230,7 @@ export const es = {
   "budget.error.category": "Eleg\u00ed una categor\u00eda de este espacio.",
   "budget.error.month": "No pudimos ver de qu\u00e9 mes se trata.",
   "budget.error.space": "No pudimos ver de qu\u00e9 espacio se trata.",
-  // The ceiling comes from `MAX_FIXED_ITEM_NAME_LENGTH` rather than being
+  // The ceiling comes from `MAX_BUDGET_ITEM_NAME_LENGTH` rather than being
   // written out here: a number in the copy and a number in the domain are two
   // places for one rule, and only one of them refuses anything.
   "budget.error.name": "Pon\u00e9le un nombre de hasta {max} caracteres.",

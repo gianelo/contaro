@@ -131,7 +131,11 @@ export default async function BudgetItemPage({
         categories={categories}
         currency={space.currency}
         locales={locales}
-        initial={{ amount: item.minorUnits, categoryId: item.categoryId }}
+        initial={{
+          amount: item.minorUnits,
+          name: item.name,
+          categoryId: item.categoryId,
+        }}
         action={amendBudgetItemAction}
         submit={t("budget.item.save")}
         working={t("budget.item.save.working")}
