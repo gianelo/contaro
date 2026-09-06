@@ -68,8 +68,12 @@ it("plans a Variable item and reads the month back", async () => {
     month: SEPTEMBER,
     categoryId,
     amount: 240_000_00,
+    name: "Súper semana 1",
   });
 
+  // The name is part of the row and not of the Category (#79): it is written,
+  // it survives the round trip, and it is what tells one week of groceries
+  // from the next.
   expect(planned).toEqual({
     kind: "variable",
     id: expect.any(String),
@@ -77,13 +81,14 @@ it("plans a Variable item and reads the month back", async () => {
     month: SEPTEMBER,
     categoryId,
     amount: money(240_000_00, "ARS"),
+    name: "Súper semana 1",
   });
   expect(await budgetItemsInMonth(db, space, SEPTEMBER)).toEqual([planned]);
 });
 
 it("keeps a month's plan out of the months around it", async () => {
   const { space, categoryId } = await aSpaceWithACategory("Meses");
-  const item = { spaceId: space.id, categoryId, amount: 100_00 };
+  const item = { spaceId: space.id, categoryId, amount: 100_00, name: "Súper" };
 
   await planBudgetItemInSpace(db, space, { ...item, month: SEPTEMBER });
 
@@ -94,11 +99,16 @@ it("takes several items on one Category, which is how a month is planned in week
   const { space, categoryId } = await aSpaceWithACategory("Semanas");
   const week = { spaceId: space.id, month: SEPTEMBER, categoryId, amount: 60_000_00 };
 
-  await planBudgetItemInSpace(db, space, week);
-  await planBudgetItemInSpace(db, space, week);
+  await planBudgetItemInSpace(db, space, { ...week, name: "Súper semana 1" });
+  await planBudgetItemInSpace(db, space, { ...week, name: "Súper semana 2" });
 
   const planned = await budgetItemsInMonth(db, space, SEPTEMBER);
   expect(planned).toHaveLength(2);
+  // Two rows on one Category, and now two rows a person can tell apart.
+  expect(planned.map((one) => one.name)).toEqual([
+    "Súper semana 1",
+    "Súper semana 2",
+  ]);
 });
 
 it("refuses a Category another Space added", async () => {
@@ -116,6 +126,7 @@ it("refuses a Category another Space added", async () => {
       month: SEPTEMBER,
       categoryId: theirs.id,
       amount: 100_00,
+      name: "Asado",
     }),
   ).rejects.toThrow(UnplannableBudgetItemError);
 });
@@ -127,11 +138,32 @@ it("corrects what a Category is expected to cost", async () => {
     month: SEPTEMBER,
     categoryId,
     amount: 240_000_00,
+    name: "Súper semana 1",
   });
 
   expect(
     await amendBudgetItemInSpace(db, space, planned.id, { amount: 300_000_00 }),
   ).toEqual({ ...planned, amount: money(300_000_00, "ARS") });
+});
+
+it("corrects what a Variable item is called", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Renombra");
+  const planned = await planBudgetItemInSpace(db, space, {
+    spaceId: space.id,
+    month: SEPTEMBER,
+    categoryId,
+    amount: 60_000_00,
+    name: "Súper semana 1",
+  });
+
+  const corrected = await amendBudgetItemInSpace(db, space, planned.id, {
+    name: "Súper semana 2",
+  });
+
+  expect(corrected).toEqual({ ...planned, name: "Súper semana 2" });
+  // Read back through the query the screen reads through, because a correction
+  // only the RETURNING agrees with is not a correction.
+  expect(await findBudgetItemInSpace(db, space, planned.id)).toEqual(corrected);
 });
 
 it("answers no such item for one in another Space, rather than refusing it", async () => {
@@ -142,6 +174,7 @@ it("answers no such item for one in another Space, rather than refusing it", asy
     month: SEPTEMBER,
     categoryId: other.categoryId,
     amount: 100_00,
+    name: "Súper",
   });
 
   expect(await amendBudgetItemInSpace(db, space, theirs.id, { amount: 200_00 }))
@@ -158,6 +191,7 @@ it("removes an item from the plan, leaving no trace", async () => {
     month: SEPTEMBER,
     categoryId,
     amount: 100_00,
+    name: "Súper",
   });
 
   expect(await removeBudgetItemFromSpace(db, space, planned.id)).toBe(true);
@@ -211,6 +245,7 @@ it("reads both kinds as one month's plan", async () => {
     month: SEPTEMBER,
     categoryId,
     amount: 240_000_00,
+    name: "Súper",
   });
   await aFixedItem(space, categoryId, { name: "Netflix", amount: 44_900_00 });
 
@@ -376,6 +411,7 @@ it("has nothing to pay where the item is a Variable one", async () => {
     month: SEPTEMBER,
     categoryId,
     amount: 240_000_00,
+    name: "Súper",
   });
 
   expect(
@@ -442,12 +478,14 @@ it("reads several Spaces' plans in one go, each under its own Space", async () =
     month: SEPTEMBER,
     categoryId: casa.categoryId,
     amount: 240_000_00,
+    name: "Súper",
   });
   await planBudgetItemInSpace(db, viaje.space, {
     spaceId: viaje.space.id,
     month: SEPTEMBER,
     categoryId: viaje.categoryId,
     amount: 800_00,
+    name: "Comidas",
   });
 
   const grouped = await budgetItemsInMonthForSpaces(
@@ -472,6 +510,7 @@ it("holds a batch to the month it was asked about", async () => {
     month: SEPTEMBER,
     categoryId,
     amount: 100_000_00,
+    name: "Súper",
   });
 
   const grouped = await budgetItemsInMonthForSpaces(db, [space], OCTOBER);
@@ -650,4 +689,69 @@ it("refuses, in the database itself, a Budget item that names no kind", async ()
       VALUES (${space.id}, '2026-09', ${categoryId}, 240000)
     `,
   ).rejects.toThrow(/null value in column "kind"/);
+});
+
+it("refuses, in the database itself, a Budget item that is called nothing", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Sin nombre");
+  const variable = await planBudgetItemInSpace(db, space, {
+    spaceId: space.id,
+    month: SEPTEMBER,
+    categoryId,
+    amount: 240_000_00,
+    name: "Súper",
+  });
+  const fixed = await aFixedItem(space, categoryId);
+
+  // Asked through UPDATE and not INSERT, and that is the bridge showing rather
+  // than a gap in the test: 0012's trigger is BEFORE INSERT, so an arriving row
+  // is named before the check ever sees it (which is the test below). Nothing
+  // stands between an UPDATE and the constraint, so this is where the rule can
+  // be read on its own -- of both kinds, and of a name that is only spaces as
+  // much as of none at all.
+  //
+  // The null case is the one that used to get through. A CHECK evaluating to
+  // NULL is satisfied in Postgres, so `char_length(btrim(name)) > 0` alone let
+  // a Fixed item with no name straight in; `name is not null` is what closes it.
+  for (const id of [variable.id, fixed.id]) {
+    for (const nothing of [null, "", "   "]) {
+      await expect(
+        sql`UPDATE budget_items SET name = ${nothing} WHERE id = ${id}`,
+      ).rejects.toThrow(/budget_items_carries_what_its_kind_carries/);
+    }
+  }
+});
+
+/*
+ * The expand half of ADR-0008, which only exists for a few minutes and is
+ * therefore the half nobody would notice was broken. Migrations run from an
+ * Action while Vercel deploys in parallel, so the code of #10 -- which has
+ * never heard of naming a Variable item -- is still inserting here without one.
+ */
+it("names an insert that names nothing after its Category", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Puente");
+  const asado = await addCategoryToSpace(db, {
+    spaceId: space.id,
+    parentId: null,
+    name: "Asado",
+  });
+
+  // The old code's insert, exactly: the column is omitted rather than sent
+  // empty, because that code does not know it is there.
+  await sql`
+    INSERT INTO budget_items (space_id, month, category_id, amount, kind)
+    VALUES (${space.id}, '2026-09', ${asado.id}, 240000, 'variable')
+  `;
+
+  // The case that matters, because it is nearly every row there is: a shipped
+  // Category carries a slug and no name at all, and the name a person read was
+  // copy the screen resolved. `budget_item_name_for_category` borrows that
+  // copy, so this comes back "Supermercado" -- reading `categories.name` alone
+  // would have written the identifier here and left the plan full of UUIDs.
+  await sql`
+    INSERT INTO budget_items (space_id, month, category_id, amount, kind)
+    VALUES (${space.id}, '2026-09', ${categoryId}, 100000, 'variable')
+  `;
+
+  const planned = await budgetItemsInMonth(db, space, SEPTEMBER);
+  expect(planned.map((one) => one.name)).toEqual(["Asado", "Supermercado"]);
 });

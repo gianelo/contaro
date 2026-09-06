@@ -50,10 +50,23 @@ async function categorise(page: Page, heading: string, under?: string) {
   }
 }
 
-/** One Variable item, planned the way a person plans one. */
-async function plan(page: Page, spaceId: string, digits: string) {
+/**
+ * One Variable item, planned the way a person plans one: how much, what it is
+ * called, and what it is filed under (#79).
+ *
+ * The name is where `planFixed` puts it below, because the two forms ask it in
+ * the same place -- a person who has planned one kind knows where the question
+ * is on the other.
+ */
+async function plan(
+  page: Page,
+  spaceId: string,
+  name: string,
+  digits: string,
+) {
   await page.getByRole("link", { name: "Agregar un gasto previsto" }).click();
   await type(page, digits);
+  await page.getByLabel("Cómo se llama").fill(name);
   // The same two steps the entry screen asks for, because it is the same
   // question: picking a Category (#45).
   await categorise(page, "Comida", "Supermercado");
@@ -117,7 +130,7 @@ test("the Budget screen names itself and holds the month's two figures", async (
 
   // Planned and spent, the card draws the month against its plan -- #11's last
   // criterion, which never shipped because the card it names arrives here.
-  await plan(page, space.id, "40000000");
+  await plan(page, space.id, "Súper de la semana", "40000000");
   await spend(page, space.id, "10000000");
   await page.goto(`/espacios/${space.id}`);
 
@@ -143,12 +156,13 @@ test("a Member plans the month and reads it back", async ({
   const budget = page.getByRole("group", { name: "El plan del mes" });
   await expect(budget).toContainText("Todavía no planeaste este mes.");
 
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
 
-  // The Category on the first line and the heading it sits under on the
-  // second, the way the month's list writes a row.
-  await expect(budget).toContainText("Supermercado");
-  await expect(budget).toContainText("Comida");
+  // The name on the first line and what it is filed under on the quiet one
+  // beneath it, the way a Fijos row reads (#79). The Category used to be the
+  // first line, which made four weeks of groceries four identical rows.
+  await expect(budget).toContainText("Súper de la semana");
+  await expect(budget).toContainText("Supermercado · Comida");
   await expect(budget).toContainText("$ 240.000,00");
 
   // And the plan's total is on the card at the top of the screen now, beside
@@ -166,10 +180,10 @@ test("correcting an item opens on the branch its Category sits in", async ({
   const { space } = await aMemberWithASpace("Bruno Repasa", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}`);
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
 
   const budget = page.getByRole("group", { name: "El plan del mes" });
-  await budget.getByRole("link", { name: /Supermercado/ }).click();
+  await budget.getByRole("link", { name: /Súper de la semana/ }).click();
 
   // The same picker the entry screen asks with, opened the same way: on the
   // branch the saved Category sits in, with the Category itself chosen.
@@ -192,15 +206,22 @@ test("several items on one Category are read as one of their combined amount", a
 
   // Four weeks of groceries, which is how a person plans a month they think
   // about in weeks. They stay four rows, so all four can still be corrected.
-  await plan(page, space.id, "6000000");
-  await plan(page, space.id, "6000000");
-  await plan(page, space.id, "5500000");
-  await plan(page, space.id, "6500000");
+  await plan(page, space.id, "Semana 1", "6000000");
+  await plan(page, space.id, "Semana 2", "6000000");
+  await plan(page, space.id, "Semana 3", "5500000");
+  await plan(page, space.id, "Semana 4", "6500000");
 
   const budget = page.getByRole("group", { name: "El plan del mes" });
-  await expect(
-    budget.getByRole("link", { name: /Supermercado/ }),
-  ).toHaveCount(4);
+  await expect(budget.getByRole("link")).toHaveCount(4);
+
+  // And each of the four is a row a thumb can aim at, which is the whole of
+  // #79: four rows called the same thing are a plan a person can read down and
+  // cannot correct, because nothing on the screen says which week is which.
+  for (const week of ["Semana 1", "Semana 2", "Semana 3", "Semana 4"]) {
+    await expect(budget.getByRole("link", { name: new RegExp(week) })).toHaveCount(
+      1,
+    );
+  }
 
   // And what the Category expects of the month is the four added up: one line
   // to be over or under, however many items make it.
@@ -217,7 +238,7 @@ test("a Member is told when a Category has passed what it expected", async ({
   const { space } = await aMemberWithASpace("Euge Se Pasa", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}`);
-  await plan(page, space.id, "40000000");
+  await plan(page, space.id, "Súper de la semana", "40000000");
 
   const variables = page.getByRole("group", { name: "Variables" });
   // Planned and nothing spent yet: the comparison is a figure, not a blank.
@@ -280,7 +301,7 @@ test("a Member plans next month before it starts", async ({
   // already moved, and a plan is what a month is expected to cost.
   await chooseMonth(page, `/espacios/${space.id}?mes=${next}`, next);
 
-  await plan(page, space.id, "9000000");
+  await plan(page, space.id, "Súper de la semana", "9000000");
   await expect(page).toHaveURL(new RegExp(`\\?mes=${next}$`));
 
   const budget = page.getByRole("group", { name: "El plan del mes" });
@@ -299,18 +320,20 @@ test("a Member corrects an item and takes another off the plan", async ({
   const { space } = await aMemberWithASpace("Cami Corrige", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}`);
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
 
   const budget = page.getByRole("group", { name: "El plan del mes" });
-  await budget.getByRole("link", { name: /Supermercado/ }).click();
+  await budget.getByRole("link", { name: /Súper de la semana/ }).click();
 
   // The keypad opens on what the item expects, so a correction is typed over
-  // it rather than from nothing.
+  // it rather than from nothing, and the name field on what it is called.
   await page.getByRole("button", { name: "Borrar el último número" }).click();
+  await page.getByLabel("Cómo se llama").fill("Súper de la primera semana");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(budget).toContainText("$ 24.000,00");
+  await expect(budget).toContainText("Súper de la primera semana");
 
-  await budget.getByRole("link", { name: /Supermercado/ }).click();
+  await budget.getByRole("link", { name: /Súper de la primera semana/ }).click();
   await page.getByRole("button", { name: "Sacar del plan" }).click();
 
   await expect(budget).toContainText("Todavía no planeaste este mes.");
@@ -364,7 +387,7 @@ test("a Member plans the rent and marks it paid", async ({
 
   // Both kinds add into the month's total, because both are what the month
   // expects to cost (#13).
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
   await expect(summary).toContainText("$ 2.040.000,00");
 
   // Marking it paid confirms first, because it brings money into existence in
@@ -572,7 +595,7 @@ test("a Member reads whether the month is ahead of its pace", async ({
   // nobody earned.
   await expect(summary).not.toContainText("del ritmo");
 
-  await plan(page, space.id, "100000000");
+  await plan(page, space.id, "Súper de la semana", "100000000");
 
   // One line of words, and it names its own scope out loud so nobody has to
   // know why the rent is not in it. Nothing spent yet, so the month is behind
@@ -655,7 +678,7 @@ test.describe("read by a phone set to English, where the money is spelled out", 
     const { space } = await aMemberWithASpace("Wanda Ancha", context, baseURL!);
 
     await page.goto(`/espacios/${space.id}`);
-    await plan(page, space.id, CEILING);
+    await plan(page, space.id, "Súper de la semana", CEILING);
     await spend(page, space.id, CEILING);
     await page.goto(`/espacios/${space.id}`);
 

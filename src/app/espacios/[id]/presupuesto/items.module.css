@@ -1,0 +1,25 @@
+/* The name of a planned item: what the row is actually called (#79). */
+.name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/*
+ * The Category, and the heading it sits under, quiet beneath the name. The
+ * same rule the Fijos row's second line has, because it is the same line.
+ *
+ * Tertiary, where the rule this replaced in `page.module.css` was secondary:
+ * the Variable second line got quieter when it stopped being the row's title
+ * and became the line under one, and tertiary is the grey the Fijos row's own
+ * second line is already written in. Not a restyle in passing -- it is what
+ * makes the two rows the same row.
+ *
+ * No rule holding either of them on one line, and none narrowing the column
+ * they share: a name is words and wraps at a space, so the answer to a long
+ * one is a second line rather than a squeezed column (ADR-0036).
+ */
+.beneath {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}

@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import type { CurrencyCode } from "@/domain/money/currency";
 import { lastDayOf, month as asMonth } from "@/domain/calendar/month";
-import { MAX_FIXED_ITEM_NAME_LENGTH } from "@/domain/budget/budget";
+import { MAX_BUDGET_ITEM_NAME_LENGTH } from "@/domain/budget/budget";
 import { t } from "@/i18n";
 import { Button } from "@/ui/button";
 import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
@@ -45,11 +45,13 @@ export type FixedItemFormProps = {
  * A Fixed item planned: how much, what it is called, what it is filed under
  * and which day of the month it falls due (#13).
  *
- * Two questions more than a Variable item asks, and they are the whole
- * difference between the kinds. A name, because a Fixed item is read by it
- * rather than by its Category — three subscriptions under "Suscripciones" are
- * three rows a person has to tell apart. And a day, because that is what makes
- * it fixed.
+ * One question more than a Variable item asks, and it is the whole difference
+ * between the kinds: a day, because that is what makes it fixed.
+ *
+ * The name is no longer part of that difference (#79). It is asked here and on
+ * the other form out of one key, because it was never about the kind — three
+ * subscriptions under "Suscripciones" are three rows a person has to tell
+ * apart, and so are four weeks of groceries under one Category.
  *
  * The day is a day *of the month being planned* and never a whole date. The
  * screen already knows which month it is on, so offering a date picker would
@@ -113,8 +115,8 @@ export function FixedItemForm({
 
       <TextField
         name="name"
-        label={t("budget.fixed.name")}
-        maxLength={MAX_FIXED_ITEM_NAME_LENGTH}
+        label={t("budget.item.name")}
+        maxLength={MAX_BUDGET_ITEM_NAME_LENGTH}
         defaultValue={initial.name}
         required
       />

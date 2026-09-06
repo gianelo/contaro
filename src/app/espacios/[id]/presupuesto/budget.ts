@@ -41,7 +41,13 @@ type ReadableItemInCommon = {
    * planned for, and taking it off the plan has to land back on that one.
    */
   month: Month;
-  /** What the row is called: the Category, as a person reads it. */
+  /** What it is read by, and the first thing its correction asks. */
+  name: string;
+  /**
+   * What it is filed under, named. The quieter second line rather than the
+   * row's own word: a name is what tells four weeks of groceries apart, and
+   * the Category is what they have in common (#79).
+   */
   category: string;
   /** The heading that Category sits under, if it sits under one. */
   heading: string | null;
@@ -57,20 +63,18 @@ type ReadableItemInCommon = {
 };
 
 /**
- * One item of a month's plan, as its correction screen shows it: named by its
- * Category and written in the reader's separators.
+ * One item of a month's plan, as its correction screen shows it: called
+ * something, filed under a Category and written in the reader's separators.
  *
  * Discriminated on `kind`, because the correction screen is two screens behind one URL
  * (#48). A Fixed item is corrected by four questions and a Variable one by
- * two, and a screen that read the four off an optional field would be a screen
- * that could render half of either.
+ * three, and a screen that read the fourth off an optional field would be a
+ * screen that could render half of either.
  */
 export type ReadableBudgetItem =
   | (ReadableItemInCommon & { kind: "variable" })
   | (ReadableItemInCommon & {
       kind: "fixed";
-      /** What it is read by, and the first thing its correction asks. */
-      name: string;
       /**
        * The day of the month it falls due on, and not the date. The choice
        * list on the screen is days of *this* month, so a date would have to be
@@ -92,6 +96,21 @@ export type ReadableBudgetItem =
        */
       paidBy: string | null;
     });
+
+/**
+ * The Variable arm of that union, named because the month's list is made of
+ * exactly these and nothing else.
+ *
+ * `readableBudget` already sorts the two kinds into two fields, so a screen
+ * drawing one of them is holding one kind whatever its prop says. Saying so in
+ * the type is what stops the screen having to narrow a kind away that never
+ * reaches it -- and what makes a fixture for it a whole Variable item rather
+ * than half of either.
+ */
+export type ReadableVariableItem = Extract<
+  ReadableBudgetItem,
+  { kind: "variable" }
+>;
 
 /**
  * One Category of the plan, what it expected, and what it really cost (#11).
@@ -221,7 +240,7 @@ export type ReadableBudget = {
    * collapsing them on the screen would take away the four rows they meant to
    * edit.
    */
-  items: readonly ReadableBudgetItem[];
+  items: readonly ReadableVariableItem[];
   /**
    * The Fixed items, in the order they were planned, drawn above the rest
    * (#13). Their own list and not rows among the others, because they are read
@@ -495,12 +514,12 @@ function readableFixedToCorrect(
     kind: "fixed",
     id: item.id,
     month: item.month,
+    name: item.name,
     category: category?.name ?? item.categoryId,
     heading: category?.heading ?? null,
     amount: formatMoney(item.amount, reader.locales),
     minorUnits: item.amount.amount,
     categoryId: item.categoryId,
-    name: item.name,
     // The last two characters of a `CalendarDate`, which is `YYYY-MM-DD` and
     // is checked to be one before it is ever built (`isCalendarDate`).
     dueDay: Number(item.dueOn.slice(8)),
@@ -512,13 +531,14 @@ function readable(
   item: VariableItem,
   named: Naming,
   reader: Reader,
-): ReadableBudgetItem {
+): ReadableVariableItem {
   const category = named.get(item.categoryId);
 
   return {
     kind: "variable",
     id: item.id,
     month: item.month,
+    name: item.name,
     // The identifier showing rather than a blank row, the way the month's
     // list reads one: a plan whose Category was retired by a migration is a
     // figure a person should still see and be able to correct, and a line

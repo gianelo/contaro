@@ -1,7 +1,7 @@
 import type { ReadSession } from "@/auth/session";
 import {
   FixedItemAlreadyPaidError,
-  MAX_FIXED_ITEM_NAME_LENGTH,
+  MAX_BUDGET_ITEM_NAME_LENGTH,
   UnplannableBudgetItemError,
   type BudgetItem,
   type BudgetItemAmendment,
@@ -302,7 +302,7 @@ export function refusalMessage(refusal: Refusal): string {
           // wrong thing.
           return t("budget.error.space");
         case "name":
-          return t("budget.error.name", { max: MAX_FIXED_ITEM_NAME_LENGTH });
+          return t("budget.error.name", { max: MAX_BUDGET_ITEM_NAME_LENGTH });
         case "dueDay":
           return t("budget.error.dueDay");
       }

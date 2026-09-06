@@ -9,6 +9,7 @@ import { currentSpace, viewingMember } from "./space";
 import { monthInView, spaceMembers } from "./movimientos/month";
 import { readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
+import { PlannedItems } from "./presupuesto/items";
 import { MonthSummary } from "./presupuesto/summary";
 import { Variables } from "./presupuesto/variables";
 import styles from "./page.module.css";
@@ -126,44 +127,16 @@ export default async function SpacePage({
       />
 
       {/*
-        The Variable items: one row per item, in the order they were planned.
-        Several items on one Category stay several rows, because they are how a
-        person thinks in weeks — sixty thousand of groceries a week rather than
-        two hundred and forty a month — and collapsing them here would take
-        away the four rows they meant to be able to edit.
+        The Variable items: one row per item, read by its name with the
+        Category quiet under it, the way a Fijos row is read (#79). Its own
+        component beside the other sections of this screen rather than markup
+        inlined here, so what a row draws is provable without a database.
       */}
-      <GroupedList label={t("budget.title")}>
-        {nothingPlanned ? (
-          <GroupedListItem>{t("budget.empty")}</GroupedListItem>
-        ) : (
-          plan.items.map((item) => (
-            <GroupedListItem
-              key={item.id}
-              href={`/espacios/${space.id}/presupuesto/${item.id}`}
-              trailing={item.amount}
-            >
-              <span className={styles.category}>{item.category}</span>
-              {/*
-                The heading on a second line, the way the month's list writes
-                one. Absent rather than empty: a Category that is itself a
-                heading has nothing to say here, and a blank line still takes
-                the height of one.
-              */}
-              {item.heading ? (
-                <span className={styles.beneath}>{item.heading}</span>
-              ) : null}
-            </GroupedListItem>
-          ))
-        )}
-        {/*
-          What the whole month's plan adds up to is no longer a row here: it is
-          "Presupuestado" on the card at the top of the screen, beside the
-          figure it was always meant to be read against (#40). A total at the
-          foot of this list was the only place it could go while the two
-          figures were deliberately kept apart, and it never was the total of
-          exactly the rows above it -- the Fijos section is part of the plan too.
-        */}
-      </GroupedList>
+      <PlannedItems
+        spaceId={space.id}
+        items={plan.items}
+        nothingPlanned={nothingPlanned}
+      />
 
       {/*
         What each Category expected and what it really cost (#11). One line

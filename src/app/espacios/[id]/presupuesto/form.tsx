@@ -2,9 +2,11 @@
 
 import { useActionState, useState } from "react";
 import type { CurrencyCode } from "@/domain/money/currency";
+import { MAX_BUDGET_ITEM_NAME_LENGTH } from "@/domain/budget/budget";
 import { t } from "@/i18n";
 import { Button } from "@/ui/button";
 import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
+import { TextField } from "@/ui/field";
 import { Keypad } from "@/ui/keypad";
 import { nothingWrongYet, type BudgetFormState } from "./plan";
 import styles from "./form.module.css";
@@ -18,8 +20,14 @@ export type BudgetItemFormProps = {
   categories: readonly ChipBranch[];
   currency: CurrencyCode;
   locales: readonly string[];
+  /**
+   * What the three questions already say, and what nothing answered looks like
+   * for one being planned: a keypad on zero, an empty name, and `null` for the
+   * one the person picks from a list rather than fills in.
+   */
   initial: {
     amount: number;
+    name: string;
     categoryId: string | null;
   };
   action: (
@@ -31,14 +39,23 @@ export type BudgetItemFormProps = {
 };
 
 /**
- * One item of the month's plan: how much, on what.
+ * One item of the month's plan: how much, what it is called, and what it is
+ * filed under.
  *
- * Two questions and no more, in the order the entry screen asks its first two
- * (story 18 in #1): the amount on the keypad, then the Category one tap away
- * from its headings — the same picker the entry screen uses, because asking
- * for a Category is one question (#45). There is no day and no attribution,
- * because a plan has neither — it is about a month, and the money in a Space
- * is one pot.
+ * Three questions, in the order the entry screen asks its own (story 18 in
+ * #1): the amount on the keypad, the name, then the Category one tap away from
+ * its headings — the same picker the entry screen uses, because asking for a
+ * Category is one question (#45). The name sits where the Fixed form puts it,
+ * between the two, so the two ways into the plan are one form with one
+ * question more on it rather than two shapes a thumb has to learn.
+ *
+ * This is still not the Movement entry screen, and the questions it does not
+ * ask are the argument (#66 against #79): there is no day and no attribution,
+ * because planning a month is not done standing at a till — a plan is about a
+ * month rather than a moment, and the money in a Space is one pot. What the
+ * name buys is the one thing #79 says the plan was missing: four weeks of
+ * groceries under "Súper" were four identical rows, and a person could read
+ * down them but not tell which was the week they meant.
  *
  * There is nothing to mark paid, and that is the shape of a Variable item
  * rather than a control left out: a Fixed item is a known amount on a known
@@ -91,6 +108,14 @@ export function BudgetItemForm({
         currency={currency}
         locales={locales}
         onChange={setAmount}
+      />
+
+      <TextField
+        name="name"
+        label={t("budget.item.name")}
+        maxLength={MAX_BUDGET_ITEM_NAME_LENGTH}
+        defaultValue={initial.name}
+        required
       />
 
       <BranchingChipField
