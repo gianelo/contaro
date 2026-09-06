@@ -88,10 +88,10 @@ export const es = {
   "space.members": "Miembros",
   "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
   "space.month.choose": "Elegir el mes",
-  "space.month.previous": "Mes anterior",
-  "space.month.next": "Mes siguiente",
-  // The pill at the top of the Budget screen (#40). The month first, because
-  // the accessible name has to start with the word a person can see on it.
+  // The pill at the top of the plan and of the month's list (#40, #61). The
+  // month first, because the accessible name has to start with the word a
+  // person can see on it. "Mes anterior" and "Mes siguiente" left with the
+  // walker they named: there is one way to change the month, and it is this.
   "space.month.pill": "{month}, elegir el mes",
   "space.month.inView": "Mes que est\u00e1s viendo",
 

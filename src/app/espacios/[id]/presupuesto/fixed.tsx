@@ -65,28 +65,36 @@ export function FixedItems({
           <GroupedListItem
             key={item.id}
             href={`/espacios/${spaceId}/presupuesto/${item.id}`}
-            trailing={
-              <span className={styles.amount}>{item.amount}</span>
-            }
+            /*
+              The end of the row, as one column: the amount over its badge,
+              flush right, the way the canvas draws it. Both halves out here
+              rather than the amount staying inside the row, because the badge
+              has to be reachable and a column does not straddle the link.
+            */
             beside={
-              item.paid ? (
-                <Badge variant="accent">{t("budget.fixed.paid")}</Badge>
-              ) : (
-                /*
-                  The badge is what it looks like and the button is what it
-                  does, so the two are named apart: a screen reader hears
-                  "Marcar Arriendo como pagado" and eyes read "Pendiente",
-                  which is the state the tap would leave behind.
-                */
-                <button
-                  type="button"
-                  className={styles.pay}
-                  aria-label={t("budget.fixed.pay.row", { name: item.name })}
-                  onClick={() => setPaying(item)}
-                >
+              <>
+                <span className={styles.amount}>{item.amount}</span>
+                {item.paid ? (
+                  <Badge variant="accent">{t("budget.fixed.paid")}</Badge>
+                ) : (
                   <Badge variant="muted">{t("budget.fixed.pending")}</Badge>
-                </button>
-              )
+                )}
+              </>
+            }
+            /*
+              And the whole of that column is the tap that marks it paid, while
+              there is something left to pay. The badge is what it looks like
+              and this is what it does, so the two are named apart: a screen
+              reader hears "Marcar Arriendo como pagado" and eyes read
+              "Pendiente", which is the state the tap would leave behind.
+            */
+            besideAction={
+              item.paid
+                ? undefined
+                : {
+                    label: t("budget.fixed.pay.row", { name: item.name }),
+                    onClick: () => setPaying(item),
+                  }
             }
           >
             <span className={styles.name}>{item.name}</span>

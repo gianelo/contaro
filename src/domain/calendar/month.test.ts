@@ -9,7 +9,6 @@ import {
   lastDayOf,
   month,
   monthOf,
-  monthsAround,
   monthSoFar,
   monthsToPlan,
   nextMonth,
@@ -137,32 +136,11 @@ describe("the month before and the month after", () => {
   });
 });
 
-describe("the months a screen can move to", () => {
-  const SEPTEMBER = month("2026-09");
-
-  it("always offers the month before", () => {
-    expect(monthsAround(SEPTEMBER, SEPTEMBER).previous).toBe("2026-08");
-  });
-
-  it("offers the month after while there is one to read", () => {
-    expect(monthsAround(month("2026-07"), SEPTEMBER).next).toBe("2026-08");
-  });
-
-  it("offers no month after the one being lived in", () => {
-    // Nothing can have happened after today, so a later month is guaranteed
-    // empty. Offering it is offering a blank screen with a month's name on it.
-    expect(monthsAround(SEPTEMBER, SEPTEMBER).next).toBeNull();
-  });
-
-  it("offers no month after one already past the calendar", () => {
-    expect(monthsAround(month("2027-03"), SEPTEMBER).next).toBeNull();
-  });
-});
-
-describe("the months a plan can be opened on", () => {
-  // The opposite of `monthsAround`, and on purpose: a Movement is money that
-  // has already moved, so forwards is a corridor of blank screens. A Budget is
-  // a plan, and the month after this one is exactly the month a person plans.
+describe("the months a screen can be opened on", () => {
+  // One window for both screens (#61): the plan and the month's list are two
+  // readings of one month, so the pill offers the same fourteen on each. The
+  // `‹ Septiembre ›` walker stopped forwards at the month being lived in
+  // because a step cost a screen load; a picker costs nothing untapped.
   it("offers the whole year the month in view falls in", () => {
     expect(monthsToPlan(month("2026-09"))).toEqual([
       "2025-12",

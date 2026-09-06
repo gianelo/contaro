@@ -6,7 +6,8 @@ import {
   type Page,
 } from "@playwright/test";
 import { createMember, createSpaceFor, startSession } from "./session";
-import { box, overlapping, withinTheGutter } from "./layout";
+import { box, hitTargetOf, overlapping, withinTheGutter } from "./layout";
+import { chooseMonth, months, openMonths } from "./months";
 
 // Deliberately not the signed-in fixture: planning money needs a session
 // belonging to a Member the database really has.
@@ -60,25 +61,6 @@ async function plan(page: Page, spaceId: string, digits: string) {
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
 
-/**
- * Moves to another month through the pill at the top of the screen (#40).
- *
- * Two taps for any month of the year, where the `‹ Septiembre ›` walker it
- * replaced took one tap and one page load per month stepped over. Picked by
- * where the row goes rather than by the month's name, so this does not have to
- * hold a second copy of how Spanish names a month.
- */
-async function chooseMonth(page: Page, spaceId: string, month: string) {
-  await page.getByRole("button", { name: /elegir el mes$/ }).click();
-  await page
-    .getByRole("dialog")
-    .locator(`a[href="/espacios/${spaceId}?mes=${month}"]`)
-    .click();
-  // A client-side navigation, so the URL is read once it has landed rather
-  // than in the same breath as the tap.
-  await page.waitForURL(new RegExp(`\\?mes=${month}$`));
-}
-
 /** One expense, recorded the way a person records one on the way home. */
 async function spend(page: Page, spaceId: string, digits: string) {
   await page.goto(`/espacios/${spaceId}/movimientos`);
@@ -112,8 +94,7 @@ test("the Budget screen names itself and holds the month's two figures", async (
 
   // The month is a pill on the title's row, and picking one is a single act
   // rather than a walk: the sheet holds the whole year at once.
-  await page.getByRole("button", { name: /elegir el mes$/ }).click();
-  const sheet = page.getByRole("dialog", { name: "Elegir el mes" });
+  const sheet = await openMonths(page);
   await expect(
     sheet.locator(`a[href="/espacios/${space.id}?mes=${thisMonth}"]`),
   ).toBeVisible();
@@ -297,7 +278,7 @@ test("a Member plans next month before it starts", async ({
 
   // Forwards, which the month's list does not offer: a Movement is money that
   // already moved, and a plan is what a month is expected to cost.
-  await chooseMonth(page, space.id, next);
+  await chooseMonth(page, `/espacios/${space.id}?mes=${next}`, next);
 
   await plan(page, space.id, "9000000");
   await expect(page).toHaveURL(new RegExp(`\\?mes=${next}$`));
@@ -306,7 +287,7 @@ test("a Member plans next month before it starts", async ({
   await expect(budget).toContainText("$ 90.000,00");
 
   // And this month is untouched by it.
-  await chooseMonth(page, space.id, thisMonth);
+  await chooseMonth(page, `/espacios/${space.id}?mes=${thisMonth}`, thisMonth);
   await expect(budget).toContainText("Todavía no planeaste este mes.");
 });
 
@@ -574,27 +555,6 @@ function today() {
   return { day, days: new Date(Date.UTC(year, month, 0)).getUTCDate() };
 }
 
-/**
- * The month the run is standing in and the one after it, written `YYYY-MM` in
- * the zone the suite is pinned to. Calendar arithmetic and nothing the screen
- * decides, the way `today` above is.
- */
-function months() {
-  const inBogota = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Bogota",
-    year: "numeric",
-    month: "2-digit",
-  }).format(new Date());
-
-  const [year, month] = inBogota.split("-").map(Number) as [number, number];
-  const after = new Date(Date.UTC(year, month, 1));
-
-  return {
-    thisMonth: inBogota,
-    next: after.toISOString().slice(0, 7),
-  };
-}
-
 test("a Member reads whether the month is ahead of its pace", async ({
   page,
   context,
@@ -728,4 +688,66 @@ test.describe("read by a phone set to English, where the money is spelled out", 
     expect(overlapping(category, pair)).toBe(false);
     await withinTheGutter(page, pair);
   });
+});
+
+/**
+ * The end of a Fijos row, which the canvas draws as one column: the amount
+ * over its badge, flush right.
+ *
+ * It became a line when the badge moved out of the row (#48) so a keyboard
+ * could reach it, leaving the amount behind inside. Two things beside the name
+ * instead of one column squeezed the name column until "Alquiler · 1 sep"
+ * wrapped and the row grew (#59). Measured here because a jsdom run has no
+ * layout: whether two things stack is a question only a browser can answer.
+ */
+test("a Fijo's amount sits over its badge, and the line under the name keeps to one", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Vera Mide", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+  // A name of ordinary length, which is what the squeeze showed up on: a short
+  // one fits however badly the rest of the row is laid out.
+  await planFixed(page, space.id, "Arriendo y expensas", "180000000", "1");
+
+  const fijos = page.getByRole("group", { name: "Fijos" });
+  const amount = await box(fijos.getByText("$ 1.800.000,00"));
+  const badge = await box(fijos.getByText("Pendiente"));
+
+  // Stacked: the badge begins at or below where the amount ends.
+  expect(badge.y).toBeGreaterThanOrEqual(amount.y + amount.height);
+
+  // And one column rather than two things that happen to be stacked: they
+  // share a right edge. A pixel of tolerance, because a browser lays text out
+  // in fractions.
+  const rightOf = (measured: { x: number; width: number }) =>
+    measured.x + measured.width;
+  expect(Math.abs(rightOf(badge) - rightOf(amount))).toBeLessThanOrEqual(1);
+
+  await withinTheGutter(page, amount);
+  await withinTheGutter(page, badge);
+
+  // The line under the name, on one line. Counted in line boxes rather than
+  // measured in pixels: a line that wrapped is two rects, whatever the font
+  // decided its height was.
+  const beneath = fijos.getByText(/·/);
+  await expect(beneath).toBeVisible();
+  expect(await beneath.evaluate((line) => line.getClientRects().length)).toBe(1);
+
+  // The tap that marks it paid is the whole column, so it is a finger's worth
+  // in both directions by being what is drawn rather than by growing past it.
+  const tap = await box(fijos.getByRole("button", { name: /Arriendo/ }));
+  const finger = await hitTargetOf(page);
+
+  expect(tap.width).toBeGreaterThanOrEqual(finger);
+  expect(tap.height).toBeGreaterThanOrEqual(finger);
+
+  // And it is the column and nothing more: it holds both halves and stays on
+  // the screen. A target that met its 44px by reaching past the gutter, or
+  // over the row above, would pass the two lines above and still be wrong.
+  expect(tap.y).toBeLessThanOrEqual(amount.y);
+  expect(tap.y + tap.height).toBeGreaterThanOrEqual(badge.y + badge.height);
+  await withinTheGutter(page, tap);
 });
