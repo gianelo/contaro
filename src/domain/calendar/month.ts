@@ -144,6 +144,20 @@ export function lastDayOf(month: Month): CalendarDate {
 }
 
 /**
+ * How many days a month has.
+ *
+ * `lastDayOf` said as a number, because two things want the count rather than
+ * the date: `monthSoFar`, which divides by it, and the day picker on the plan's
+ * entry screens, which offers exactly that many choices so nobody has to be
+ * refused to find out February is shorter (#80). Here rather than in either of
+ * them, because reading a `CalendarDate` apart by string offset is this
+ * module's business and nobody else's.
+ */
+export function daysIn(month: Month): number {
+  return Number(lastDayOf(month).slice(8));
+}
+
+/**
  * A given day of a month: the 22nd of `2026-09` is `2026-09-22`.
  *
  * The one way a Fixed item's due date comes into existence, and the reason it
@@ -209,7 +223,7 @@ export function monthSoFar(of: Month, today: CalendarDate): MonthSoFar | null {
 
   return {
     day: daysBetween(first, today) + 1,
-    days: daysBetween(first, lastDayOf(of)) + 1,
+    days: daysIn(of),
   };
 }
 

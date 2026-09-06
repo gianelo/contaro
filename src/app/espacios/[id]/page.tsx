@@ -173,21 +173,24 @@ export default async function SpacePage({
       */}
       <Variables spaceId={space.id} comparisons={plan.variables} />
 
+      {/*
+        One way in, for both kinds (#80). There were two buttons here, reading
+        almost the same, and choosing between them meant knowing what "fijo"
+        meant -- the product asking somebody to name a type before it would let
+        them write down a number.
+
+        The recorded reason for the second one was that the two kinds were
+        answered with different questions, and that a form which grew or shrank
+        after a toggle is a form whose shape a thumb cannot predict. The first
+        half stopped being true at #79, which gave every item a name and left
+        the due day as the whole difference. The second half is answered on the
+        form itself: the day question is on the screen from the start, so the
+        only thing that grows is the picker directly under the chip that opened
+        it.
+      */}
       <div className={styles.plan}>
         <ButtonLink href={`/espacios/${space.id}/presupuesto/nuevo?mes=${month}`}>
           {t("budget.item.new")}
-        </ButtonLink>
-        {/*
-          Its own way in, and not a choice inside the other one. The two kinds
-          are answered with different questions -- a Fixed item is asked for a
-          name and a day -- and a form that grew or shrank after a toggle is a
-          form whose shape a thumb cannot predict.
-        */}
-        <ButtonLink
-          variant="plain"
-          href={`/espacios/${space.id}/presupuesto/nuevo/fijo?mes=${month}`}
-        >
-          {t("budget.fixed.new")}
         </ButtonLink>
       </div>
 

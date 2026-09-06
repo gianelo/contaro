@@ -54,9 +54,10 @@ async function categorise(page: Page, heading: string, under?: string) {
  * One Variable item, planned the way a person plans one: how much, what it is
  * called, and what it is filed under (#79).
  *
- * The name is where `planFixed` puts it below, because the two forms ask it in
- * the same place -- a person who has planned one kind knows where the question
- * is on the other.
+ * Nothing is said about a day, and that is what leaves it Variable (#80). The
+ * form asks -- the question is on the screen from the moment it loads -- and
+ * "No vence" is where it starts, so planning a week of groceries costs the
+ * same taps it did before the two ways in became one.
  */
 async function plan(
   page: Page,
@@ -432,7 +433,12 @@ test("a Member corrects an item and takes another off the plan", async ({
 });
 
 /**
- * One Fixed item, planned the way a person plans the rent.
+ * One Fixed item, planned the way a person plans the rent: on the same screen,
+ * out of the same button, one answer further along (#80).
+ *
+ * Nobody types the word "fijo" here and nobody taps it, which is the whole of
+ * the change: what a person says is that this one vences, and the day they
+ * then pick is what makes it Fixed.
  *
  * The Category is answered by the rent's own by default, because that is what
  * almost every journey here is about. It is asked for at all so that one of
@@ -447,10 +453,12 @@ async function planFixed(
   dueDay: string,
   filedUnder: readonly [heading: string, under: string] = ["Hogar", "Alquiler"],
 ) {
-  await page.getByRole("link", { name: "Agregar un gasto fijo" }).click();
+  await page.getByRole("link", { name: "Agregar un gasto previsto" }).click();
   await type(page, digits);
   await page.getByLabel("Cómo se llama").fill(name);
-  await page.getByLabel("Qué día del mes vence").selectOption(dueDay);
+  // The one question the kind is decided by, answered with a day. The same
+  // picker sits on the screen for a Variable item and is left on "No vence".
+  await page.getByLabel("¿Vence un día del mes?").selectOption(dueDay);
   await categorise(page, filedUnder[0], filedUnder[1]);
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
@@ -873,4 +881,92 @@ test("a Fijo's amount sits over its badge, and the line under the name keeps to 
   expect(tap.y).toBeLessThanOrEqual(amount.y);
   expect(tap.y + tap.height).toBeGreaterThanOrEqual(badge.y + badge.height);
   await withinTheGutter(page, tap);
+});
+
+/**
+ * One way into the plan, for both kinds (#80).
+ *
+ * There were two buttons here, reading almost the same, and choosing between
+ * them meant knowing what "fijo" meant before you were allowed to write down a
+ * number. The proof that the merge happened is not that the one button works —
+ * the tests above already plan both kinds through it — but that the second one
+ * is gone from the screen a person actually stands on.
+ */
+test("a Member is offered one way into the plan and never asked to pick a kind", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Vera Planea", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+
+  await expect(
+    page.getByRole("link", { name: "Agregar un gasto previsto" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Agregar un gasto fijo" }),
+  ).toHaveCount(0);
+
+  // And the word for the kind is nowhere in the question the form asks. What a
+  // person is asked is whether it vences, which is a word they already own.
+  await page.getByRole("link", { name: "Agregar un gasto previsto" }).click();
+
+  const vence = page.getByLabel("¿Vence un día del mes?");
+  await expect(vence).toBeVisible();
+
+  // "No vence" is where it starts and it is a real answer, not a prompt: what
+  // the row reads is what gets filed, at every moment. There is no state here
+  // that can say the item vences while the control says it does not.
+  await expect(vence).toHaveValue("");
+  await expect(vence.locator("option").first()).toHaveText("No vence");
+
+  // Exactly the days this month has, plus "No vence", and never a day the
+  // month does not have. Counted from the calendar rather than written down,
+  // so a February plan offered a 30th fails here rather than at the domain.
+  const { thisMonth } = months();
+  const days = new Date(
+    Date.UTC(Number(thisMonth.slice(0, 4)), Number(thisMonth.slice(5)), 0),
+  ).getUTCDate();
+  await expect(vence.locator("option")).toHaveCount(days + 1);
+
+  // Nothing on this screen ever grows or shrinks: the question is one row from
+  // the moment it loads, whichever way it is answered. That is the objection
+  // recorded against merging the two ways in, answered as completely as it can
+  // be -- Guardar does not move.
+  const tall = () =>
+    page.evaluate(() => document.documentElement.scrollHeight);
+  const before = await tall();
+  await vence.selectOption("5");
+  expect(await tall()).toBe(before);
+});
+
+/**
+ * The address bar stays honest about a way in that no longer exists (ADR-0010).
+ *
+ * `/presupuesto/nuevo/fijo` shipped in #13 and was the second way into the
+ * plan until #80. A link somebody kept, or a tab open since before the merge,
+ * lands on the one form — still holding the month it was opened on, because
+ * landing on "this month" would take somebody planning October in September
+ * off the month they were working on.
+ */
+test("the Fixed item's old route lands on the one form, on the month it was asked for", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Beto Marcado", context, baseURL!);
+
+  // Next month and not this one, because that is the month the old link
+  // carried that landing on "hoy" would silently lose.
+  const { next } = months();
+
+  await page.goto(`/espacios/${space.id}/presupuesto/nuevo/fijo?mes=${next}`);
+
+  await expect(page).toHaveURL(
+    `/espacios/${space.id}/presupuesto/nuevo?mes=${next}`,
+  );
+  await expect(
+    page.getByRole("heading", { name: "Nuevo gasto previsto" }),
+  ).toBeVisible();
 });

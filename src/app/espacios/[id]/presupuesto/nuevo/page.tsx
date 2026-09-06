@@ -10,10 +10,16 @@ import { planBudgetItemAction } from "../actions";
 import styles from "./page.module.css";
 
 /**
- * Planning one Variable item: the month's plan comes into existence here (#10).
+ * Planning one item of either kind: the month's plan comes into existence here
+ * (#10), and since #80 this is the only place it does.
  *
  * There is no Budget to create first, so this screen is the whole of it: the
  * first item somebody plans is the month's plan.
+ *
+ * There used to be a second screen under `nuevo/fijo`, and a second button on
+ * the Budget screen pointing at it. The form asks the day question now, and
+ * whether it is answered is what makes an item Fixed — so nobody has to know
+ * what "fijo" means to write down a number.
  *
  * Membership is proved here the way every route under `/espacios/[id]` proves
  * it, and proved again by the action, because the form names the Space and a
@@ -62,6 +68,10 @@ export default async function NewBudgetItemPage({
           // for a person, so the picker starts empty and `required` has teeth.
           categoryId: "",
         }}
+        // Only here. Correcting an item does not ask it: the kind is settled
+        // the moment the item is written down, and the domain has nowhere to
+        // write a changed one back to.
+        asksWhetherItFallsDue
         action={planBudgetItemAction}
         submit={t("budget.item.save")}
         working={t("budget.item.save.working")}

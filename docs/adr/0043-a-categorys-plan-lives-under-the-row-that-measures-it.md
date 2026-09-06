@@ -50,4 +50,4 @@ The whole-plan empty state moves onto the screen. It used to live inside EL PLAN
 
 ADR-0019's "the rows stay several so all of them can still be corrected" still holds, and this is where they stay several. Four weekly items of sixty thousand are four rows in Comida · Súper's tray, each opening its own correction screen at the same `/presupuesto/<itemId>` both lists already used — one URL that works for either kind, because the correction screen branches on `kind` itself (#48).
 
-The way into the plan is still two buttons at the foot of the screen, and this ADR does not move them. #80 and #81 are what that is, and #81 was already written against the two-group screen this produces.
+The way into the plan was still two buttons at the foot of the screen, and this ADR did not move them. #80 and #81 are what that is, and #81 was already written against the two-group screen this produces. #80 has since landed: there is one button now, and the day question on the form behind it is what makes an item Fixed (ADR-0044).
