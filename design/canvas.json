@@ -81,6 +81,46 @@
       "w": 390,
       "h": 844,
       "title": "Sheet · Cerrar el mes"
+    },
+    {
+      "file": "Presupuesto63Plegado.dc.html",
+      "x": 470,
+      "y": 2300,
+      "w": 390,
+      "h": 1080,
+      "title": "Presupuesto #63 · plegado"
+    },
+    {
+      "file": "Presupuesto63Desplegado.dc.html",
+      "x": 940,
+      "y": 2300,
+      "w": 390,
+      "h": 1240,
+      "title": "Presupuesto #63 · desplegado"
+    },
+    {
+      "file": "AgregarUnFormulario.dc.html",
+      "x": 0,
+      "y": 3700,
+      "w": 390,
+      "h": 844,
+      "title": "Idea A · un solo formulario"
+    },
+    {
+      "file": "MasHoja.dc.html",
+      "x": 470,
+      "y": 3700,
+      "w": 390,
+      "h": 844,
+      "title": "Idea B · el + pregunta"
+    },
+    {
+      "file": "MasIntacto.dc.html",
+      "x": 940,
+      "y": 3700,
+      "w": 390,
+      "h": 1080,
+      "title": "Idea C · el + no se toca"
     }
   ],
   "annotations": [
@@ -97,6 +137,20 @@
       "y": 1110,
       "w": 440,
       "text": "MODO OSCURO + CONFIRMACIONES\nLa primera es la misma pantalla de cargar gasto, también viva, con la paleta oscura.\nCerrar el mes es la única confirmación irreversible: por eso va en rojo."
+    },
+    {
+      "id": "nota-63",
+      "x": 0,
+      "y": 2180,
+      "w": 620,
+      "text": "PROPUESTA PARA EL ISSUE #63\nEl grupo EL PLAN DEL MES desaparece: cada fila de VARIABLES abre los ítems que la componen.\nY todo ítem del plan pasa a tener nombre, no solo los Fijos. Hoy VariableItem no tiene ninguno, así que cuatro semanas de super son cuatro filas idénticas que nadie puede distinguir — el mismo argumento que el dominio ya escribió para los Fijos.\nEn el desplegado están abiertas Comida · Súper (cuatro ítems) y Ocio (uno solo), para ver cómo queda una categoría con un único ítem detrás."
+    },
+    {
+      "id": "nota-mas",
+      "x": 0,
+      "y": 3540,
+      "w": 700,
+      "text": "TRES IDEAS PARA AGREGAR AL PLAN\nHoy son dos links al pie del Presupuesto («Agregar un ítem» y «Agregar un fijo») y el + de la barra va siempre a cargar un gasto.\n\nA · UN SOLO FORMULARIO — Los dos links se vuelven uno. El día de vencimiento es lo que hace que un ítem sea Fijo; si no elegís día, es Variable. La línea roja es el fondo del iPhone 13 (664px de alto real, no 844): mirá dónde queda Guardar. Es una estimación a mano, no una medición.\nB · EL + PREGUNTA — Tocás + y elegís. Una sola puerta desde cualquier pantalla, pero le cuesta un toque más a cargar un gasto, que es lo que la app promete hacer en diez segundos.\nC · EL + NO SE TOCA — El + sigue siendo el gasto. Los dos links se vuelven una sola fila DEBAJO de las dos listas, no adentro de VARIABLES: el plan son los ítems de los dos tipos, así que su puerta de entrada no pertenece a ninguna de las dos secciones.\n\nEn B y en C, la puerta abre A. A no compite con ninguna de las dos: es lo que hace que B tenga dos filas en vez de tres, y que C sea una fila en vez de dos."
     }
   ],
   "launch": {
