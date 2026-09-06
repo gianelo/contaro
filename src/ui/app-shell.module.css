@@ -11,12 +11,18 @@
    * The ceiling goes on the shell rather than on .content so that the tab bar,
    * which is a sibling of the content and not inside it, stops at the edge of
    * the column too. Its border-top is the line that shows how wide the app is;
-   * run across the whole monitor it would draw a rule under a phone.
+   * run across the whole monitor it would draw a rule under a column far
+   * narrower than it.
+   *
+   * A ceiling and not a width: on a phone it never binds, so the shell is as
+   * wide as the screen and the bar reaches both edges. It used to bind on
+   * every phone wider than an iPhone 13, which is #75 -- the fix is the number
+   * in tokens.css (ADR-0041), not this rule, which was right all along.
    *
    * No overflow rule belongs here: it would make this a scroll container and
    * the tab bar's `position: sticky` would stop sticking.
    */
-  max-width: var(--column);
+  max-width: var(--measure);
   margin-inline: auto;
   background: var(--color-background);
   color: var(--color-text);

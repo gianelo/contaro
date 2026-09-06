@@ -88,3 +88,20 @@ export async function hitTargetOf(page: Page) {
 
   return Number.parseFloat(size);
 }
+
+/**
+ * How wide the app is allowed to grow, asked of the app rather than written
+ * down again here -- the same reason `gutterOf` reads the gutter off `main`.
+ *
+ * `--measure` is a root token (`ui/tokens.css`) and ADR-0041 makes it the one
+ * answer to "how wide is this?". A number in a spec file would be a second
+ * one, and it would keep passing while the app moved -- which is how the
+ * 390px ceiling #75 reports survived a suite that pins the width twice.
+ */
+export async function measureOf(page: Page) {
+  const ceiling = await page
+    .locator(":root")
+    .evaluate((root) => getComputedStyle(root).getPropertyValue("--measure"));
+
+  return Number.parseFloat(ceiling);
+}

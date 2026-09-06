@@ -38,7 +38,8 @@ const asleep = /style="(font-size: [^"]*color: #8E8E93;)"/.exec(block)?.[1];
  *
  * That makes them the numbers most easily left behind by a redesign: nothing
  * else in the app would break. So they are pinned against the artboard here,
- * the same way `width.source.test.ts` pins the column against `canvas.json`.
+ * the same way `width.source.test.ts` reads `canvas.json` back -- though not
+ * for the column any more, which stopped being the canvas's to give (#75).
  */
 describe("the numbers the tab bar reads off the canvas", () => {
   it("finds the bar, its button and an asleep label on the artboard", () => {
