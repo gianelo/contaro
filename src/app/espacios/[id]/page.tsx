@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { ButtonLink } from "@/ui/button";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
@@ -11,7 +10,7 @@ import { readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
 import { MonthSummary } from "./presupuesto/summary";
 import { Variables } from "./presupuesto/variables";
-import styles from "./page.module.css";
+import { WayIntoThePlan } from "./presupuesto/way-in";
 
 /**
  * The Space's Budget: where picking a Space lands, and where the month's plan
@@ -120,28 +119,37 @@ export default async function SpacePage({
       <MonthSummary summary={plan.summary} pace={plan.pace} />
 
       {/*
-        A month nobody has planned says what to do rather than that there is
-        nothing: there is no Budget to create first, and the first item is the
-        whole of it.
+        One way in, for both kinds (#80), and here rather than at the foot of
+        the screen (#81). There were two buttons under both lists, reading
+        almost the same, and choosing between them meant knowing what "fijo"
+        meant -- the product asking somebody to name a type before it would let
+        them write down a number. The recorded reason for the second one was
+        that a form which grew or shrank after a toggle is a form whose shape a
+        thumb cannot predict; the day question on the form behind this row is
+        on the screen from the moment it loads, which is that objection
+        answered (ADR-0044).
 
-        Here, above both sections, and not inside either -- it is about the
-        plan and not about one kind of item, and both sections draw nothing at
-        all when it shows. It used to live inside the list of Variable items,
-        which was the only list that always rendered; with that list gone
-        (#63) it belongs to the screen, which is the one thing here that can
-        see both halves of a Budget.
+        Above both lists because below them it was the one control on the
+        screen whose distance from a thumb grew with every item planned -- and
+        it is the control a person with a long plan needs most. A reachability
+        that degrades as the feature succeeds is the same toll ADR-0027 took
+        off the way into a Movement, which was a link at the foot of the
+        month's list until the raised button replaced it. This is that argument
+        arriving at the plan.
 
-        `labelHidden` for the case `grouped-list.tsx` documents it for: the
-        screen's own title already says this is the Presupuesto, and printing
-        the word again over a single sentence is the heading saying nothing.
-        Hidden and not absent, so the group is still one a screen reader can
-        name and skip to.
+        Above both and not inside either, because a Budget is its items of
+        either kind (CONTEXT.md, ADR-0019): a way in nested in the Variables
+        card would read as "add a variable", which is the ambiguity #63 exists
+        to remove.
+
+        The whole-plan empty state travels with it, inside the same card and
+        for reasons that belong to the card (`way-in.tsx`, ADR-0045).
       */}
-      {nothingPlanned ? (
-        <GroupedList label={t("nav.budget")} labelHidden>
-          <GroupedListItem>{t("budget.empty")}</GroupedListItem>
-        </GroupedList>
-      ) : null}
+      <WayIntoThePlan
+        spaceId={space.id}
+        month={month}
+        nothingPlanned={nothingPlanned}
+      />
 
       {/*
         What the month already owes on days it knows about, and what has been
@@ -172,27 +180,6 @@ export default async function SpacePage({
         up to.
       */}
       <Variables spaceId={space.id} comparisons={plan.variables} />
-
-      {/*
-        One way in, for both kinds (#80). There were two buttons here, reading
-        almost the same, and choosing between them meant knowing what "fijo"
-        meant -- the product asking somebody to name a type before it would let
-        them write down a number.
-
-        The recorded reason for the second one was that the two kinds were
-        answered with different questions, and that a form which grew or shrank
-        after a toggle is a form whose shape a thumb cannot predict. The first
-        half stopped being true at #79, which gave every item a name and left
-        the due day as the whole difference. The second half is answered on the
-        form itself: the day question is on the screen from the start, so the
-        only thing that grows is the picker directly under the chip that opened
-        it.
-      */}
-      <div className={styles.plan}>
-        <ButtonLink href={`/espacios/${space.id}/presupuesto/nuevo?mes=${month}`}>
-          {t("budget.item.new")}
-        </ButtonLink>
-      </div>
 
       {/*
         Who shares this Space, and the way to invite the person who does not

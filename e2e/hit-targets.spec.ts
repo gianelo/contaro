@@ -74,6 +74,13 @@ test("every interactive element inside a Space is at least 44px", async ({
   // this new, and an empty state is a line of words rather than something to
   // tap; so is a month with no Fixed items, which draws no Fijos section at
   // all.
+  //
+  // Nine before #81 moved that way in above both lists and nine after. It is a
+  // row in a card now rather than a filled button at the foot of the screen,
+  // and a row is the same one tap a button was -- what changed is how far a
+  // thumb travels to it, which is a distance and not a target. The empty
+  // sentence that rides in the same card is still words rather than something
+  // to tap, wherever it is drawn.
   expect(inside.count).toBe(9);
   expect(inside.undersized).toEqual([]);
 });

@@ -140,6 +140,18 @@ export const es = {
   // The empty state says what to do, not that there is nothing: a month
   // nobody has planned yet is the ordinary state of every first of the month.
   "budget.empty": "Todav\u00eda no planeaste este mes.",
+  // The words on the row that opens the plan, above both of its sections
+  // (#81, ADR-0045). They name the destination and not the kind, which is what
+  // #80 made sayable: there is one way in for both kinds now, so the row can
+  // be about the plan a person is adding to rather than about the thing they
+  // are adding. "Agregar un gasto previsto" said the noun on a row that
+  // belongs to neither Fijos nor Variables, and a row naming one kind of item
+  // above two lists is the ambiguity #63 exists to remove.
+  //
+  // The noun itself is untouched (ADR-0040): "gasto previsto" is still what an
+  // item is called wherever a person reads one, and the screen this row opens
+  // is still titled with it.
+  "budget.plan.new": "Agregar al plan",
   // What a Budget item is called where a person reads it (#82, ADR-0040).
   // "Ítem" was never chosen for it: it is the container word `CONTEXT.md`'s
   // own avoid list already refuses under Line, Entry and Row, and it names
@@ -149,7 +161,6 @@ export const es = {
   // for, and the adjective is the whole of the difference. Cupo, tope and
   // límite read warmer and were refused for promising the enforcement a
   // Budget deliberately does not have.
-  "budget.item.new": "Agregar un gasto previsto",
   "budget.item.new.title": "Nuevo gasto previsto",
   "budget.item.edit.title": "Corregir el gasto previsto",
   // Asked of both kinds, and one key because it is one question (#79). A gasto
@@ -209,8 +220,9 @@ export const es = {
   "budget.fixed": "Fijos",
   // There is no "Agregar un gasto fijo" any more, and no screen titled "Nuevo
   // gasto fijo". One way into the plan since #80: the words a person reads on
-  // the way in are "Agregar un gasto previsto", of either kind, and the kind
-  // is decided by "budget.item.due" rather than by which button was pressed.
+  // the way in are "Agregar al plan", which name the plan rather than either
+  // kind, and the kind is decided by "budget.item.due" rather than by which
+  // button was pressed.
   "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
   "budget.fixed.amount": "Cu\u00e1nto es",
   // The badge at the end of a row. Two words, and never a colour on its own:

@@ -56,7 +56,7 @@ _Avoid_: Active, Current, Selected, Default space
 The bucket an *expense* is classified under, such as food, rent or leisure. Categories come from a global catalogue that every Space sees, which a Space can extend with its own; a Category may hold subcategories. Income carries none: the dimension exists to be measured against a Budget, and a Budget is a plan of expenses (ADR-0016).
 
 **Budget**:
-The plan of expenses a Space expects to make in a given month, made up of Budget items. It is those items and nothing above them: it comes into existence with the first one and nobody creates an empty one first (ADR-0019). It stays editable throughout its month, and real spending is measured against it; it never blocks a Movement from being recorded.
+The plan of expenses a Space expects to make in a given month, made up of Budget items. It is those items and nothing above them: it comes into existence with the first one and nobody creates an empty one first (ADR-0019). It stays editable throughout its month, and real spending is measured against it; it never blocks a Movement from being recorded. Because it is its items of either kind, the one way into it belongs to the plan rather than to either of the sections a screen sorts them into, and it is offered above them: at the foot it would be the one control whose distance from a thumb grows with every item planned, which is the walk ADR-0027 took off the way into a Movement (ADR-0045). What a person reads there names the plan — "Agregar al plan" — and never a kind.
 _Avoid_: Limit, Cap, Allowance
 
 **Budget item**:
