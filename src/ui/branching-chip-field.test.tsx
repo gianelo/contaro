@@ -47,20 +47,37 @@ describe("BranchingChipField", () => {
     expect(screen.getByRole("radio", { name: "Comida" })).toBeChecked();
   });
 
-  it("offers what a chosen heading holds, under a legend of its own", async () => {
+  it("offers what a chosen heading holds, on the row the heading was on", async () => {
     render(field());
 
     await userEvent.click(screen.getByRole("radio", { name: "Comida" }));
 
-    const under = screen.getByRole("group", { name: "¿Algo más preciso?" });
-    expect(under).toBeInTheDocument();
+    // One group and not two: the row does not gain a second question under
+    // it, it changes the one it asks. Two stacked groups are 146px on a
+    // screen with about 67 for the picker (#60).
+    const groups = screen.getAllByRole("group");
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toHaveAccessibleName("¿Algo más preciso?");
+
+    // The heading leads, because it is the answer already given, and what it
+    // holds follows it as the offer.
     expect(
-      screen.getByRole("radio", { name: "Supermercado, Comida" }),
-    ).toBeInTheDocument();
-    // Offered and not demanded: nothing in the second group is required, and
-    // the heading above it is already a complete answer.
-    for (const chip of screen.getAllByRole("radio")) {
-      if (under.contains(chip)) expect(chip).not.toBeRequired();
+      screen.getAllByRole("radio").map((chip) => chip.getAttribute("value")),
+    ).toEqual(["food", "food.groceries", "food.dining"]);
+  });
+
+  it("offers a subcategory without demanding one", async () => {
+    render(field());
+
+    await userEvent.click(screen.getByRole("radio", { name: "Comida" }));
+
+    // The whole of the offer is that nothing further has to be touched. The
+    // one `required` sits on the group rather than on a subcategory, and the
+    // heading is a member of that group, so the heading alone answers it —
+    // which is what a browser asks of a radio group either way.
+    expect(screen.getByRole("radio", { name: "Comida" })).toBeChecked();
+    for (const child of ["Supermercado, Comida", "Restaurantes, Comida"]) {
+      expect(screen.getByRole("radio", { name: child })).not.toBeChecked();
     }
   });
 
@@ -115,6 +132,11 @@ describe("BranchingChipField", () => {
 
     expect(screen.getAllByRole("radio")).toHaveLength(2);
     expect(screen.getByRole("radio", { name: "Mascotas" })).toBeInTheDocument();
+    // And the question goes back to being the wide one, which is the row's
+    // only way of saying which of the two things it is offering.
+    expect(
+      screen.getByRole("group", { name: "Categoría" }),
+    ).toBeInTheDocument();
     // The way back is a change of answer, so it leaves none behind.
     expect(screen.getByRole("radio", { name: "Comida" })).not.toBeChecked();
   });
@@ -128,6 +150,9 @@ describe("BranchingChipField", () => {
     expect(
       screen.getByRole("group", { name: "¿Algo más preciso?" }),
     ).toBeInTheDocument();
+    // The heading it sits under is on the row with it, which is what makes
+    // the answer readable without tapping anything.
+    expect(screen.getByRole("radio", { name: "Comida" })).toBeInTheDocument();
   });
 
   it("opens on the branch a saved heading is", () => {

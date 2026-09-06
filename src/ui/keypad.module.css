@@ -14,6 +14,12 @@
  * word next to a big one.
  */
 .figure {
+  /* A block laid out by its parent's `gap`, so the browser's default `1em`
+     paragraph margin is not spacing -- it is 17px of nothing under the figure,
+     meeting the 12px the currency keeps above itself to hold two lines 31px
+     apart that the canvas draws 2px apart. Zeroing it here and on `.currency`
+     is most of why the readout is 74px tall and used to be 132 (#60). */
+  margin: 0;
   display: flex;
   align-items: baseline;
   justify-content: center;
@@ -58,6 +64,7 @@
 }
 
 .currency {
+  margin: 0;
   text-align: center;
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
