@@ -6,6 +6,7 @@ import {
   firstDayOf,
   isCalendarDate,
   isMonth,
+  daysIn,
   lastDayOf,
   month,
   monthOf,
@@ -72,6 +73,16 @@ describe("the month a day falls in", () => {
 
   it("ends December on the 31st, without spilling into January", () => {
     expect(lastDayOf(month("2026-12"))).toBe("2026-12-31");
+  });
+
+  // The same fact counted rather than written out, because two screens offer
+  // the days of a month as a list to pick a due day from and neither should be
+  // reading a date apart by string offset to get there.
+  it("counts how many days a month has", () => {
+    expect(daysIn(month("2026-09"))).toBe(30);
+    expect(daysIn(month("2026-12"))).toBe(31);
+    expect(daysIn(month("2028-02"))).toBe(29);
+    expect(daysIn(month("2027-02"))).toBe(28);
   });
 });
 

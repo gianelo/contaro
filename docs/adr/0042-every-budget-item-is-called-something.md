@@ -147,6 +147,11 @@ the first honest lever and buys 94 of 249, after which the next thing in the
 list is a 310px keypad. It is #86, with the numbers, the per-block breakdown
 and the written test.
 
+Since #80 there is one screen over the fold rather than two: `/nuevo/fijo`
+renders no form at all now, and the merged screen carries both kinds at the
+height the Fixed one used to be. ADR-0044 has the current figures, and #86
+still owns them.
+
 ## Consequences
 
 Planning a month costs a name per item, and the plan's rows can be told apart

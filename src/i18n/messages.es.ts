@@ -176,6 +176,21 @@ export const es = {
   "budget.item.save.working": "Guardando\u2026",
   "budget.item.remove": "Sacar del plan",
   "budget.item.remove.working": "Sacando\u2026",
+  // The one question a person is asked about the kind, and it never says the
+  // word (#80). "Vence" is what the two kinds actually differ by, and it is a
+  // word somebody already owns -- unlike "fijo", which the screen used to ask
+  // them to have learnt before they were allowed to write down a number.
+  //
+  // A question and not a label, because the picker under it answers yes and no
+  // both: a day, or "No vence". The month is the one being planned, so "del
+  // mes" is not vague -- the day cannot belong to another one.
+  "budget.item.due": "\u00bfVence un d\u00eda del mes?",
+  // First in the list and where the picker starts, because it is the absence
+  // of a day rather than a claim about one, and it is what almost every item
+  // is. A real answer and not a prompt, which is why the picker asking this
+  // question is never `required`: every state of it is something somebody can
+  // have meant.
+  "budget.item.due.never": "No vence",
 
   "budget.fixed.edit.title": "Corregir el gasto fijo",
   // Why the four questions are not on the screen, and what to do about it. The
@@ -192,11 +207,10 @@ export const es = {
   // named for the kind of item rather than for the grouping. `GroupedList`
   // puts it in capitals.
   "budget.fixed": "Fijos",
-  // The kind is said whole -- "un gasto fijo", not "un fijo" -- so the two
-  // ways into the plan read as two kinds of one thing rather than as two
-  // unrelated things (#82).
-  "budget.fixed.new": "Agregar un gasto fijo",
-  "budget.fixed.new.title": "Nuevo gasto fijo",
+  // There is no "Agregar un gasto fijo" any more, and no screen titled "Nuevo
+  // gasto fijo". One way into the plan since #80: the words a person reads on
+  // the way in are "Agregar un gasto previsto", of either kind, and the kind
+  // is decided by "budget.item.due" rather than by which button was pressed.
   "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
   "budget.fixed.amount": "Cu\u00e1nto es",
   // The badge at the end of a row. Two words, and never a colour on its own:

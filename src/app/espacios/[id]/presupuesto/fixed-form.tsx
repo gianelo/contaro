@@ -2,13 +2,13 @@
 
 import { useActionState, useState } from "react";
 import type { CurrencyCode } from "@/domain/money/currency";
-import { lastDayOf, month as asMonth } from "@/domain/calendar/month";
 import { MAX_BUDGET_ITEM_NAME_LENGTH } from "@/domain/budget/budget";
 import { t } from "@/i18n";
 import { Button } from "@/ui/button";
 import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
 import { SelectField, TextField } from "@/ui/field";
 import { Keypad } from "@/ui/keypad";
+import { daysOf } from "./days";
 import { nothingWrongYet, type BudgetFormState } from "./plan";
 import styles from "./form.module.css";
 
@@ -21,12 +21,7 @@ export type FixedItemFormProps = {
   categories: readonly ChipBranch[];
   currency: CurrencyCode;
   locales: readonly string[];
-  /**
-   * What the four questions already say, and what nothing chosen looks like
-   * for one being planned: a keypad on zero, an empty name, and `null` for the
-   * two the person picks from a list rather than fills in -- which is what the
-   * day's placeholder and the unchosen chip each read as.
-   */
+  /** What the four questions already say about the item being corrected. */
   initial: {
     amount: number;
     name: string;
@@ -42,26 +37,29 @@ export type FixedItemFormProps = {
 };
 
 /**
- * A Fixed item planned: how much, what it is called, what it is filed under
- * and which day of the month it falls due (#13).
+ * A Fixed item corrected: how much, what it is called, what it is filed under
+ * and which day of the month it falls due (#48).
  *
- * One question more than a Variable item asks, and it is the whole difference
- * between the kinds: a day, because that is what makes it fixed.
+ * Correcting only, since #80. Planning happens on the one form both kinds are
+ * planned with, where the day is asked of everything and answering it is what
+ * makes an item Fixed. This stays because a correction is a different
+ * question: the item's kind is already settled, so the day is asked outright
+ * and there is no way to say it never falls due — that would be changing the
+ * kind, which the domain has no operation for and this screen must therefore
+ * not appear to offer.
+ *
+ * One question more than correcting a Variable item asks, and it is the whole
+ * difference between the kinds: a day, because that is what makes it fixed.
  *
  * The name is no longer part of that difference (#79). It is asked here and on
  * the other form out of one key, because it was never about the kind — three
  * subscriptions under "Suscripciones" are three rows a person has to tell
  * apart, and so are four weeks of groceries under one Category.
  *
- * The day is a day *of the month being planned* and never a whole date. The
+ * The day is a day *of the month being corrected* and never a whole date. The
  * screen already knows which month it is on, so offering a date picker would
  * be offering somebody the chance to contradict it — and the choices stop at
  * the length of that month, so a February plan is never offered a 30th.
- *
- * Planning and correcting are one form, the way they already are for the other
- * kind (#48). Two copies would be two places for the correction to stop being
- * held to the rules the planning was -- and the four questions are the four
- * questions whichever of the two is being asked.
  *
  * Nothing here asks whether the item is paid. That refusal is the domain's
  * (`amendFixedItem`, ADR-0034) and the screen above decides whether to render
@@ -84,20 +82,10 @@ export function FixedItemForm({
   const [state, send, pending] = useActionState(action, nothingWrongYet);
   const [amount, setAmount] = useState(initial.amount);
 
-  // Exactly the days this month has. `lastDayOf` is what knows February is
-  // shorter and how much shorter this particular February is; the domain
-  // refuses a day past it (`dayOf`), and this is that same rule offered as a
-  // list so nobody has to be refused to find out.
-  const days = Number(lastDayOf(asMonth(month)).slice(8));
-  const choices = Array.from({ length: days }, (_, index) => ({
-    value: String(index + 1),
-    label: String(index + 1),
-  }));
-
   return (
     <form action={send} className={styles.form}>
       {/*
-        A claim, not a fact: `handlePlanFixedItem` proves membership again
+        A claim, not a fact: `handleAmendFixedItem` proves membership again
         before anything is written (ADR-0010).
       */}
       <input type="hidden" name="spaceId" value={spaceId} />
@@ -124,7 +112,9 @@ export function FixedItemForm({
       <SelectField
         name="dueDay"
         label={t("budget.fixed.dueDay")}
-        choices={choices}
+        // Exactly the days this month has, out of the one place that knows
+        // February is shorter -- the same list the plan's entry screen offers.
+        choices={daysOf(month)}
         // Nothing chosen to begin with, so `required` has teeth: a picker
         // that starts on the 1st answers for whoever does not look, and it
         // would answer with a due date they never chose. A correction opens on

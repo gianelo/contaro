@@ -66,13 +66,15 @@ test("every interactive element inside a Space is at least 44px", async ({
   const inside = await undersizedTargets(page);
 
   // The way out, the four tabs and the raised button between them, the month
-  // pill at the top (#40), the two ways to plan an item -- a Variable one
-  // (#10) and a Fixed one (#13) -- and the row to who shares this Space (#9).
-  // The pill is one target where the `‹ Septiembre ›` walker it replaced was
-  // two. The plan itself is empty on a Space this new, and an empty state is a
-  // line of words rather than something to tap; so is a month with no Fixed
-  // items, which draws no Fijos section at all.
-  expect(inside.count).toBe(10);
+  // pill at the top (#40), the one way into the plan (#80) and the row to who
+  // shares this Space (#9). The pill is one target where the `‹ Septiembre ›`
+  // walker it replaced was two. There were two ways into the plan until #80 --
+  // one per kind -- and now the kind is a question the form asks rather than a
+  // button a person has to choose between. The plan itself is empty on a Space
+  // this new, and an empty state is a line of words rather than something to
+  // tap; so is a month with no Fixed items, which draws no Fijos section at
+  // all.
+  expect(inside.count).toBe(9);
   expect(inside.undersized).toEqual([]);
 });
 
