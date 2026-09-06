@@ -65,7 +65,7 @@ async function plan(
   name: string,
   digits: string,
 ) {
-  await page.getByRole("link", { name: "Agregar un gasto previsto" }).click();
+  await page.getByRole("link", { name: "Agregar al plan" }).click();
   await type(page, digits);
   await page.getByLabel("Cómo se llama").fill(name);
   // The same two steps the entry screen asks for, because it is the same
@@ -453,7 +453,7 @@ async function planFixed(
   dueDay: string,
   filedUnder: readonly [heading: string, under: string] = ["Hogar", "Alquiler"],
 ) {
-  await page.getByRole("link", { name: "Agregar un gasto previsto" }).click();
+  await page.getByRole("link", { name: "Agregar al plan" }).click();
   await type(page, digits);
   await page.getByLabel("Cómo se llama").fill(name);
   // The one question the kind is decided by, answered with a day. The same
@@ -902,7 +902,7 @@ test("a Member is offered one way into the plan and never asked to pick a kind",
   await page.goto(`/espacios/${space.id}`);
 
   await expect(
-    page.getByRole("link", { name: "Agregar un gasto previsto" }),
+    page.getByRole("link", { name: "Agregar al plan" }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Agregar un gasto fijo" }),
@@ -910,7 +910,7 @@ test("a Member is offered one way into the plan and never asked to pick a kind",
 
   // And the word for the kind is nowhere in the question the form asks. What a
   // person is asked is whether it vences, which is a word they already own.
-  await page.getByRole("link", { name: "Agregar un gasto previsto" }).click();
+  await page.getByRole("link", { name: "Agregar al plan" }).click();
 
   const vence = page.getByLabel("¿Vence un día del mes?");
   await expect(vence).toBeVisible();
@@ -939,6 +939,76 @@ test("a Member is offered one way into the plan and never asked to pick a kind",
   const before = await tall();
   await vence.selectOption("5");
   expect(await tall()).toBe(before);
+});
+
+/**
+ * The way into the plan is above the plan, and stays exactly as far from a
+ * thumb however long the plan gets (#81).
+ *
+ * What is read is a distance and never a coordinate. A number here would be
+ * this file's second opinion about how tall a row is, and it would fail the
+ * day a badge grew a pixel while the thing it exists to catch -- the row
+ * sliding back under the lists -- went on passing. Criterion #1 is not an
+ * order but an invariant: the walk to this control is not a function of how
+ * much has been planned, which is the whole reason it moved off the foot of
+ * the screen.
+ *
+ * So the gap between the month's figures and the card under them is read on a
+ * month with nothing planned, and again once both sections are real and long.
+ * It is the same gap: five items bought the plan its two lists and moved the
+ * door not at all. Measured on the card and not on the row inside it, because
+ * the empty sentence leaves the card when the month stops being empty -- and
+ * the summary above grows a meter and a line of pace in the same breath, both
+ * of which are the plan appearing rather than the door moving.
+ *
+ * The order is asserted on the long plan too, which is that invariant said the
+ * other way round: the whole of the row ends above where FIJOS begins.
+ */
+test("the way into the plan keeps its distance from the figures as the plan grows", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Lucía Larga", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+
+  const summary = page.getByRole("region", { name: "Este mes" });
+  const card = page.getByRole("group", { name: "Presupuesto" });
+
+  // How far the way in sits under the two figures, which is the reachability
+  // #81 is about: everything above it on the screen is one card of fixed
+  // shape, so this is the whole of the walk to it.
+  const underTheFigures = async () => {
+    const figures = await box(summary);
+    const door = await box(card);
+
+    return door.y - (figures.y + figures.height);
+  };
+
+  const onAnEmptyMonth = await underTheFigures();
+
+  // Enough of both kinds that neither section is a single row: it is a long
+  // FIJOS list that used to push the way in off the bottom of the screen.
+  await planFixed(page, space.id, "Arriendo", "180000", "1");
+  await planFixed(page, space.id, "Netflix", "44900", "5", ["Ocio", "Suscripciones"]);
+  await planFixed(page, space.id, "Gimnasio", "120000", "25", ["Salud", "Farmacia"]);
+  await plan(page, space.id, "Semana 1", "90000");
+  await plan(page, space.id, "Semana 2", "90000");
+
+  const onAPlannedMonth = await underTheFigures();
+
+  // A pixel of tolerance, because a browser lays a card out in fractions. It
+  // is a tolerance and not a measurement: any real regression here is a list's
+  // worth of rows, not a rounding.
+  expect(Math.abs(onAPlannedMonth - onAnEmptyMonth)).toBeLessThanOrEqual(1);
+
+  const wayIn = await box(page.getByRole("link", { name: "Agregar al plan" }));
+  const fijos = await box(page.getByRole("group", { name: "Fijos" }));
+  const variables = await box(page.getByRole("group", { name: "Variables" }));
+
+  expect(wayIn.y + wayIn.height).toBeLessThanOrEqual(fijos.y);
+  expect(fijos.y).toBeLessThanOrEqual(variables.y);
 });
 
 /**

@@ -1,0 +1,49 @@
+/*
+ * The section's own bottom spacing, because nothing gives it one: `.content`
+ * in `app-shell.module.css` has no gap, so every section on this screen says
+ * how far it holds itself off the next one. The summary card directly above
+ * says `--space-8` (`summary.module.css`), and this says the same — so the
+ * card sits the same distance from the figures above it as from the FIJOS
+ * heading below, which is a card between two things and belonging to neither.
+ *
+ * The canvas draws 18px here (`design/MasIntacto.dc.html`) and the scale has
+ * no 18. This is the step below, which is the rounding
+ * `grouped-list.module.css` does for its 3px gap and `variables.module.css`
+ * for its 11px row: a value off the scale would be the first one.
+ */
+.card {
+  margin-bottom: var(--space-8);
+}
+
+/*
+ * The one row on this screen written in the brand's ink rather than in the
+ * ordinary one, which is how the canvas draws it and what says the row is
+ * somewhere to go rather than something to read.
+ *
+ * Said here and not as a modifier on `GroupedList`. This accent row exists on
+ * one screen so far, and a modifier on the shared component would be the list
+ * claiming a rule that one screen has — every list in the app would then carry
+ * an opinion about a colour none of the others has asked for. The day a second
+ * screen wants the same row is the day it becomes the list's.
+ *
+ * It restores what `globals.css` already says a link is coloured (ADR-0035);
+ * `.row` overrides that with `--color-text` because an ordinary grouped row is
+ * a line of reading that happens to be tappable, and this one is not.
+ */
+.mark,
+.word {
+  color: var(--color-accent);
+}
+
+/* Shrink-wraps the drawing and nothing more: see `way-in.tsx` on why the
+   plus is wrapped at all. */
+.mark {
+  display: flex;
+}
+
+/* The weight the canvas gives it, which is the weight a Fixed item's name
+   wears (`fixed.module.css`): this is the row's subject and not its aside. */
+.word {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}

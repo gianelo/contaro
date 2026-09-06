@@ -205,9 +205,10 @@ test("not one link in the app is underlined", async ({
     // Cancelar, back to the list. A form of one field has nowhere else to go.
     "/espacios/nuevo": 1,
     // The tab bar's four tabs and the raised button between them, the Fixed
-    // item's row, the one way to plan another (#80) and the row to who shares
-    // this Space (#9). On a Space with nothing planned it would be five, which
-    // is the tab bar.
+    // item's row, the one way into the plan (#80) and the row to who shares
+    // this Space (#9). On a Space with nothing planned it would be seven: the
+    // same five, the way in and the Members row, because the Fixed item's row
+    // is the only one of the eight the plan itself puts on the screen.
     //
     // Eight and no longer nine: there were two ways into the plan, one per
     // kind, and #80 made them one -- the kind is a question the form asks now
@@ -217,6 +218,12 @@ test("not one link in the app is underlined", async ({
     // screen until somebody opens it. It is read below instead, where it is
     // drawn -- because #58 is about every link in the app and a link nobody
     // counted is a link nobody checked.
+    //
+    // Eight through #81 as well, which moved that way in from the foot of the
+    // screen to above both lists. It is a row in a card of its own now and the
+    // whole-plan empty state moved in beside it, so the screen lost one group
+    // and gained one -- and a group is not a link. The sentence never was one
+    // either.
     [`/espacios/${space.id}`]: 8,
     // The same five and the one Movement's row. The step back to last month
     // went with the rest of the walker (#61): the month is a pill now, and a
