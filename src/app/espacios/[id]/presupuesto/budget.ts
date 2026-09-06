@@ -15,12 +15,7 @@ import {
   type PaceStanding,
   type VariableItem,
 } from "@/domain/budget/budget";
-import {
-  monthOf,
-  monthSoFar,
-  monthsToPlan,
-  type Month,
-} from "@/domain/calendar/month";
+import { monthOf, monthSoFar, type Month } from "@/domain/calendar/month";
 import type { Category } from "@/domain/category/category";
 import type { CurrencyCode } from "@/domain/money/currency";
 import { formatAmount, formatMoney } from "@/domain/money/money";
@@ -34,6 +29,7 @@ import {
   readableCatalogueFor,
   type Naming,
 } from "../categorias/catalogue";
+import { monthChoices, type ReadableMonthChoice } from "../months";
 
 /** What both kinds of item carry into their correction screen. */
 type ReadableItemInCommon = {
@@ -187,15 +183,6 @@ export type ReadableFixedItem = {
   due: string | null;
 };
 
-/** One month the pill at the top of the screen offers (#40). */
-export type ReadableMonthChoice = {
-  month: Month;
-  /** The month as a person reads it: "Septiembre", "Enero 2027". */
-  label: string;
-  /** Whether it is the month the screen is currently showing. */
-  inView: boolean;
-};
-
 /**
  * The month's two figures and how they stand, as the summary card draws them
  * (#40).
@@ -295,11 +282,7 @@ export async function readableBudget(
   return {
     month,
     label: monthLabel(month, monthOf(reader.today)),
-    choices: monthsToPlan(month).map((offered) => ({
-      month: offered,
-      label: monthLabel(offered, monthOf(reader.today)),
-      inView: offered === month,
-    })),
+    choices: monthChoices(month, monthOf(reader.today)),
     items: planned
       .filter((item): item is VariableItem => item.kind === "variable")
       .map((item) => readable(item, named, reader)),

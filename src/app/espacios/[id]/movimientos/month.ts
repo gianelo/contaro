@@ -1,13 +1,8 @@
 import { database } from "@/db/client";
 import { membersOfSpace } from "@/db/spaces";
 import { findMovementInSpace, movementsInMonth } from "@/db/movements";
-import type { CalendarDate, Month, MonthsAround } from "@/domain/calendar/month";
-import {
-  calendarDate,
-  isMonth,
-  monthOf,
-  monthsAround,
-} from "@/domain/calendar/month";
+import type { CalendarDate, Month } from "@/domain/calendar/month";
+import { calendarDate, isMonth, monthOf } from "@/domain/calendar/month";
 import { formatMoney } from "@/domain/money/money";
 import {
   earned,
@@ -31,6 +26,7 @@ import {
   readableCatalogueFor,
   type Naming,
 } from "../categorias/catalogue";
+import { monthChoices, type ReadableMonthChoice } from "../months";
 
 /**
  * The day it is, by the server's clock.
@@ -66,8 +62,9 @@ export function todayOnTheServer(): CalendarDate {
  *
  * A month off a URL is any string at all, and every reader of one builds days
  * out of it, which throws (`isMonth`). Something that is not a month is
- * treated as nothing asked for. There is no control that changes this yet: #8
- * brings the picker, and it will read exactly here.
+ * treated as nothing asked for. The control that changes it is the pill in
+ * the head of the screen, and it reads exactly here: every month it offers is
+ * a `?mes=` on this screen's own URL (#61).
  */
 export function monthInView(asked: string | undefined, today: CalendarDate): Month {
   return asked !== undefined && isMonth(asked) ? asked : monthOf(today);
@@ -146,8 +143,14 @@ export type ReadableMonth = {
   /** What went out and what came in, in the Space's money. */
   spent: string;
   earned: string;
-  /** Where the control at the top of the screen can go from here. */
-  around: MonthsAround;
+  /**
+   * Every month the pill at the top of the screen can be moved to (#61).
+   *
+   * The same fourteen the plan offers, out of the same function: the ledger
+   * and the plan are two readings of one month, and a picker that reached
+   * different months depending on the tab is a picker a thumb cannot predict.
+   */
+  choices: readonly ReadableMonthChoice[];
 };
 
 /**
@@ -237,7 +240,7 @@ export async function readableMonth(
     // with them.
     spent: formatMoney(spent(recorded, space.currency), reader.locales),
     earned: formatMoney(earned(recorded, space.currency), reader.locales),
-    around: monthsAround(month, monthOf(reader.today)),
+    choices: monthChoices(month, monthOf(reader.today)),
   };
 }
 
