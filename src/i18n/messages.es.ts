@@ -95,11 +95,6 @@ export const es = {
   "space.month.pill": "{month}, elegir el mes",
   "space.month.inView": "Mes que est\u00e1s viendo",
 
-  // The month's plan (#10). "Presupuesto" is the tab and, since #40, the
-  // screen's own title; the list under it is "El plan del mes", because the
-  // rows are the plan and a second "Presupuesto" over them would name the
-  // screen twice.
-  "budget.title": "El plan del mes",
   // What the month was planned to cost, beside what it really cost (#40). A
   // pair of nouns on one card, the way the month's list writes "Ingresos" and
   // "Gastos": each one is only readable against the other. It replaced
@@ -111,6 +106,20 @@ export const es = {
   // the Fijos beside it (#13), and it is what the canvas titles it.
   // `GroupedList` puts it in capitals.
   "budget.variables": "Variables",
+  // The heading over what opens under one of those rows (#63): the items the
+  // figure on the row is made of.
+  //
+  // "de esta categoría" is the whole of it. The screen used to head these same
+  // items "El plan del mes", in a list of their own beside the Categories --
+  // so a month with four weeks of groceries on it drew "Comida · Súper" twice,
+  // under two headings, and neither one said what the other was for. This
+  // names what it is: not the month's plan, one Category's share of it, hung
+  // under the figure it adds up to.
+  //
+  // "El plan" and not "Los gastos previstos", which is what a Budget item is
+  // called everywhere a person is asked for one (#82, ADR-0040): those rows
+  // are the items, and this line is the thing they make together.
+  "budget.variables.plan": "El plan de esta categor\u00eda",
   // The amount is written out and not only shown in red, so a person who
   // cannot see the colour is still told (#11).
   "budget.over": "Te pasaste {amount}",
@@ -131,22 +140,75 @@ export const es = {
   // The empty state says what to do, not that there is nothing: a month
   // nobody has planned yet is the ordinary state of every first of the month.
   "budget.empty": "Todav\u00eda no planeaste este mes.",
-  "budget.item.new": "Agregar un \u00edtem",
-  "budget.item.new.title": "Nuevo \u00edtem",
-  "budget.item.edit.title": "Corregir el \u00edtem",
+  // The words on the row that opens the plan, above both of its sections
+  // (#81, ADR-0045). They name the destination and not the kind, which is what
+  // #80 made sayable: there is one way in for both kinds now, so the row can
+  // be about the plan a person is adding to rather than about the thing they
+  // are adding. "Agregar un gasto previsto" said the noun on a row that
+  // belongs to neither Fijos nor Variables, and a row naming one kind of item
+  // above two lists is the ambiguity #63 exists to remove.
+  //
+  // The noun itself is untouched (ADR-0040): "gasto previsto" is still what an
+  // item is called wherever a person reads one, and the screen this row opens
+  // is still titled with it.
+  "budget.plan.new": "Agregar al plan",
+  // What a Budget item is called where a person reads it (#82, ADR-0040).
+  // "Ítem" was never chosen for it: it is the container word `CONTEXT.md`'s
+  // own avoid list already refuses under Line, Entry and Row, and it names
+  // where the thing is drawn rather than what it is. "Gasto previsto" is that
+  // definition put in Spanish, and it shares "gasto" with a Movement on
+  // purpose -- previsto against gastado is the comparison a Budget exists
+  // for, and the adjective is the whole of the difference. Cupo, tope and
+  // límite read warmer and were refused for promising the enforcement a
+  // Budget deliberately does not have.
+  "budget.item.new.title": "Nuevo gasto previsto",
+  "budget.item.edit.title": "Corregir el gasto previsto",
+  // Asked of both kinds, and one key because it is one question (#79). A gasto
+  // previsto of either kind is read by what it is called rather than by what
+  // it is filed under: four weeks of groceries on one Category are four rows a
+  // person has to tell apart, and the Category is what they have in common
+  // rather than what separates them. It was "budget.fixed.name" while only the
+  // Fixed form asked it, which said the difference was the kind -- and it
+  // never was.
+  "budget.item.name": "C\u00f3mo se llama",
   "budget.item.category": "Categor\u00eda",
+  // "Supermercado · Comida": the Category and the heading it sits under, on
+  // the quiet line under the name, exactly where "budget.fixed.beneath" writes
+  // the Category and the day. The separator is copy and not markup, so this
+  // line is punctuated in the file the rest of its words live in. That is not
+  // yet true of both lines: `fixed.tsx` still writes a middot into JSX to hang
+  // the due notice off the end of its own, and until it stops, the two can
+  // come to be punctuated differently. A wart, and not the rule. Category
+  // first: it is the
+  // more precise of the two, and it is what the row was called until #79.
+  "budget.item.beneath": "{category} \u00b7 {heading}",
   "budget.item.amount": "Cu\u00e1nto esper\u00e1s gastar",
   "budget.item.save": "Guardar",
   "budget.item.save.working": "Guardando\u2026",
   "budget.item.remove": "Sacar del plan",
   "budget.item.remove.working": "Sacando\u2026",
+  // The one question a person is asked about the kind, and it never says the
+  // word (#80). "Vence" is what the two kinds actually differ by, and it is a
+  // word somebody already owns -- unlike "fijo", which the screen used to ask
+  // them to have learnt before they were allowed to write down a number.
+  //
+  // A question and not a label, because the picker under it answers yes and no
+  // both: a day, or "No vence". The month is the one being planned, so "del
+  // mes" is not vague -- the day cannot belong to another one.
+  "budget.item.due": "\u00bfVence un d\u00eda del mes?",
+  // First in the list and where the picker starts, because it is the absence
+  // of a day rather than a claim about one, and it is what almost every item
+  // is. A real answer and not a prompt, which is why the picker asking this
+  // question is never `required`: every state of it is something somebody can
+  // have meant.
+  "budget.item.due.never": "No vence",
 
-  "budget.fixed.edit.title": "Corregir el fijo",
+  "budget.fixed.edit.title": "Corregir el gasto fijo",
   // Why the four questions are not on the screen, and what to do about it. The
   // way out is named as a place to go and not only as an instruction: a
   // sentence telling somebody to undo something they cannot reach from here is
   // a dead end with good manners.
-  "budget.fixed.paid.title": "Este \u00edtem ya est\u00e1 pagado",
+  "budget.fixed.paid.title": "Este gasto fijo ya est\u00e1 pagado",
   "budget.fixed.paid.body":
     "Para corregirlo o sacarlo del plan, primero anul\u00e1 el movimiento que lo pag\u00f3.",
   "budget.fixed.paid.movement": "Ver el movimiento",
@@ -156,9 +218,11 @@ export const es = {
   // named for the kind of item rather than for the grouping. `GroupedList`
   // puts it in capitals.
   "budget.fixed": "Fijos",
-  "budget.fixed.new": "Agregar un fijo",
-  "budget.fixed.new.title": "Nuevo \u00edtem fijo",
-  "budget.fixed.name": "C\u00f3mo se llama",
+  // There is no "Agregar un gasto fijo" any more, and no screen titled "Nuevo
+  // gasto fijo". One way into the plan since #80: the words a person reads on
+  // the way in are "Agregar al plan", which name the plan rather than either
+  // kind, and the kind is decided by "budget.item.due" rather than by which
+  // button was pressed.
   "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
   "budget.fixed.amount": "Cu\u00e1nto es",
   // The badge at the end of a row. Two words, and never a colour on its own:
@@ -201,15 +265,20 @@ export const es = {
   "budget.error.category": "Eleg\u00ed una categor\u00eda de este espacio.",
   "budget.error.month": "No pudimos ver de qu\u00e9 mes se trata.",
   "budget.error.space": "No pudimos ver de qu\u00e9 espacio se trata.",
-  // The ceiling comes from `MAX_FIXED_ITEM_NAME_LENGTH` rather than being
+  // The ceiling comes from `MAX_BUDGET_ITEM_NAME_LENGTH` rather than being
   // written out here: a number in the copy and a number in the domain are two
   // places for one rule, and only one of them refuses anything.
   "budget.error.name": "Pon\u00e9le un nombre de hasta {max} caracteres.",
   "budget.error.dueDay": "Eleg\u00ed un d\u00eda que ese mes tenga.",
-  "budget.error.gone": "Ese \u00edtem ya no est\u00e1.",
-  "budget.error.alreadyPaid": "Ese \u00edtem ya estaba pagado.",
+  // The noun is said whole here rather than as a bare "gasto" plus a clause:
+  // now that "gasto" also names a Movement, a person told a gasto is gone has
+  // two places it could have gone from. Saying "gasto previsto" answers that
+  // and keeps the shape its two siblings have -- "Ese movimiento ya no está",
+  // "Esa invitación ya no está" (#82).
+  "budget.error.gone": "Ese gasto previsto ya no est\u00e1.",
+  "budget.error.alreadyPaid": "Ese gasto fijo ya estaba pagado.",
   "budget.error.signedOut": "Se cerr\u00f3 tu sesi\u00f3n. Entr\u00e1 de nuevo.",
-  "budget.error.failed": "No pudimos guardar el \u00edtem. Prob\u00e1 de nuevo.",
+  "budget.error.failed": "No pudimos guardar el gasto previsto. Prob\u00e1 de nuevo.",
 
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",

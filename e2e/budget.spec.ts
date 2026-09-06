@@ -50,15 +50,43 @@ async function categorise(page: Page, heading: string, under?: string) {
   }
 }
 
-/** One Variable item, planned the way a person plans one. */
-async function plan(page: Page, spaceId: string, digits: string) {
-  await page.getByRole("link", { name: "Agregar un ítem" }).click();
+/**
+ * One Variable item, planned the way a person plans one: how much, what it is
+ * called, and what it is filed under (#79).
+ *
+ * Nothing is said about a day, and that is what leaves it Variable (#80). The
+ * form asks -- the question is on the screen from the moment it loads -- and
+ * "No vence" is where it starts, so planning a week of groceries costs the
+ * same taps it did before the two ways in became one.
+ */
+async function plan(
+  page: Page,
+  spaceId: string,
+  name: string,
+  digits: string,
+) {
+  await page.getByRole("link", { name: "Agregar al plan" }).click();
   await type(page, digits);
+  await page.getByLabel("Cómo se llama").fill(name);
   // The same two steps the entry screen asks for, because it is the same
   // question: picking a Category (#45).
   await categorise(page, "Comida", "Supermercado");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
+}
+
+/**
+ * Opens what a Category's row keeps inside it: the items its figure is made
+ * of (#63).
+ *
+ * By clicking the row rather than by setting the attribute, because tapping
+ * the comparison is the whole gesture -- and because every navigation away
+ * from this screen closes it again. A `<details>` holds no state a server
+ * render restores, so a journey that comes back here has to open it again,
+ * which is what a person does too.
+ */
+async function openPlanOf(variables: Locator, category: string) {
+  await variables.locator("summary").filter({ hasText: category }).click();
 }
 
 /** One expense, recorded the way a person records one on the way home. */
@@ -117,7 +145,7 @@ test("the Budget screen names itself and holds the month's two figures", async (
 
   // Planned and spent, the card draws the month against its plan -- #11's last
   // criterion, which never shipped because the card it names arrives here.
-  await plan(page, space.id, "40000000");
+  await plan(page, space.id, "Súper de la semana", "40000000");
   await spend(page, space.id, "10000000");
   await page.goto(`/espacios/${space.id}`);
 
@@ -140,16 +168,26 @@ test("a Member plans the month and reads it back", async ({
 
   // A month nobody has planned says what to do, not that there is nothing.
   // There is no Budget to create first: the first item is the plan.
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await expect(budget).toContainText("Todavía no planeaste este mes.");
+  await expect(page.getByText("Todavía no planeaste este mes.")).toBeVisible();
 
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
 
-  // The Category on the first line and the heading it sits under on the
-  // second, the way the month's list writes a row.
-  await expect(budget).toContainText("Supermercado");
-  await expect(budget).toContainText("Comida");
-  await expect(budget).toContainText("$ 240.000,00");
+  // One row for the Category, saying what it expects and what it has cost.
+  // The screen used to draw a second list of the items beside this one, headed
+  // "El plan del mes", so a planned Category appeared twice under two headings
+  // and neither appearance said what the other was for (#63).
+  const variables = page.getByRole("group", { name: "Variables" });
+  await expect(variables).toContainText("Supermercado");
+  await expect(variables).toContainText("/ 240.000,00");
+  await expect(page.getByText("Todavía no planeaste este mes.")).toHaveCount(0);
+
+  // And the item is inside it, under the figure it adds up to, read by the
+  // name it was planned with (#79). Until items were called something, four
+  // weeks of groceries were four rows nothing on the screen told apart.
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables).toContainText("El plan de esta categoría");
+  await expect(variables).toContainText("Súper de la semana");
+  await expect(variables).toContainText("$ 240.000,00");
 
   // And the plan's total is on the card at the top of the screen now, beside
   // the figure it is meant to be read against (#40).
@@ -166,10 +204,11 @@ test("correcting an item opens on the branch its Category sits in", async ({
   const { space } = await aMemberWithASpace("Bruno Repasa", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}`);
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await budget.getByRole("link", { name: /Supermercado/ }).click();
+  const variables = page.getByRole("group", { name: "Variables" });
+  await openPlanOf(variables, "Supermercado");
+  await variables.getByRole("link", { name: /Súper de la semana/ }).click();
 
   // The same picker the entry screen asks with, opened the same way: on the
   // branch the saved Category sits in, with the Category itself chosen.
@@ -192,21 +231,79 @@ test("several items on one Category are read as one of their combined amount", a
 
   // Four weeks of groceries, which is how a person plans a month they think
   // about in weeks. They stay four rows, so all four can still be corrected.
-  await plan(page, space.id, "6000000");
-  await plan(page, space.id, "6000000");
-  await plan(page, space.id, "5500000");
-  await plan(page, space.id, "6500000");
+  await plan(page, space.id, "Semana 1", "6000000");
+  await plan(page, space.id, "Semana 2", "6000000");
+  await plan(page, space.id, "Semana 3", "5500000");
+  await plan(page, space.id, "Semana 4", "6500000");
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
+  const variables = page.getByRole("group", { name: "Variables" });
+
+  // One row and never four: what the Category expects of the month is the four
+  // added up, and that is the one thing there is to be over or under.
+  await expect(variables.locator("summary")).toHaveCount(1);
+  await expect(variables).toContainText("/ 240.000,00");
+
+  // And the four are still four rows a thumb can aim at, one tap inside the
+  // figure they make. That is the whole of #79 -- four rows called the same
+  // thing are a plan a person can read down and cannot correct, because
+  // nothing on the screen says which week is which -- and the whole of #63:
+  // they are here, under what they add up to, and nowhere else.
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables.getByRole("link")).toHaveCount(4);
+
+  for (const week of ["Semana 1", "Semana 2", "Semana 3", "Semana 4"]) {
+    await expect(
+      variables.getByRole("link", { name: new RegExp(week) }),
+    ).toHaveCount(1);
+  }
+});
+
+/*
+ * The half of #63 no component test can show: which items the read model files
+ * under a Category, rather than which ones the tray draws once it has them.
+ *
+ * A Fixed item is read twice on this screen and that is the decision, not an
+ * oversight. `expectedByCategory` sums every item of the Category, so the
+ * figure the tray hangs under already has the rent in it -- and a tray that
+ * left it out would not add up to the number above it. Fijos asks "have I paid
+ * it"; the tray asks "what is this total made of". Two questions, two rows.
+ */
+test("a Fixed item is inside the Category it was planned on, as well as in Fijos", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Rita Reparte", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+
+  // Both kinds on one Category: a week of groceries, and a box of vegetables
+  // that comes out of the same Category on the 1st every month.
+  await plan(page, space.id, "Súper de la semana", "24000000");
+  await planFixed(page, space.id, "Caja de verduras", "6000000", "1", [
+    "Comida",
+    "Supermercado",
+  ]);
+
+  const fijos = page.getByRole("group", { name: "Fijos" });
+  const variables = page.getByRole("group", { name: "Variables" });
+
+  // What the Category expects is both of them: the $240.000 planned in weeks
+  // and the $60.000 that comes out on the 1st.
+  await expect(variables).toContainText("/ 300.000,00");
+  await expect(fijos).toContainText("Caja de verduras");
+
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables).toContainText("Caja de verduras");
+  await expect(variables).toContainText("Súper de la semana");
+
+  // And the row opens the Fixed item's own screen, which is the same URL for
+  // either kind (#48) -- so the tray needs to know nothing about kinds to send
+  // a thumb to the right form.
+  await variables.getByRole("link", { name: /Caja de verduras/ }).click();
   await expect(
-    budget.getByRole("link", { name: /Supermercado/ }),
-  ).toHaveCount(4);
-
-  // And what the Category expects of the month is the four added up: one line
-  // to be over or under, however many items make it.
-  await expect(page.getByRole("group", { name: "Variables" })).toContainText(
-    "/ 240.000,00",
-  );
+    page.getByRole("heading", { name: "Corregir el gasto fijo" }),
+  ).toBeVisible();
 });
 
 test("a Member is told when a Category has passed what it expected", async ({
@@ -217,7 +314,7 @@ test("a Member is told when a Category has passed what it expected", async ({
   const { space } = await aMemberWithASpace("Euge Se Pasa", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}`);
-  await plan(page, space.id, "40000000");
+  await plan(page, space.id, "Súper de la semana", "40000000");
 
   const variables = page.getByRole("group", { name: "Variables" });
   // Planned and nothing spent yet: the comparison is a figure, not a blank.
@@ -280,15 +377,17 @@ test("a Member plans next month before it starts", async ({
   // already moved, and a plan is what a month is expected to cost.
   await chooseMonth(page, `/espacios/${space.id}?mes=${next}`, next);
 
-  await plan(page, space.id, "9000000");
+  await plan(page, space.id, "Súper de la semana", "9000000");
   await expect(page).toHaveURL(new RegExp(`\\?mes=${next}$`));
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await expect(budget).toContainText("$ 90.000,00");
+  const variables = page.getByRole("group", { name: "Variables" });
+  await expect(variables).toContainText("/ 90.000,00");
 
-  // And this month is untouched by it.
+  // And this month is untouched by it: no Category to compare, and the empty
+  // state saying so about the whole plan rather than about half of it.
   await chooseMonth(page, `/espacios/${space.id}?mes=${thisMonth}`, thisMonth);
-  await expect(budget).toContainText("Todavía no planeaste este mes.");
+  await expect(page.getByText("Todavía no planeaste este mes.")).toBeVisible();
+  await expect(variables).toHaveCount(0);
 });
 
 test("a Member corrects an item and takes another off the plan", async ({
@@ -299,36 +398,68 @@ test("a Member corrects an item and takes another off the plan", async ({
   const { space } = await aMemberWithASpace("Cami Corrige", context, baseURL!);
 
   await page.goto(`/espacios/${space.id}`);
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await budget.getByRole("link", { name: /Supermercado/ }).click();
+  const variables = page.getByRole("group", { name: "Variables" });
+  await openPlanOf(variables, "Supermercado");
+  await variables.getByRole("link", { name: /Súper de la semana/ }).click();
 
   // The keypad opens on what the item expects, so a correction is typed over
-  // it rather than from nothing.
+  // it rather than from nothing, and the name field on what it is called.
   await page.getByRole("button", { name: "Borrar el último número" }).click();
+  await page.getByLabel("Cómo se llama").fill("Súper de la primera semana");
   await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(budget).toContainText("$ 24.000,00");
 
-  await budget.getByRole("link", { name: /Supermercado/ }).click();
+  // The Category's own figure moves with the item, because the figure is what
+  // the items add up to.
+  await expect(variables).toContainText("/ 24.000,00");
+
+  // Opened again, because coming back to the screen is a fresh render and a
+  // `<details>` keeps nothing across one -- which is exactly what makes it
+  // work before any JavaScript has loaded.
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables).toContainText("Súper de la primera semana");
+  await expect(variables).toContainText("$ 24.000,00");
+
+  await variables
+    .getByRole("link", { name: /Súper de la primera semana/ })
+    .click();
   await page.getByRole("button", { name: "Sacar del plan" }).click();
 
-  await expect(budget).toContainText("Todavía no planeaste este mes.");
+  // The last item off the plan takes the Category's row with it, and the
+  // month is unplanned again -- of either kind.
+  await expect(page.getByText("Todavía no planeaste este mes.")).toBeVisible();
+  await expect(variables).toHaveCount(0);
 });
 
-/** One Fixed item, planned the way a person plans the rent. */
+/**
+ * One Fixed item, planned the way a person plans the rent: on the same screen,
+ * out of the same button, one answer further along (#80).
+ *
+ * Nobody types the word "fijo" here and nobody taps it, which is the whole of
+ * the change: what a person says is that this one vences, and the day they
+ * then pick is what makes it Fixed.
+ *
+ * The Category is answered by the rent's own by default, because that is what
+ * almost every journey here is about. It is asked for at all so that one of
+ * them can put a Fixed item on the Category a Variable one is already on,
+ * which is where the two kinds meet on this screen (#63).
+ */
 async function planFixed(
   page: Page,
   spaceId: string,
   name: string,
   digits: string,
   dueDay: string,
+  filedUnder: readonly [heading: string, under: string] = ["Hogar", "Alquiler"],
 ) {
-  await page.getByRole("link", { name: "Agregar un fijo" }).click();
+  await page.getByRole("link", { name: "Agregar al plan" }).click();
   await type(page, digits);
   await page.getByLabel("Cómo se llama").fill(name);
-  await page.getByLabel("Qué día del mes vence").selectOption(dueDay);
-  await categorise(page, "Hogar", "Alquiler");
+  // The one question the kind is decided by, answered with a day. The same
+  // picker sits on the screen for a Variable item and is left on "No vence".
+  await page.getByLabel("¿Vence un día del mes?").selectOption(dueDay);
+  await categorise(page, filedUnder[0], filedUnder[1]);
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
@@ -364,7 +495,7 @@ test("a Member plans the rent and marks it paid", async ({
 
   // Both kinds add into the month's total, because both are what the month
   // expects to cost (#13).
-  await plan(page, space.id, "24000000");
+  await plan(page, space.id, "Súper de la semana", "24000000");
   await expect(summary).toContainText("$ 2.040.000,00");
 
   // Marking it paid confirms first, because it brings money into existence in
@@ -472,7 +603,7 @@ test("a Member corrects the rent, and cannot while it is paid", async ({
   // The row opens the item, the way a Variable row already did.
   await fijos.getByRole("link", { name: /Arriendo/ }).click();
   await expect(
-    page.getByRole("heading", { name: "Corregir el fijo" }),
+    page.getByRole("heading", { name: "Corregir el gasto fijo" }),
   ).toBeVisible();
 
   // All four questions, opened on the answers the item already has. The
@@ -502,7 +633,7 @@ test("a Member corrects the rent, and cannot while it is paid", async ({
   // no form at all, and the one thing that undoes it named as somewhere to go
   // (ADR-0034).
   await fijos.getByRole("link", { name: /Arriendo/ }).click();
-  await expect(page.getByText("Este ítem ya está pagado")).toBeVisible();
+  await expect(page.getByText("Este gasto fijo ya está pagado")).toBeVisible();
   await expect(page.getByRole("button", { name: "Guardar" })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Sacar del plan" }),
@@ -572,7 +703,7 @@ test("a Member reads whether the month is ahead of its pace", async ({
   // nobody earned.
   await expect(summary).not.toContainText("del ritmo");
 
-  await plan(page, space.id, "100000000");
+  await plan(page, space.id, "Súper de la semana", "100000000");
 
   // One line of words, and it names its own scope out loud so nobody has to
   // know why the rent is not in it. Nothing spent yet, so the month is behind
@@ -655,7 +786,7 @@ test.describe("read by a phone set to English, where the money is spelled out", 
     const { space } = await aMemberWithASpace("Wanda Ancha", context, baseURL!);
 
     await page.goto(`/espacios/${space.id}`);
-    await plan(page, space.id, CEILING);
+    await plan(page, space.id, "Súper de la semana", CEILING);
     await spend(page, space.id, CEILING);
     await page.goto(`/espacios/${space.id}`);
 
@@ -750,4 +881,162 @@ test("a Fijo's amount sits over its badge, and the line under the name keeps to 
   expect(tap.y).toBeLessThanOrEqual(amount.y);
   expect(tap.y + tap.height).toBeGreaterThanOrEqual(badge.y + badge.height);
   await withinTheGutter(page, tap);
+});
+
+/**
+ * One way into the plan, for both kinds (#80).
+ *
+ * There were two buttons here, reading almost the same, and choosing between
+ * them meant knowing what "fijo" meant before you were allowed to write down a
+ * number. The proof that the merge happened is not that the one button works —
+ * the tests above already plan both kinds through it — but that the second one
+ * is gone from the screen a person actually stands on.
+ */
+test("a Member is offered one way into the plan and never asked to pick a kind", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Vera Planea", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+
+  await expect(
+    page.getByRole("link", { name: "Agregar al plan" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Agregar un gasto fijo" }),
+  ).toHaveCount(0);
+
+  // And the word for the kind is nowhere in the question the form asks. What a
+  // person is asked is whether it vences, which is a word they already own.
+  await page.getByRole("link", { name: "Agregar al plan" }).click();
+
+  const vence = page.getByLabel("¿Vence un día del mes?");
+  await expect(vence).toBeVisible();
+
+  // "No vence" is where it starts and it is a real answer, not a prompt: what
+  // the row reads is what gets filed, at every moment. There is no state here
+  // that can say the item vences while the control says it does not.
+  await expect(vence).toHaveValue("");
+  await expect(vence.locator("option").first()).toHaveText("No vence");
+
+  // Exactly the days this month has, plus "No vence", and never a day the
+  // month does not have. Counted from the calendar rather than written down,
+  // so a February plan offered a 30th fails here rather than at the domain.
+  const { thisMonth } = months();
+  const days = new Date(
+    Date.UTC(Number(thisMonth.slice(0, 4)), Number(thisMonth.slice(5)), 0),
+  ).getUTCDate();
+  await expect(vence.locator("option")).toHaveCount(days + 1);
+
+  // Nothing on this screen ever grows or shrinks: the question is one row from
+  // the moment it loads, whichever way it is answered. That is the objection
+  // recorded against merging the two ways in, answered as completely as it can
+  // be -- Guardar does not move.
+  const tall = () =>
+    page.evaluate(() => document.documentElement.scrollHeight);
+  const before = await tall();
+  await vence.selectOption("5");
+  expect(await tall()).toBe(before);
+});
+
+/**
+ * The way into the plan is above the plan, and stays exactly as far from a
+ * thumb however long the plan gets (#81).
+ *
+ * What is read is a distance and never a coordinate. A number here would be
+ * this file's second opinion about how tall a row is, and it would fail the
+ * day a badge grew a pixel while the thing it exists to catch -- the row
+ * sliding back under the lists -- went on passing. Criterion #1 is not an
+ * order but an invariant: the walk to this control is not a function of how
+ * much has been planned, which is the whole reason it moved off the foot of
+ * the screen.
+ *
+ * So the gap between the month's figures and the card under them is read on a
+ * month with nothing planned, and again once both sections are real and long.
+ * It is the same gap: five items bought the plan its two lists and moved the
+ * door not at all. Measured on the card and not on the row inside it, because
+ * the empty sentence leaves the card when the month stops being empty -- and
+ * the summary above grows a meter and a line of pace in the same breath, both
+ * of which are the plan appearing rather than the door moving.
+ *
+ * The order is asserted on the long plan too, which is that invariant said the
+ * other way round: the whole of the row ends above where FIJOS begins.
+ */
+test("the way into the plan keeps its distance from the figures as the plan grows", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Lucía Larga", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+
+  const summary = page.getByRole("region", { name: "Este mes" });
+  const card = page.getByRole("group", { name: "Presupuesto" });
+
+  // How far the way in sits under the two figures, which is the reachability
+  // #81 is about: everything above it on the screen is one card of fixed
+  // shape, so this is the whole of the walk to it.
+  const underTheFigures = async () => {
+    const figures = await box(summary);
+    const door = await box(card);
+
+    return door.y - (figures.y + figures.height);
+  };
+
+  const onAnEmptyMonth = await underTheFigures();
+
+  // Enough of both kinds that neither section is a single row: it is a long
+  // FIJOS list that used to push the way in off the bottom of the screen.
+  await planFixed(page, space.id, "Arriendo", "180000", "1");
+  await planFixed(page, space.id, "Netflix", "44900", "5", ["Ocio", "Suscripciones"]);
+  await planFixed(page, space.id, "Gimnasio", "120000", "25", ["Salud", "Farmacia"]);
+  await plan(page, space.id, "Semana 1", "90000");
+  await plan(page, space.id, "Semana 2", "90000");
+
+  const onAPlannedMonth = await underTheFigures();
+
+  // A pixel of tolerance, because a browser lays a card out in fractions. It
+  // is a tolerance and not a measurement: any real regression here is a list's
+  // worth of rows, not a rounding.
+  expect(Math.abs(onAPlannedMonth - onAnEmptyMonth)).toBeLessThanOrEqual(1);
+
+  const wayIn = await box(page.getByRole("link", { name: "Agregar al plan" }));
+  const fijos = await box(page.getByRole("group", { name: "Fijos" }));
+  const variables = await box(page.getByRole("group", { name: "Variables" }));
+
+  expect(wayIn.y + wayIn.height).toBeLessThanOrEqual(fijos.y);
+  expect(fijos.y).toBeLessThanOrEqual(variables.y);
+});
+
+/**
+ * The address bar stays honest about a way in that no longer exists (ADR-0010).
+ *
+ * `/presupuesto/nuevo/fijo` shipped in #13 and was the second way into the
+ * plan until #80. A link somebody kept, or a tab open since before the merge,
+ * lands on the one form — still holding the month it was opened on, because
+ * landing on "this month" would take somebody planning October in September
+ * off the month they were working on.
+ */
+test("the Fixed item's old route lands on the one form, on the month it was asked for", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Beto Marcado", context, baseURL!);
+
+  // Next month and not this one, because that is the month the old link
+  // carried that landing on "hoy" would silently lose.
+  const { next } = months();
+
+  await page.goto(`/espacios/${space.id}/presupuesto/nuevo/fijo?mes=${next}`);
+
+  await expect(page).toHaveURL(
+    `/espacios/${space.id}/presupuesto/nuevo?mes=${next}`,
+  );
+  await expect(
+    page.getByRole("heading", { name: "Nuevo gasto previsto" }),
+  ).toBeVisible();
 });

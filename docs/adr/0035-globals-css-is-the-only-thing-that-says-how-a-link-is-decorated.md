@@ -44,8 +44,10 @@ across a card the canvas draws without one.
 
 Not one of the ten artboards in `design/` writes an underline anywhere. So the
 rule is read off the canvas rather than argued for here — the same source
-`--column` and `--gutter` are taken from (ADR-0025), though this one is a
-decision the canvas made rather than a number it holds.
+`--gutter` is taken from (ADR-0025), though this one is a decision the canvas
+made rather than a number it holds. The ceiling was read off it too until #75
+showed that a canvas drawing one width cannot say "and no wider"; it is
+`--measure` now and it is argued, not read (ADR-0041).
 
 ## The way back in is deliberate
 

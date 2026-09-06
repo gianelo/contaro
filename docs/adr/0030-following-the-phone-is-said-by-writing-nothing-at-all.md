@@ -127,7 +127,10 @@ comment, so nobody reads the URL and concludes the choice is per Space.
 `SegmentedField` carries it. Its shape claims "these are all of them, and one is
 already true", which is exactly a theme; the claim was never about there being
 two of them, and its comment now says two or three and no further — a fourth
-answer inside a 390px column leaves four labels nobody can read.
+answer inside a column as narrow as a phone leaves four labels nobody can read.
+(The comment said "a 390px column" until #75, which is when the column stopped
+being 390px. The claim was always about the *narrowest* column and the
+narrowest phone is narrower than 390, so it survived the number moving.)
 
 Unlike the direction control, this one prints its question. "Gasto | Ingreso"
 says what it is being asked by being read; "Automático | Claro | Oscuro" says

@@ -81,6 +81,38 @@
       "w": 390,
       "h": 844,
       "title": "Sheet · Cerrar el mes"
+    },
+    {
+      "file": "Presupuesto63Desplegado.dc.html",
+      "x": 470,
+      "y": 2300,
+      "w": 390,
+      "h": 1240,
+      "title": "Presupuesto · una categoría abierta"
+    },
+    {
+      "file": "AgregarUnFormulario.dc.html",
+      "x": 0,
+      "y": 3700,
+      "w": 390,
+      "h": 844,
+      "title": "Idea A · un solo formulario"
+    },
+    {
+      "file": "MasHoja.dc.html",
+      "x": 470,
+      "y": 3700,
+      "w": 390,
+      "h": 844,
+      "title": "Idea B · el + pregunta"
+    },
+    {
+      "file": "MasIntacto.dc.html",
+      "x": 940,
+      "y": 3700,
+      "w": 390,
+      "h": 1080,
+      "title": "Idea C · el + no se toca"
     }
   ],
   "annotations": [
@@ -97,6 +129,20 @@
       "y": 1110,
       "w": 440,
       "text": "MODO OSCURO + CONFIRMACIONES\nLa primera es la misma pantalla de cargar gasto, también viva, con la paleta oscura.\nCerrar el mes es la única confirmación irreversible: por eso va en rojo."
+    },
+    {
+      "id": "nota-63",
+      "x": 0,
+      "y": 2180,
+      "w": 620,
+      "text": "EL PLAN VIVE ADENTRO DE LA CATEGORÍA (#63, ADR-0043)\nEsto ya está construido. El grupo EL PLAN DEL MES desapareció: cada fila de VARIABLES abre los gastos previstos que la componen, bajo el título «El plan de esta categoría». El plegado es ahora el artboard de referencia (Presupuesto del mes); acá al lado está el mismo con una categoría abierta.\nLa bandeja lista TODOS los gastos previstos de la categoría, fijos incluidos, porque la cifra de arriba también los cuenta (ADR-0023): una lista de montos que no suma el total que tiene encima es una lista que miente callada. Un fijo aparece entonces dos veces en la pantalla — en FIJOS contesta «¿lo pagué?» y en la bandeja «¿de qué está hecho este total?».\nEn el desplegado están abiertas Comida · Súper (cuatro gastos previstos) y Ocio (uno solo), para ver cómo queda una categoría con un único gasto previsto detrás."
+    },
+    {
+      "id": "nota-mas",
+      "x": 0,
+      "y": 3540,
+      "w": 700,
+      "text": "TRES IDEAS PARA AGREGAR AL PLAN\nHoy son dos links al pie del Presupuesto («Agregar un gasto previsto» y «Agregar un gasto fijo») y el + de la barra va siempre a cargar un gasto.\n\nA · UN SOLO FORMULARIO — Los dos links se vuelven uno. El día de vencimiento es lo que hace que un gasto previsto sea Fijo; si no elegís día, es Variable. La línea roja es el fondo del iPhone 13 (664px de alto real, no 844): mirá dónde queda Guardar. Es una estimación a mano, no una medición.\nB · EL + PREGUNTA — Tocás + y elegís. Una sola puerta desde cualquier pantalla, pero le cuesta un toque más a cargar un gasto, que es lo que la app promete hacer en diez segundos.\nC · EL + NO SE TOCA — El + sigue siendo el gasto. Los dos links se vuelven una sola fila ARRIBA de las dos listas, entre la tarjeta del mes y FIJOS, y no adentro de VARIABLES: el plan son los gastos previstos de los dos tipos, así que su puerta de entrada no pertenece a ninguna de las dos secciones. Arriba y no al pie porque al pie la distancia al pulgar crece con el plan.\n\nEn B y en C, la puerta abre A. A no compite con ninguna de las dos: es lo que hace que B tenga dos filas en vez de tres, y que C sea una fila en vez de dos."
     }
   ],
   "launch": {

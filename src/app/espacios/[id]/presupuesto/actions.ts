@@ -21,7 +21,6 @@ import {
   handleAmendFixedItem,
   handlePayFixedItem,
   handlePlanBudgetItem,
-  handlePlanFixedItem,
   handleRemoveBudgetItem,
   refusalMessage,
   type BudgetFormState,
@@ -70,33 +69,6 @@ async function ports(): Promise<BudgetPorts> {
   };
 }
 
-export async function planFixedItemAction(
-  _previous: BudgetFormState,
-  form: FormData,
-): Promise<BudgetFormState> {
-  const spaceId = answer(form, "spaceId");
-
-  const outcome = await handlePlanFixedItem(await ports(), {
-    spaceId,
-    month: answer(form, "mes"),
-    categoryId: answer(form, "categoryId"),
-    amount: Number(answer(form, "amount")),
-    name: answer(form, "name"),
-    // Passed through raw, the way the amount is. `Number("")` is 0 and
-    // `Number("x")` is NaN, and `planFixedItem` refuses both by name --
-    // repairing either here would file a due date the person never chose.
-    dueDay: Number(answer(form, "dueDay")),
-  });
-
-  report("Planning a Fixed item", outcome);
-
-  if (outcome.kind === "planned") {
-    redirect(budgetScreen(spaceId, outcome.item.month));
-  }
-
-  return { error: refusalMessage(outcome) };
-}
-
 /**
  * Marking a Fixed item paid, which is what creates its Movement.
  *
@@ -130,11 +102,19 @@ export async function payFixedItemAction(
   return { error: refusalMessage(outcome) };
 }
 
+/**
+ * One item added to the month's plan, of whichever kind the day makes it (#80).
+ *
+ * One action, because there is one form: the two that used to be here read
+ * different fields off two different forms, and after #79 the only field they
+ * disagreed about was the day.
+ */
 export async function planBudgetItemAction(
   _previous: BudgetFormState,
   form: FormData,
 ): Promise<BudgetFormState> {
   const spaceId = answer(form, "spaceId");
+  const dueDay = answer(form, "dueDay");
 
   const outcome = await handlePlanBudgetItem(await ports(), {
     spaceId,
@@ -148,9 +128,23 @@ export async function planBudgetItemAction(
     // domain by name. Repairing either here would hide the bug rather than the
     // typo.
     amount: Number(answer(form, "amount")),
+    // Raw, the way the Fixed item's is: `planItem` is what trims it and what
+    // refuses a blank one, and a name repaired here would be a row called
+    // something nobody typed.
+    name: answer(form, "name"),
+    // The one answer read here rather than passed on, and it is read as an
+    // answer rather than repaired: the day picker is not on the form at all
+    // while "No vence" is chosen (#80), so nothing posted is somebody saying
+    // this item never falls due. Every other string goes to the domain as
+    // typed -- `Number("x")` is NaN, and `planFixedItem` refuses it by name
+    // rather than filing a due date nobody chose.
+    dueDay: dueDay === "" ? null : Number(dueDay),
   });
 
-  report("Planning a Budget item", outcome);
+  // One label for both kinds, because one action plans both and this only
+  // ever prints when the cause was ours (`report`) -- a failure that never got
+  // as far as deciding which kind it was making.
+  report("Planning an item", outcome);
 
   if (outcome.kind === "planned") {
     // Outside the handler's try on purpose: redirect works by throwing, so
@@ -179,6 +173,7 @@ export async function amendBudgetItemAction(
     {
       categoryId: answer(form, "categoryId"),
       amount: Number(answer(form, "amount")),
+      name: answer(form, "name"),
     },
   );
 

@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { ButtonLink } from "@/ui/button";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
@@ -11,7 +10,7 @@ import { readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
 import { MonthSummary } from "./presupuesto/summary";
 import { Variables } from "./presupuesto/variables";
-import styles from "./page.module.css";
+import { WayIntoThePlan } from "./presupuesto/way-in";
 
 /**
  * The Space's Budget: where picking a Space lands, and where the month's plan
@@ -73,7 +72,14 @@ export default async function SpacePage({
   // A Budget is its items, of either kind (CONTEXT.md). A month with the rent
   // on it and nothing else has been planned, so the empty state is about the
   // whole plan rather than about the Variable half of it.
-  const nothingPlanned = plan.items.length === 0 && plan.fixed.length === 0;
+  //
+  // Read off the two sections the screen actually draws, now that the list of
+  // Variable items is gone (#63). That is exact rather than nearly so: every
+  // Variable item's Category is a measured one (ADR-0023), so a Category with
+  // a Variable item on it always has a row in `variables` -- which makes an
+  // empty `variables` the same fact as "no Variable item exists". With no
+  // Fixed item beside it, the month holds no item of either kind.
+  const nothingPlanned = plan.fixed.length === 0 && plan.variables.length === 0;
 
   return (
     <SpaceScreen
@@ -113,6 +119,39 @@ export default async function SpacePage({
       <MonthSummary summary={plan.summary} pace={plan.pace} />
 
       {/*
+        One way in, for both kinds (#80), and here rather than at the foot of
+        the screen (#81). There were two buttons under both lists, reading
+        almost the same, and choosing between them meant knowing what "fijo"
+        meant -- the product asking somebody to name a type before it would let
+        them write down a number. The recorded reason for the second one was
+        that a form which grew or shrank after a toggle is a form whose shape a
+        thumb cannot predict; the day question on the form behind this row is
+        on the screen from the moment it loads, which is that objection
+        answered (ADR-0044).
+
+        Above both lists because below them it was the one control on the
+        screen whose distance from a thumb grew with every item planned -- and
+        it is the control a person with a long plan needs most. A reachability
+        that degrades as the feature succeeds is the same toll ADR-0027 took
+        off the way into a Movement, which was a link at the foot of the
+        month's list until the raised button replaced it. This is that argument
+        arriving at the plan.
+
+        Above both and not inside either, because a Budget is its items of
+        either kind (CONTEXT.md, ADR-0019): a way in nested in the Variables
+        card would read as "add a variable", which is the ambiguity #63 exists
+        to remove.
+
+        The whole-plan empty state travels with it, inside the same card and
+        for reasons that belong to the card (`way-in.tsx`, ADR-0045).
+      */}
+      <WayIntoThePlan
+        spaceId={space.id}
+        month={month}
+        nothingPlanned={nothingPlanned}
+      />
+
+      {/*
         What the month already owes on days it knows about, and what has been
         paid (#13). Above the Variables, because it is read first and for a
         different question: not "how much is left" but "have I paid it".
@@ -126,71 +165,21 @@ export default async function SpacePage({
       />
 
       {/*
-        The Variable items: one row per item, in the order they were planned.
-        Several items on one Category stay several rows, because they are how a
-        person thinks in weeks — sixty thousand of groceries a week rather than
-        two hundred and forty a month — and collapsing them here would take
-        away the four rows they meant to be able to edit.
-      */}
-      <GroupedList label={t("budget.title")}>
-        {nothingPlanned ? (
-          <GroupedListItem>{t("budget.empty")}</GroupedListItem>
-        ) : (
-          plan.items.map((item) => (
-            <GroupedListItem
-              key={item.id}
-              href={`/espacios/${space.id}/presupuesto/${item.id}`}
-              trailing={item.amount}
-            >
-              <span className={styles.category}>{item.category}</span>
-              {/*
-                The heading on a second line, the way the month's list writes
-                one. Absent rather than empty: a Category that is itself a
-                heading has nothing to say here, and a blank line still takes
-                the height of one.
-              */}
-              {item.heading ? (
-                <span className={styles.beneath}>{item.heading}</span>
-              ) : null}
-            </GroupedListItem>
-          ))
-        )}
-        {/*
-          What the whole month's plan adds up to is no longer a row here: it is
-          "Presupuestado" on the card at the top of the screen, beside the
-          figure it was always meant to be read against (#40). A total at the
-          foot of this list was the only place it could go while the two
-          figures were deliberately kept apart, and it never was the total of
-          exactly the rows above it -- the Fijos section is part of the plan too.
-        */}
-      </GroupedList>
-
-      {/*
-        What each Category expected and what it really cost (#11). One line
-        per Category and never one per item: the four weekly rows above are
-        how a month is planned in weeks, and they are one thing to be over or
+        What each Category expected, what it really cost, and — under each
+        row — the items that figure is made of (#11, #63). One line per
+        Category and never one per item: several items on one Category are how
+        a month is planned in weeks, and they are one thing to be over or
         under. This is the only place that can see a Member who is under on
         every single shop and over for the month.
-      */}
-      <Variables comparisons={plan.variables} />
 
-      <div className={styles.plan}>
-        <ButtonLink href={`/espacios/${space.id}/presupuesto/nuevo?mes=${month}`}>
-          {t("budget.item.new")}
-        </ButtonLink>
-        {/*
-          Its own way in, and not a choice inside the other one. The two kinds
-          are answered with different questions -- a Fixed item is asked for a
-          name and a day -- and a form that grew or shrank after a toggle is a
-          form whose shape a thumb cannot predict.
-        */}
-        <ButtonLink
-          variant="plain"
-          href={`/espacios/${space.id}/presupuesto/nuevo/fijo?mes=${month}`}
-        >
-          {t("budget.fixed.new")}
-        </ButtonLink>
-      </div>
+        It is also the only place the month's items are drawn now. There used
+        to be a second list of them above this one, headed "El plan del mes",
+        which drew every planned Category a second time under a second heading
+        and left a person reading two plans for one month. The items are all
+        still here and still correctable, one tap inside the figure they add
+        up to.
+      */}
+      <Variables spaceId={space.id} comparisons={plan.variables} />
 
       {/*
         Who shares this Space, and the way to invite the person who does not

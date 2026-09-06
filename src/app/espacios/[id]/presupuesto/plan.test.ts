@@ -3,9 +3,7 @@ import {
   FixedItemAlreadyPaidError,
   UnplannableBudgetItemError,
   type BudgetItem,
-  type BudgetItemDraft,
   type FixedItem,
-  type FixedItemDraft,
 } from "@/domain/budget/budget";
 import { calendarDate, month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
@@ -16,10 +14,10 @@ import {
   handleAmendFixedItem,
   handlePayFixedItem,
   handlePlanBudgetItem,
-  handlePlanFixedItem,
   handleRemoveBudgetItem,
   refusalMessage,
   type BudgetPorts,
+  type PlannedItemDraft,
 } from "./plan";
 
 const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
@@ -32,6 +30,7 @@ const PLANNED: BudgetItem = {
   month: month("2026-09"),
   categoryId: "cat-super",
   amount: money(240_000_00, "ARS"),
+  name: "Súper de la semana",
 };
 
 const TODAY = calendarDate("2026-09-18");
@@ -59,7 +58,14 @@ const PAYMENT: Movement = {
   attributedTo: GIAN,
 };
 
-const fixedDraft: FixedItemDraft = {
+/**
+ * One screen's answers, with the day somebody chose on them.
+ *
+ * The same shape as the draft below it, and that is the point of #80: a person
+ * is asked one set of questions, and whether they answered the last one is
+ * what decides the kind.
+ */
+const fixedDraft: PlannedItemDraft = {
   spaceId: CASA.id,
   month: "2026-09",
   categoryId: "cat-vivienda",
@@ -68,11 +74,14 @@ const fixedDraft: FixedItemDraft = {
   dueDay: 1,
 };
 
-const draft: BudgetItemDraft = {
+/** The same answers with nothing said about a day: an item that never falls due. */
+const draft: PlannedItemDraft = {
   spaceId: CASA.id,
   month: "2026-09",
   categoryId: "cat-super",
   amount: 240_000_00,
+  name: "Súper de la semana",
+  dueDay: null,
 };
 
 const ports = (changes: Partial<BudgetPorts> = {}): BudgetPorts => ({
@@ -94,6 +103,100 @@ describe("planning an item from the screen", () => {
       kind: "planned",
       item: PLANNED,
     });
+  });
+
+  // The whole of #80. Nobody is asked to pick a kind: a day answered is what
+  // makes an item Fixed, and a day left unanswered is what leaves it Variable.
+  // One set of answers on the screen, and the domain's two shapes on the far
+  // side of this.
+  it("makes an item with no day a Variable one, and hands it no day", async () => {
+    const plan = vi.fn(async () => PLANNED);
+    const planFixed = vi.fn(async () => FIXED);
+
+    expect(
+      await handlePlanBudgetItem(ports({ plan, planFixed }), draft),
+    ).toEqual({ kind: "planned", item: PLANNED });
+
+    // Exactly the five answers a `BudgetItemDraft` is, and no sixth carrying
+    // "no day". A draft that could hold one is a shape `planItem` would have
+    // to defend against; one that never reaches it cannot.
+    expect(plan).toHaveBeenCalledWith(CASA, {
+      spaceId: draft.spaceId,
+      month: draft.month,
+      categoryId: draft.categoryId,
+      amount: draft.amount,
+      name: draft.name,
+    });
+    expect(planFixed).not.toHaveBeenCalled();
+  });
+
+  it("makes an item with a day a Fixed one, due on the day chosen", async () => {
+    const plan = vi.fn(async () => PLANNED);
+    const planFixed = vi.fn(async () => FIXED);
+
+    expect(
+      await handlePlanBudgetItem(ports({ plan, planFixed }), fixedDraft),
+    ).toEqual({ kind: "planned", item: FIXED });
+
+    expect(planFixed).toHaveBeenCalledWith(CASA, {
+      spaceId: fixedDraft.spaceId,
+      month: fixedDraft.month,
+      categoryId: fixedDraft.categoryId,
+      amount: fixedDraft.amount,
+      name: fixedDraft.name,
+      dueDay: 1,
+    });
+    expect(plan).not.toHaveBeenCalled();
+  });
+
+  // A day is passed through raw, the way the amount and the month are: `0` is
+  // what an unanswered <select> reads as and `NaN` is what a broken one does,
+  // and `planFixedItem` refuses both by name. Repairing either here would file
+  // a due date nobody chose -- and, worse since #80, would file it under a
+  // kind nobody chose either.
+  it("plans a day it cannot read as a Fixed item, so the domain can refuse it", async () => {
+    const planFixed = vi.fn(async () => FIXED);
+
+    await handlePlanBudgetItem(ports({ planFixed }), {
+      ...fixedDraft,
+      dueDay: Number.NaN,
+    });
+
+    expect(planFixed).toHaveBeenCalledWith(
+      CASA,
+      expect.objectContaining({ dueDay: Number.NaN }),
+    );
+  });
+
+  // The refusals of the Fixed path reach the screen the way the other's do.
+  // Without this, choosing a day the month does not have is a blank screen
+  // rather than a sentence pointing at the picker.
+  it("names the answer a refused Fixed item was refused over", async () => {
+    expect(
+      await handlePlanBudgetItem(
+        ports({
+          planFixed: async () => {
+            throw new UnplannableBudgetItemError("dueDay", "no such day");
+          },
+        }),
+        fixedDraft,
+      ),
+    ).toEqual({ kind: "rejected", field: "dueDay" });
+  });
+
+  // The same claim, refused the same way, whichever kind the day makes it:
+  // without this, the Space somebody plans in is the Space whose identifier
+  // they guessed.
+  it("refuses a Space the session does not prove, for either kind", async () => {
+    const planFixed = vi.fn(async () => FIXED);
+
+    const outcome = await handlePlanBudgetItem(
+      ports({ findSpace: async () => null, planFixed }),
+      fixedDraft,
+    );
+
+    expect(outcome).toEqual({ kind: "no-such-space" });
+    expect(planFixed).not.toHaveBeenCalled();
   });
 
   // A form field is a claim: without this, the Space somebody plans in is the
@@ -135,6 +238,24 @@ describe("planning an item from the screen", () => {
     expect(outcome).toEqual({ kind: "rejected", field: "amount" });
   });
 
+  // Both kinds are asked what the row is called since #79, so both can be
+  // refused over it -- and the screen is owed the field rather than a shrug.
+  it("names a refused name as the name", async () => {
+    const outcome = await handlePlanBudgetItem(
+      ports({
+        plan: async () => {
+          throw new UnplannableBudgetItemError(
+            "name",
+            "it is not called anything",
+          );
+        },
+      }),
+      draft,
+    );
+
+    expect(outcome).toEqual({ kind: "rejected", field: "name" });
+  });
+
   // A dropped connection is ours, and saying "the amount is wrong" would send
   // somebody to correct a field that was never the problem.
   it("keeps our failures apart from the person's", async () => {
@@ -152,12 +273,33 @@ describe("planning an item from the screen", () => {
 });
 
 describe("correcting and removing an item", () => {
-  it("corrects what a Category is expected to cost", async () => {
+  it("corrects all three of a Variable item's questions", async () => {
     expect(
       await handleAmendBudgetItem(ports(), CASA.id, PLANNED.id, {
         amount: 300_000_00,
+        name: "Súper de la segunda semana",
+        categoryId: "cat-super",
       }),
     ).toEqual({ kind: "planned", item: PLANNED });
+  });
+
+  // The three answers reach the store as three, and the name among them: a
+  // correction that quietly dropped one would leave the row called what it
+  // was called before somebody retyped it (#79).
+  it("hands the store every answer the form carried", async () => {
+    const amend = vi.fn(async () => PLANNED);
+
+    await handleAmendBudgetItem(ports({ amend }), CASA.id, PLANNED.id, {
+      amount: 300_000_00,
+      name: "Súper de la segunda semana",
+      categoryId: "cat-super",
+    });
+
+    expect(amend).toHaveBeenCalledWith(CASA, PLANNED.id, {
+      amount: 300_000_00,
+      name: "Súper de la segunda semana",
+      categoryId: "cat-super",
+    });
   });
 
   it("reads an item of another Space as one that never existed", async () => {
@@ -267,42 +409,6 @@ describe("what a refused plan says on the screen", () => {
   });
 });
 
-describe("planning a Fixed item from the screen", () => {
-  it("plans it, once the Member has been proved to be in the Space", async () => {
-    expect(await handlePlanFixedItem(ports(), fixedDraft)).toEqual({
-      kind: "planned",
-      item: FIXED,
-    });
-  });
-
-  // The same claim the other kind makes, refused the same way: without this,
-  // the Space somebody plans in is the Space whose identifier they guessed.
-  it("refuses a Space the session does not prove", async () => {
-    const planFixed = vi.fn(async () => FIXED);
-
-    const outcome = await handlePlanFixedItem(
-      ports({ findSpace: async () => null, planFixed }),
-      fixedDraft,
-    );
-
-    expect(outcome).toEqual({ kind: "no-such-space" });
-    expect(planFixed).not.toHaveBeenCalled();
-  });
-
-  it("names the answer that was refused", async () => {
-    expect(
-      await handlePlanFixedItem(
-        ports({
-          planFixed: async () => {
-            throw new UnplannableBudgetItemError("dueDay", "no such day");
-          },
-        }),
-        fixedDraft,
-      ),
-    ).toEqual({ kind: "rejected", field: "dueDay" });
-  });
-});
-
 describe("marking a Fixed item paid", () => {
   it("records the Movement and hands it back", async () => {
     expect(await handlePayFixedItem(ports(), CASA.id, FIXED.id)).toEqual({
@@ -369,7 +475,7 @@ describe("marking a Fixed item paid", () => {
 
   it("says nothing was created when it was already paid", () => {
     expect(refusalMessage({ kind: "already-paid" })).toBe(
-      "Ese ítem ya estaba pagado.",
+      "Ese gasto fijo ya estaba pagado.",
     );
   });
 });

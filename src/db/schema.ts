@@ -405,8 +405,16 @@ export const budgetItems = pgTable(
      */
     kind: text("kind").notNull(),
     /**
-     * What a Fixed item is called: "Arriendo", "Netflix". Null on a Variable
-     * item, which is named by its Category and has nothing else to be called.
+     * What the item is called: "Arriendo", "Netflix", "Súper semana 1". Asked
+     * of both kinds (#79), because a row is read by its name and not by its
+     * Category -- four weeks of groceries under "Súper" are four lines a person
+     * has to tell apart.
+     *
+     * Still nullable here, and that is the expand half of an expand/contract
+     * (ADR-0008) rather than a column that permits a nameless row. The check
+     * below already refuses one; making the column itself `NOT NULL` is a third
+     * deploy, after this one has filled every row that was written without a
+     * name.
      */
     name: text("name"),
     /**
@@ -455,21 +463,32 @@ export const budgetItems = pgTable(
       "budget_items_kind_is_one_of_two",
       sql`${table.kind} in ('variable', 'fixed')`,
     ),
-    // What each kind carries, and by its absence what it may not. A Variable
-    // item with a due date would be a row the domain has no type for, and a
-    // Fixed item without one is a plan for a day nobody named.
+    // Every item is called something, and then what each kind carries and by
+    // its absence what it may not. A Variable item with a due date would be a
+    // row the domain has no type for, and a Fixed item without one is a plan
+    // for a day nobody named.
+    //
+    // The name is asked outside the branch because it is asked of both kinds
+    // (#79), and `is not null` is written out rather than left to
+    // `char_length` because in Postgres a check that evaluates to NULL is
+    // *satisfied*. `char_length(btrim(name)) > 0` alone was therefore never a
+    // rule about a missing name at all: it refused a blank one and let a null
+    // one straight through, so a Fixed item with no name has been writable
+    // since 0009. Saying `is not null` first is what closes that.
     check(
       "budget_items_carries_what_its_kind_carries",
-      sql`(
-        ${table.kind} = 'variable'
-        and ${table.name} is null
-        and ${table.dueOn} is null
-        and ${table.movementId} is null
-      ) or (
-        ${table.kind} = 'fixed'
+      sql`${table.name} is not null
         and char_length(btrim(${table.name})) > 0
-        and ${table.dueOn} is not null
-      )`,
+        and (
+          (
+            ${table.kind} = 'variable'
+            and ${table.dueOn} is null
+            and ${table.movementId} is null
+          ) or (
+            ${table.kind} = 'fixed'
+            and ${table.dueOn} is not null
+          )
+        )`,
     ),
     // A Fixed item falls due inside the month it is planned on, or the plan
     // holds a date belonging to a month it is not about.

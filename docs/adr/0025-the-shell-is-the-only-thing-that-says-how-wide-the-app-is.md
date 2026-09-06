@@ -22,11 +22,17 @@ They become two tokens shaped after `--hit-target` rather than after the numbere
 
 `width.source.test.ts` reads the canvas and the tokens together, so a redesign that moves the artboards breaks a test rather than quietly leaving the app at the old width.
 
+#75 reversed half of this heading, and it is the half this ADR was proudest of. The gutter is still the canvas's and always was: 16px down both sides of a list is a drawing decision, and reading it off the drawing is right. The ceiling never was. A canvas that draws every artboard at one width has said "here is a phone"; it has not said "and no wider", and it cannot, because a maximum is a statement about the screens the canvas never drew. Reading `--column` off `390` therefore did not read a ceiling off the canvas — it promoted a drawing width to one, and the promotion was invisible because at 390px the two are the same number.
+
+What that cost is four device generations. 390 is an iPhone 13, every phone Apple and Google have shipped since is wider, and on all of them the app drew itself as a 390px column with dead background down both sides and a tab bar that reached neither edge — the double inset #75 is reported from. The suite could not see it: it pins the width at 390, where the column edge and `viewport.width - gutter` are the same number, and at 1280, where centring is what is wanted. Every real phone lives in the gap between.
+
+The ceiling is now `--measure`, a reading measure chosen for where one column of text stops reading as the thing that was drawn, and it is checked against the band between the widest handset and the narrowest tablet rather than against the canvas. ADR-0041 has the number and what it is guarded by. Everything else here stands: the ceiling still belongs on `.shell` and not on `.content`, the gutter still belongs on what the shell wraps, there is still no `overflow` rule, and the bottom sheet and the sign-in screen are still the two things that answer for themselves.
+
 ## Where it is said
 
 `app-shell.module.css` is the only file that answers the question for a screen the shell wraps. Two files answer it for themselves because the shell cannot reach them, and a test pins both lists so a third cannot appear quietly.
 
-- **The bottom sheet** is `position: fixed`, so it escapes `.shell` entirely. Left alone, this change would have shipped a laptop a monitor-wide sheet sliding up under a 390px column — a regression this change introduces rather than one it found. So `.sheet` carries the same `--column` and centres itself. Its scrim stays full-bleed: it dims the screen, and a screen is as wide as it is.
+- **The bottom sheet** is `position: fixed`, so it escapes `.shell` entirely. Left alone, this change would have shipped a laptop a monitor-wide sheet sliding up under a 390px column — a regression this change introduces rather than one it found. So `.sheet` carries the same ceiling token — `--column` then, `--measure` since #75 — and centres itself. Its scrim stays full-bleed: it dims the screen, and a screen is as wide as it is.
 - **The sign-in screen** renders outside the shell (`/ingresar` is a centred hero, not a column). It used to say `padding: var(--space-8)` as a literal of its own; it now reads `var(--gutter)`, so if the canvas ever moves the gutter, sign-in moves with it.
 
 The component gallery at `/ui` is not in either list. It is a development route, its padding is a frame around specimens rather than a page gutter, and it gets no ceiling.
@@ -37,7 +43,7 @@ Nine page-level rules lost their horizontal padding, and one lost its element: `
 
 `GroupedList`'s heading was the one thing already inset 16px while the card under it was not — the mismatch #36 opens with. It is now inset by the shell like everything else.
 
-The end-to-end suite gains its first viewport that is not a phone. `playwright.config.ts` still has one project and it is still `iPhone 13` — the product is mobile-first and the run matrix says so — so what `width.spec.ts` overrides is the viewport alone; the emulated device underneath stays a phone, which is enough for a question about CSS width. Removing the ceiling makes those two tests fail with `Expected: 390, Received: 1280`.
+The end-to-end suite gains its first viewport that is not a phone. `playwright.config.ts` still has one project and it is still `iPhone 13` — the product is mobile-first and the run matrix says so — so what `width.spec.ts` overrides is the viewport alone; the emulated device underneath stays a phone, which is enough for a question about CSS width. Removing the ceiling makes those two tests fail with `Expected: 390, Received: 1280`. (390 was the ceiling then. It moved in #75, and those two tests read it off the running app now rather than naming it.)
 
 What the browser does not measure is the sheet: opening one costs a whole budget-planning flow, so that its ceiling comes with `margin-inline: auto` — a cap without it would pin the sheet to the left of the monitor, which is worse than a wide one — is read out of the stylesheet instead.
 

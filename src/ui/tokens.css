@@ -198,17 +198,31 @@
   --hit-target: 44px;
 
   /*
-   * How wide the app is, and how far it holds itself off the glass. The canvas
-   * draws every artboard at 390px and puts 16px down both sides of every list,
-   * so neither is a choice made here (#36).
+   * How wide the app is, and how far it holds itself off the glass.
+   *
+   * The gutter is the canvas's and stays that way: it puts 16px down both
+   * sides of every list, and 16px already had a name here (#36).
+   *
+   * The ceiling is not the canvas's any more, and that is the whole of #75. It
+   * used to be the 390px every artboard is drawn at, which made it the width
+   * of an iPhone 13 -- so every phone shipped since drew the app as a 390px
+   * column with dead background down both sides and a tab bar that reached
+   * neither edge. A canvas that only ever drew one width never said "and no
+   * wider"; it said "here is a phone".
+   *
+   * So this is a reading measure and not a device width: past it one column of
+   * 17px text stops reading as the thing that was drawn. Every handset is
+   * below it and fills the screen; a monitor is above it and still gets a
+   * centred column rather than a stretched one (ADR-0041).
    *
    * Applied by app-shell.module.css, which is the only file that gets to
    * answer "how wide is this?" for a screen the shell wraps. Two things it
-   * cannot reach say it for themselves and nothing else may: the bottom sheet,
-   * which is fixed to the viewport and so escapes the column, and the sign-in
-   * screen, which is rendered outside the shell entirely.
+   * cannot reach answer for themselves and nothing else may: the bottom sheet,
+   * which is fixed to the viewport and so escapes the ceiling, and the sign-in
+   * screen, which is rendered outside the shell entirely and so takes only the
+   * gutter.
    */
-  --column: 390px;
+  --measure: 512px;
   --gutter: var(--space-8);
 
   /* Shadows are not colours, so light-dark() cannot hold them. */

@@ -29,6 +29,8 @@ The two rules are about different things and that is why they can be ordered rat
 
 ## Consequences
 
-The number is repeated at each call site that wants it. That is the cost, and it is bounded: an icon left alone still draws itself, so only a screen that departs from the common weight says anything at all. Today that is one screen — the over-plan alert in the Variables section, whose 13px triangle now asks for 2.2 — and #35's raised button, whose `plus` asks for 2.4 at 26px.
+The number is repeated at each call site that wants it. That is the cost, and it is bounded: an icon left alone still draws itself, so only a screen that departs from the common weight says anything at all. When this was written that was the over-plan alert in the Variables section, whose 13px triangle asks for 2.2, and #35's raised button, whose `plus` asks for 2.4 at 26px. Since then the month pill has joined them with a 13px `chevron-down` at 2.5, and ADR-0043 added two more: the `chevron-right` that says a Category's row opens, at 16, and the one on each row of the tray it opens, at 15 — both at 2.5, which is what the canvas draws them at (`design/Presupuesto63Plegado.dc.html`).
+
+Those two are worth noting for what they say about the table above. It records 2.5 only against a 13px `chevron-down`, and the obvious reading of that row is optical compensation — small means heavy. The canvas draws the same 2.5 at 15 and at 16, so whatever governs a chevron's weight, it is not this one's size. Four samples were not a curve when this ADR was written and six are not one now; the weight stays a fact the screen states rather than one anything infers.
 
 `Drawing.strokeWidth` keeps its meaning unchanged: only where the common weight reads wrong for the shape itself. Nothing about `backspace` or `check` moves.

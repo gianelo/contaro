@@ -13,7 +13,7 @@ import {
   expectedByCategory,
   FixedItemAlreadyPaidError,
   isPaid,
-  MAX_FIXED_ITEM_NAME_LENGTH,
+  MAX_BUDGET_ITEM_NAME_LENGTH,
   monthAgainstPlan,
   paceOf,
   paymentFor,
@@ -70,6 +70,7 @@ const draft = (changes: Partial<Parameters<typeof planItem>[0]> = {}) => ({
   month: "2026-09",
   categoryId: SUPER.id,
   amount: 240_000_00,
+  name: "Súper de la semana",
   ...changes,
 });
 
@@ -83,7 +84,38 @@ describe("planning a Variable item", () => {
       month: SEPTEMBER,
       categoryId: SUPER.id,
       amount: money(240_000_00, "ARS"),
+      name: "Súper de la semana",
     });
+  });
+
+  it("trims the name", () => {
+    expect(planItem(draft({ name: "  Súper  " }), planning()).name)
+      .toBe("Súper");
+  });
+
+  // The same rule the Fixed kind is held to, because it is one rule: four
+  // weeks of groceries under one Category are four rows a person has to tell
+  // apart, and a blank one is a row nobody can tell from the next.
+  it("refuses a name that is not one", () => {
+    expect(() => planItem(draft({ name: "" }), planning()))
+      .toThrow(UnplannableBudgetItemError);
+    expect(() => planItem(draft({ name: "   " }), planning()))
+      .toThrow(UnplannableBudgetItemError);
+  });
+
+  it("points at the name when the name is the bad answer", () => {
+    expect(() => planItem(draft({ name: "   " }), planning())).toThrow(
+      expect.objectContaining({ field: "name" }),
+    );
+  });
+
+  it("refuses a name longer than the ceiling", () => {
+    expect(() =>
+      planItem(
+        draft({ name: "a".repeat(MAX_BUDGET_ITEM_NAME_LENGTH + 1) }),
+        planning(),
+      ),
+    ).toThrow(UnplannableBudgetItemError);
   });
 
   it("refuses a Category this Space cannot see", () => {
@@ -109,6 +141,7 @@ const item = (changes: Partial<VariableItem> = {}): VariableItem => ({
   month: SEPTEMBER,
   categoryId: SUPER.id,
   amount: money(240_000_00, "ARS"),
+  name: "Súper de la semana",
   ...changes,
 });
 
@@ -479,11 +512,32 @@ describe("correcting an item", () => {
     ).toEqual(item({ categoryId: MATE.id }));
   });
 
+  it("renames it, trimmed", () => {
+    expect(
+      amendItem(item(), { name: "  Súper del finde  " }, planning()),
+    ).toEqual(item({ name: "Súper del finde" }));
+  });
+
+  // A correction that was not asked about the name is not a correction of it.
+  it("leaves the name standing when the correction carries none", () => {
+    expect(amendItem(item(), { amount: 300_000_00 }, planning()).name)
+      .toBe("Súper de la semana");
+  });
+
   it("holds a correction to every rule the planning was held to", () => {
     expect(() => amendItem(item(), { amount: 0 }, planning()))
       .toThrow(UnplannableBudgetItemError);
     expect(() => amendItem(item(), { categoryId: ELSEWHERE.id }, planning()))
       .toThrow(UnplannableBudgetItemError);
+    expect(() => amendItem(item(), { name: "   " }, planning()))
+      .toThrow(UnplannableBudgetItemError);
+    expect(() =>
+      amendItem(
+        item(),
+        { name: "a".repeat(MAX_BUDGET_ITEM_NAME_LENGTH + 1) },
+        planning(),
+      ),
+    ).toThrow(UnplannableBudgetItemError);
   });
 
   // A refused correction changes nothing rather than landing its good half.
@@ -851,8 +905,8 @@ const fixedDraft = (
 
 describe("planning a Fixed item", () => {
   // `toEqual` is exact about the keys, which is where the whole difference
-  // between the two kinds lives: a name, a day it falls due on, and the
-  // Movement that marking it paid will create.
+  // between the two kinds lives: a day it falls due on, and the Movement that
+  // marking it paid will create. The name is on both.
   it("is an amount on a Category, called something, due on a day", () => {
     expect(planFixedItem(fixedDraft(), planning())).toEqual({
       kind: "fixed",
@@ -903,7 +957,7 @@ describe("planning a Fixed item", () => {
       .toThrow(UnplannableBudgetItemError);
     expect(() =>
       planFixedItem(
-        fixedDraft({ name: "a".repeat(MAX_FIXED_ITEM_NAME_LENGTH + 1) }),
+        fixedDraft({ name: "a".repeat(MAX_BUDGET_ITEM_NAME_LENGTH + 1) }),
         planning(),
       ),
     ).toThrow(UnplannableBudgetItemError);
@@ -1107,9 +1161,9 @@ describe("a month planned with both kinds of item", () => {
 
 describe("correcting a Fixed item", () => {
   // The Variable item's correction still refuses one, and that refusal is now
-  // about which door rather than about there being none: it asks for a
-  // Category and an amount and nothing else, so saving a Fixed item through it
-  // would leave its name and its day out of what it wrote back.
+  // about which door rather than about there being none: it never asks for a
+  // due day, so saving a Fixed item through it would leave its day out of what
+  // it wrote back.
   it("is not what the Variable item's correction does", () => {
     expect(() => amendItem(fixed(), { amount: 1 }, planning())).toThrow(
       UnplannableBudgetItemError,

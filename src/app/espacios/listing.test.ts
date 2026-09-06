@@ -42,6 +42,10 @@ const planned = (spaceId: string, amount: number, currency: CurrencyCode) =>
     month: month("2026-09"),
     categoryId: "category-1",
     amount: money(amount, currency),
+    // Called something, the way every item is since #79. The card adds items
+    // up and never names one, so what it is called is only here to be a
+    // complete item.
+    name: `Previsto ${amount}`,
   }) satisfies BudgetItem;
 
 const read = (

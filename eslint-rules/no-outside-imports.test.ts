@@ -1,6 +1,6 @@
 import path from "node:path";
 import { ESLint, RuleTester } from "eslint";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import noOutsideImports from "./no-outside-imports.js";
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
@@ -128,6 +128,44 @@ describe("the project's own lint config", () => {
       (message) => message.ruleId === "domain/no-outside-imports",
     );
   };
+
+  /**
+   * The config, read once and out of the way, because reading it is not what
+   * anything below is about (#87).
+   *
+   * `new ESLint(...)` does no I/O. `lintText` resolves the flat config for the
+   * file path it is handed, before it so much as looks at the code, and every
+   * case here shares the one instance -- so without this the first case to run
+   * was charged the whole resolution, a second or two against a budget of
+   * five, and the rest were charged the handful of milliseconds their own lint
+   * takes. A setup cost wearing a test's clothes passes every time it is run
+   * alone and dies inside the full suite, where every other test file in the
+   * repo is competing for the CPU that resolution wants. It has been seen
+   * taking twenty-two seconds there.
+   *
+   * Warmed here, every case below measures only its own lint, and the default
+   * timeout goes on meaning what it says. Raising that timeout instead would
+   * have hidden this rather than fixed it, and left a bigger number for the
+   * next genuinely slow thing to hide behind.
+   *
+   * It warms with one of the real cases and checks the answer, rather than
+   * linting an empty string and dropping it. Either resolves the config today,
+   * because `lintText` reaches the config before the code whatever the code
+   * is; only this one fails loudly the day that stops being true, instead of
+   * leaving a warm-up that quietly does nothing and a first case that is slow
+   * again for a reason nobody can see.
+   *
+   * Its own timeout, and a generous one, because what it waits for is a cold
+   * machine rather than anything this repo decides. The number has to clear
+   * the worst a loaded runner does and not the best a laptop does: wrong
+   * upwards it costs nothing, and wrong downwards it is this bug again, one
+   * line further up.
+   */
+  beforeAll(async () => {
+    expect(
+      await lint("__probe__.ts", `import { useState } from "react";`),
+    ).not.toHaveLength(0);
+  }, 60_000);
 
   it.each([
     ["__probe__.ts", `import { useState } from "react";`],

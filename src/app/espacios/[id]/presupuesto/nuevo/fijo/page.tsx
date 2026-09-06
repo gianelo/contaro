@@ -1,24 +1,24 @@
-import { headers } from "next/headers";
-import { ButtonLink } from "@/ui/button";
-import { t } from "@/i18n";
-import { numberLocalesFor, todayFor } from "@/app/reader";
-import { SpaceScreen } from "../../../screen";
-import { currentSpace } from "../../../space";
-import { categoryChips, monthInView } from "../../../movimientos/month";
-import { FixedItemForm } from "../../fixed-form";
-import { planFixedItemAction } from "../../actions";
-import styles from "../page.module.css";
+import { permanentRedirect } from "next/navigation";
 
 /**
- * Planning one Fixed item (#13).
+ * Where the second way into the plan used to be (#13, and gone at #80).
  *
- * Under `nuevo/` beside the Variable one rather than on a screen of its own,
- * because they are the same act — a month's plan is being written — asked with
- * two more questions. Membership is proved here the way every route under
- * `/espacios/[id]` proves it, and proved again by the action, because the form
- * names the Space and a form field is a claim.
+ * There is one form now, and it asks the day question the way in used to
+ * stand for. This route is kept rather than deleted because ADR-0010 says the
+ * address bar stays honest: a link somebody kept, or a tab left open since
+ * before the merge, lands on the one form still holding the month it was
+ * opened on, and the URL then says where they actually are. A 404 would be
+ * this codebase telling a person their bookmark was wrong when what changed
+ * was us.
+ *
+ * Permanent, because it is: the route it replaced is not coming back.
+ *
+ * Nothing is proved here. Whose Space this is, and whether it exists at all,
+ * is the question the screen on the far side asks (`currentSpace`) — and
+ * asking it here would be this route answering it out loud for an identifier
+ * somebody guessed.
  */
-export default async function NewFixedItemPage({
+export default async function TheOldFixedItemRoute({
   params,
   searchParams,
 }: {
@@ -26,37 +26,15 @@ export default async function NewFixedItemPage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const [{ id }, { mes }] = await Promise.all([params, searchParams]);
-  const space = await currentSpace(id);
-  const asked = await headers();
 
-  const [categories, locales] = await Promise.all([
-    categoryChips(space.id),
-    Promise.resolve(numberLocalesFor(asked)),
-  ]);
+  const plan = `/espacios/${id}/presupuesto/nuevo`;
 
-  const month = monthInView(mes, todayFor(asked));
-
-  return (
-    <SpaceScreen space={space} tab="budget">
-      <h2 className={styles.title}>{t("budget.fixed.new.title")}</h2>
-
-      <FixedItemForm
-        spaceId={space.id}
-        month={month}
-        categories={categories}
-        currency={space.currency}
-        locales={locales}
-        initial={{ amount: 0, name: "", dueDay: null, categoryId: null }}
-        action={planFixedItemAction}
-        submit={t("budget.item.save")}
-        working={t("budget.item.save.working")}
-      />
-
-      <div className={styles.back}>
-        <ButtonLink href={`/espacios/${space.id}?mes=${month}`} variant="plain">
-          {t("action.cancel")}
-        </ButtonLink>
-      </div>
-    </SpaceScreen>
+  // The month is carried across, because landing on "this month" would take
+  // somebody planning October in September off the month they were working
+  // on. It came out of a URL, so it is escaped on the way back into one: it is
+  // a string somebody typed until `monthInView` reads it, and an unescaped `&`
+  // here would be a second answer nobody gave.
+  permanentRedirect(
+    mes === undefined ? plan : `${plan}?mes=${encodeURIComponent(mes)}`,
   );
 }

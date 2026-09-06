@@ -1,10 +1,16 @@
+/* `display: block` because both elements are spans: a meter has to be legal
+   inside a `<summary>`, which takes phrasing content only, and a span is the
+   phrasing element with no meaning of its own to get in the way. The shape is
+   the same box it always was; only the tag it is cut from changed. */
 .track {
+  display: block;
   overflow: hidden;
   background: var(--color-meter-track);
   border-radius: var(--radius-pill);
 }
 
 .fill {
+  display: block;
   height: 100%;
   background: var(--color-accent);
   border-radius: var(--radius-pill);

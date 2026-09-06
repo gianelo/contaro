@@ -1,7 +1,7 @@
 import type { ReadSession } from "@/auth/session";
 import {
   FixedItemAlreadyPaidError,
-  MAX_FIXED_ITEM_NAME_LENGTH,
+  MAX_BUDGET_ITEM_NAME_LENGTH,
   UnplannableBudgetItemError,
   type BudgetItem,
   type BudgetItemAmendment,
@@ -100,39 +100,54 @@ export type BudgetFormState = { error: string | null };
 export const nothingWrongYet: BudgetFormState = { error: null };
 
 /**
+ * What one screen asks for, of whichever kind of item (#80).
+ *
+ * A `BudgetItemDraft` and the one question that used to be a second screen:
+ * whether it falls due, answered with a day or not answered at all. Nobody is
+ * asked to pick a kind — after #79 the day was the only difference left
+ * between the two forms, and one field is not a second screen.
+ *
+ * `number | null` and not an optional field, because "they said no" is an
+ * answer somebody gave and a missing key is a form that lost one. The
+ * difference matters one line down, where the answer picks which of the
+ * domain's two shapes is built.
+ */
+export type PlannedItemDraft = BudgetItemDraft & {
+  /** The day of the month it falls due, or nothing at all where it never does. */
+  dueDay: number | null;
+};
+
+/**
  * A signed-in Member's answers become an item on a month's plan, inside a
  * Space they are really in.
  *
  * This is also where a month's Budget comes into existence: there is nothing
  * to create first, so the first item planned is the whole of it.
+ *
+ * One handler for both kinds since #80, and this is the seam the merge happens
+ * at. Above it the screen asks one set of questions; below it the domain keeps
+ * its two shapes, because a Variable item genuinely has no due day and a type
+ * that let one carry `null` would be a type that stopped saying so. The `if`
+ * is here rather than in either place: it is the whole of the translation
+ * between what a person answers and what a plan holds.
+ *
+ * The day is passed on raw. `0` is what an unanswered picker reads as and
+ * `NaN` what a broken one does, and `planFixedItem` refuses both by name —
+ * repairing either here would file a due date nobody chose, under a kind
+ * nobody chose either.
  */
 export async function handlePlanBudgetItem(
   ports: BudgetPorts,
-  draft: BudgetItemDraft,
+  draft: PlannedItemDraft,
 ): Promise<Planned | Refusal> {
-  return inSpace(ports, draft.spaceId, async (space) => ({
-    kind: "planned",
-    item: await ports.plan(space, draft),
-  }));
-}
+  const { dueDay, ...planned } = draft;
 
-/**
- * A Fixed item planned: an amount on a Category, called something, due on a
- * day of the month being planned.
- *
- * Beside `handlePlanBudgetItem` rather than folded into it. The two kinds are
- * one plan and they share every rule about Spaces and sessions, which is why
- * `inSpace` is asked for both; what they do not share is what a person is
- * asked for, and one handler taking a draft that is sometimes two fields
- * longer would be that difference hidden inside an `if`.
- */
-export async function handlePlanFixedItem(
-  ports: BudgetPorts,
-  draft: FixedItemDraft,
-): Promise<Planned | Refusal> {
   return inSpace(ports, draft.spaceId, async (space) => ({
     kind: "planned",
-    item: await ports.planFixed(space, draft),
+    item:
+      dueDay === null
+        ? await ports.plan(space, planned)
+        : await ports.planFixed(space, { ...planned, dueDay }),
   }));
 }
 
@@ -302,7 +317,7 @@ export function refusalMessage(refusal: Refusal): string {
           // wrong thing.
           return t("budget.error.space");
         case "name":
-          return t("budget.error.name", { max: MAX_FIXED_ITEM_NAME_LENGTH });
+          return t("budget.error.name", { max: MAX_BUDGET_ITEM_NAME_LENGTH });
         case "dueDay":
           return t("budget.error.dueDay");
       }
