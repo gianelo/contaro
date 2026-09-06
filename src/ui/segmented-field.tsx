@@ -28,7 +28,9 @@ export type SegmentedFieldProps = {
  * A closed choice, drawn as one track with the chosen answer raised out of it.
  *
  * Two answers or three, and no further: the track divides its width evenly, so
- * a fourth answer inside a 390px column leaves four labels nobody can read. A
+ * a fourth answer inside a column as narrow as a phone leaves four labels
+ * nobody can read -- a claim that only got stronger when the column stopped
+ * being 390px and started following the screen (#75). A
  * direction is two -- "Gasto | Ingreso" -- and a theme is three (#41): light,
  * dark, and whatever the phone says. What the shape claims is "these are all
  * of them", and that claim was never about how many there are.
