@@ -6,7 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { createMember, createSpaceFor, startSession } from "./session";
-import { box, overlapping, withinTheGutter } from "./layout";
+import { box, hitTargetOf, overlapping, withinTheGutter } from "./layout";
 
 // Deliberately not the signed-in fixture: planning money needs a session
 // belonging to a Member the database really has.
@@ -728,4 +728,66 @@ test.describe("read by a phone set to English, where the money is spelled out", 
     expect(overlapping(category, pair)).toBe(false);
     await withinTheGutter(page, pair);
   });
+});
+
+/**
+ * The end of a Fijos row, which the canvas draws as one column: the amount
+ * over its badge, flush right.
+ *
+ * It became a line when the badge moved out of the row (#48) so a keyboard
+ * could reach it, leaving the amount behind inside. Two things beside the name
+ * instead of one column squeezed the name column until "Alquiler · 1 sep"
+ * wrapped and the row grew (#59). Measured here because a jsdom run has no
+ * layout: whether two things stack is a question only a browser can answer.
+ */
+test("a Fijo's amount sits over its badge, and the line under the name keeps to one", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Vera Mide", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+  // A name of ordinary length, which is what the squeeze showed up on: a short
+  // one fits however badly the rest of the row is laid out.
+  await planFixed(page, space.id, "Arriendo y expensas", "180000000", "1");
+
+  const fijos = page.getByRole("group", { name: "Fijos" });
+  const amount = await box(fijos.getByText("$ 1.800.000,00"));
+  const badge = await box(fijos.getByText("Pendiente"));
+
+  // Stacked: the badge begins at or below where the amount ends.
+  expect(badge.y).toBeGreaterThanOrEqual(amount.y + amount.height);
+
+  // And one column rather than two things that happen to be stacked: they
+  // share a right edge. A pixel of tolerance, because a browser lays text out
+  // in fractions.
+  const rightOf = (measured: { x: number; width: number }) =>
+    measured.x + measured.width;
+  expect(Math.abs(rightOf(badge) - rightOf(amount))).toBeLessThanOrEqual(1);
+
+  await withinTheGutter(page, amount);
+  await withinTheGutter(page, badge);
+
+  // The line under the name, on one line. Counted in line boxes rather than
+  // measured in pixels: a line that wrapped is two rects, whatever the font
+  // decided its height was.
+  const beneath = fijos.getByText(/·/);
+  await expect(beneath).toBeVisible();
+  expect(await beneath.evaluate((line) => line.getClientRects().length)).toBe(1);
+
+  // The tap that marks it paid is the whole column, so it is a finger's worth
+  // in both directions by being what is drawn rather than by growing past it.
+  const tap = await box(fijos.getByRole("button", { name: /Arriendo/ }));
+  const finger = await hitTargetOf(page);
+
+  expect(tap.width).toBeGreaterThanOrEqual(finger);
+  expect(tap.height).toBeGreaterThanOrEqual(finger);
+
+  // And it is the column and nothing more: it holds both halves and stays on
+  // the screen. A target that met its 44px by reaching past the gutter, or
+  // over the row above, would pass the two lines above and still be wrong.
+  expect(tap.y).toBeLessThanOrEqual(amount.y);
+  expect(tap.y + tap.height).toBeGreaterThanOrEqual(badge.y + badge.height);
+  await withinTheGutter(page, tap);
 });

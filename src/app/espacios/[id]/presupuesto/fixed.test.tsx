@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { hitTarget } from "@/ui/hit-target";
 import { FixedItems } from "./fixed";
 import type { ReadableFixedItem } from "./budget";
 
@@ -125,6 +126,67 @@ describe("the Fijos section", () => {
       expect(
         screen.queryByRole("button", { name: /Arriendo/ }),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  // What the artboard draws at the end of a Fijos row: one column, the amount
+  // over its badge, flush right. It went missing when the badge moved beside
+  // the row (#48) and left the amount behind inside it, which put three things
+  // on one line and squeezed the name until it wrapped.
+  describe("the end of a row", () => {
+    it("stacks the amount over the badge, in one block", () => {
+      render(section([item()]));
+
+      const amount = screen.getByText("$1.800.000");
+      const badge = screen.getByText("Pendiente");
+
+      expect(amount.parentElement).toContainElement(badge);
+    });
+
+    // The whole column and not only its lower half. A control inside a link is
+    // not a control a keyboard or a screen reader can reach, so the badge has
+    // to sit outside the row -- and the amount above it goes with it, because
+    // the two are one column and a column does not straddle the link.
+    it("keeps the whole column outside the row's own tap", () => {
+      render(section([item()]));
+
+      const link = screen.getByRole("link", { name: /Arriendo/ });
+
+      expect(link).not.toContainElement(screen.getByText("$1.800.000"));
+      expect(link).not.toContainElement(screen.getByText("Pendiente"));
+    });
+
+    it("stacks the same way once the item is paid", () => {
+      render(section([item({ paid: true })]));
+
+      const amount = screen.getByText("$1.800.000");
+
+      expect(amount.parentElement).toContainElement(screen.getByText("Pagado"));
+    });
+
+    // The badge is smaller than a finger, so the tap is not the badge: it is
+    // the whole column, the amount included. That the column really is 44px is
+    // hit-target.module.css's business, and the geometry it produces is
+    // measured in a browser by e2e/budget.spec.ts.
+    it("makes the whole column the tap, and gives it a touch's worth of room", () => {
+      render(section([item()]));
+
+      const tap = screen.getByRole("button", {
+        name: "Marcar Arriendo como pagado",
+      });
+
+      expect(tap).toContainElement(screen.getByText("$1.800.000"));
+      expect(tap).toContainElement(screen.getByText("Pendiente"));
+      expect(tap).toHaveClass(hitTarget);
+    });
+
+    // And a paid row's column is a reading and not a control: there is nothing
+    // left to pay, and a tap that opened a sheet only to refuse is a tap that
+    // exists to say no.
+    it("leaves a paid row's column with nothing to tap", () => {
+      render(section([item({ paid: true })]));
+
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
   });
 

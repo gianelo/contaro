@@ -58,11 +58,50 @@
   flex-grow: 1;
 }
 
+/*
+ * The row's right-hand end: one column, flush right, outside the row's own
+ * tap. What the row is worth goes above what can be done about it -- an amount
+ * over the badge that marks a Fijo paid (#59) -- because three things on one
+ * line squeeze the name until it wraps, and the canvas draws two.
+ *
+ * The gap is the scale's smallest step. The canvas draws 3px and the scale has
+ * no 3px in it, so this is 2px rounded to the step below rather than the
+ * canvas's own number: a value off the scale would be the first one.
+ *
+ * The column is said here and not in a screen's own stylesheet: the next list
+ * with two things to do to one row asks the same question.
+ */
 .beside {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--space-1);
   flex-shrink: 0;
   padding-right: var(--space-7);
+}
+
+/*
+ * The same end, when the end is a control rather than a reading: the whole
+ * column is the tap, and not the last thing in it.
+ *
+ * It is the column itself and not a button inside it, because a finger needs
+ * 44px and a badge is under 20px. A control grown to 44px around the badge
+ * alone would push it that far from the amount it belongs under -- and only on
+ * the rows that have one, so a Fijos list would carry its badges at two
+ * heights. Wearing the column, the tap is over 44px by being what is drawn.
+ */
+.besideActionable {
+  font-family: inherit;
+  text-align: right;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.besideActionable:active {
+  opacity: 0.6;
 }
 
 .actionable {

@@ -72,3 +72,19 @@ export async function withinTheGutter(page: Page, measured: Box) {
     page.viewportSize()!.width - gutter + 1,
   );
 }
+
+/**
+ * The 44px minimum touch size, asked of the app rather than written down again
+ * here -- the same reason `gutterOf` reads the gutter off `main`.
+ *
+ * `--hit-target` is a root token (`ui/tokens.css`), and hit-target.module.css
+ * is the one place that applies it. A `44` in a spec file would be a third
+ * place, and it would keep passing while the app moved.
+ */
+export async function hitTargetOf(page: Page) {
+  const size = await page
+    .locator(":root")
+    .evaluate((root) => getComputedStyle(root).getPropertyValue("--hit-target"));
+
+  return Number.parseFloat(size);
+}
