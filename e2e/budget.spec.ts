@@ -1,5 +1,12 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import { createMember, createSpaceFor, startSession } from "./session";
+import { box, overlapping, withinTheGutter } from "./layout";
 
 // Deliberately not the signed-in fixture: planning money needs a session
 // belonging to a Member the database really has.
@@ -644,4 +651,81 @@ test("a Member reads whether the month is ahead of its pace", async ({
 
   await expect(summary).toContainText("arriba del ritmo");
   expect(await sentence.textContent()).toBe(before);
+});
+
+/**
+ * The widest figure the product can put on this screen, which is not the
+ * widest one anybody typed.
+ *
+ * Two dials widen an amount independently and the product offers both on
+ * purpose. The currency: `src/domain/money/currency.ts` holds ten, and COP,
+ * CLP and PYG take no minor units while the other seven take two. The reader:
+ * ADR-0014 writes an amount the way its reader reads numbers, so a phone set
+ * to English looking at an Argentine Space is told "ARS" rather than "$" --
+ * three characters and a space where there was one character.
+ *
+ * Turn both and the ceiling is twenty characters. Every screenshot that made
+ * this card look settled was taken in COP or in `es-AR`, which is exactly why
+ * it went unnoticed (ADR-0036).
+ */
+const WIDEST = /ARS\s9,999,999,999\.99/;
+
+/**
+ * The ceiling, in minor units, as a thumb would tap it in.
+ *
+ * One number for both halves of the card, because the domain deliberately
+ * makes it one: `MAX_BUDGET_ITEM_AMOUNT` is `MAX_MOVEMENT_AMOUNT`, so that a
+ * plan cannot hold a figure no Movement could ever reach (`budget.ts`). So it
+ * is what gets planned here and what gets spent against it.
+ */
+const CEILING = "999999999999";
+
+/** The figure a label names, which is the span right after it. */
+const figureAfter = (label: Locator) =>
+  label.locator("xpath=following-sibling::span[1]");
+
+test.describe("read by a phone set to English, where the money is spelled out", () => {
+  test.use({ locale: "en-US" });
+
+  test("the month's two figures keep off each other at their widest", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    const { space } = await aMemberWithASpace("Wanda Ancha", context, baseURL!);
+
+    await page.goto(`/espacios/${space.id}`);
+    await plan(page, space.id, CEILING);
+    await spend(page, space.id, CEILING);
+    await page.goto(`/espacios/${space.id}`);
+
+    const summary = page.getByRole("region", { name: "Este mes" });
+    await expect(summary).toContainText(WIDEST);
+
+    const spent = await box(figureAfter(summary.getByText("Gastado")));
+    const planned = await box(figureAfter(summary.getByText("Presupuestado")));
+
+    // Neither figure is readable when the other is printed through it, and
+    // "Gastado" is the answer to the question the screen exists to ask.
+    expect(overlapping(spent, planned)).toBe(false);
+
+    // And neither of them leaves the screen to get out of the other's way:
+    // a figure past the gutter is a figure with digits behind the glass.
+    await withinTheGutter(page, spent);
+    await withinTheGutter(page, planned);
+
+    // The same pair of figures again, in a tighter line: whatever the card
+    // does when they do not fit, the meter rows do too (ADR-0036).
+    const variables = page.getByRole("group", { name: "Variables" });
+    await expect(variables).toContainText(WIDEST);
+
+    const category = await box(variables.getByText("Supermercado"));
+    const pair = await box(variables.getByText(WIDEST).last());
+
+    // Off the Category as well as inside the gutters: a pair that stayed on
+    // the screen by printing over the name it belongs to would pass a bounds
+    // check on its own and still be unreadable.
+    expect(overlapping(category, pair)).toBe(false);
+    await withinTheGutter(page, pair);
+  });
 });

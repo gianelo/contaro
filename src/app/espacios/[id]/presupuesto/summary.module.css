@@ -7,25 +7,49 @@
   margin-bottom: var(--space-8);
 }
 
-/* The two figures on one baseline, so the smaller one reads as measured
-   against the larger rather than as a second line of its own. */
+/*
+ * The two figures on one baseline, so the smaller one reads as measured
+ * against the larger rather than as a second line of its own.
+ *
+ * Wrapping, because they do not always fit. Two dials widen an amount and the
+ * product offers both: the currency's minor units, and a reader whose own
+ * conventions spell a foreign money out as "ARS" rather than "$" (ADR-0014).
+ * Turn both and the pair is wider than a phone. The line breaks and the plan
+ * drops under the spending; nothing is cut, shrunk, or printed through
+ * anything else (ADR-0036, #69).
+ */
 .figures {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-5);
 }
 
+/*
+ * No `min-width: 0` on either of them, and that absence is the fix. It let a
+ * column shrink under its own figure, and an amount has no break in it to give
+ * -- so the digits painted straight out of the box and across the figure
+ * beside them. At their natural minimum the columns cannot both fit, which is
+ * what makes the line above wrap instead.
+ */
 .spending,
 .plan {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  min-width: 0;
 }
 
-/* The plan sits at the far end and is read right to left from its edge. */
+/*
+ * The plan sits at the far end and is read right to left from its edge.
+ *
+ * It takes the leftover width so that edge is the card's on both a line it
+ * shares and a line of its own -- on a wrapped line `space-between` would
+ * otherwise leave it at the left, under a figure it is supposed to be read
+ * back from.
+ */
 .plan {
+  flex-grow: 1;
   align-items: flex-end;
   text-align: right;
 }
@@ -43,6 +67,10 @@
  * is pulled back against it. Less than the title's -0.6px because this is
  * smaller than the title -- the tightening follows the size rather than being
  * one value applied twice.
+ *
+ * One step of the scale and never a size that follows the box: sizing this for
+ * the widest case a catalogue of ten currencies can produce would make every
+ * ordinary month quieter to pay for a month nobody has.
  */
 .spent {
   font-size: var(--text-figure);
@@ -59,6 +87,19 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   color: var(--color-text-secondary);
+}
+
+/*
+ * The last resort, for the day a single figure is wider than the card on its
+ * own: it breaks rather than spills. `break-word` and never `anywhere` --
+ * `anywhere` would drop each column's own minimum to one digit, the line above
+ * would stop wrapping, and the pair would go straight back to being squeezed
+ * into each other. So the two figures separate first, and only one that cannot
+ * fit even alone is ever cut.
+ */
+.spent,
+.planned {
+  overflow-wrap: break-word;
 }
 
 .meter {
