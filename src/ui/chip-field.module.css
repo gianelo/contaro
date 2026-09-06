@@ -16,16 +16,74 @@
   color: var(--color-text-tertiary);
 }
 
+/*
+ * One row, always, however long the catalogue is. The entry screen has room
+ * for a legend line and a single row of chips under it and no more (#60): a
+ * wrapped second row is 44px the keys below it no longer have, and the
+ * catalogue decides how many rows there would be, so the height of the screen
+ * would be a thing the Categories a Space happens to keep could change. What
+ * does not fit is scrolled to instead.
+ */
 .chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: var(--space-3);
+  /*
+   * Asking for one overflow axis gives the other one `auto` too — that is what
+   * the spec says a `visible` paired with a scrolling axis becomes — so the
+   * focus ring, 2px of outline sitting 2px off whatever holds focus, is cut
+   * off on all four sides of this box. Scrolling rescues it on neither axis:
+   * above and below there is no scrolling at all, and at the inline start
+   * there is none left to do, which is where the first member of the row sits
+   * — and that member is now the way back out of a chosen heading, so the one
+   * ring most likely to be clipped is the one on the control that undoes an
+   * answer. Both axes therefore get the 4px the ring needs and both hand every
+   * pixel of it straight back, which leaves the row costing the form exactly
+   * the height of a chip and still beginning flush with the screen's gutter. A
+   * ring drawn only where the box happens to be roomy is a ring somebody
+   * walking this with a keyboard cannot rely on.
+   */
+  padding-block: var(--space-2);
+  margin-block: calc(var(--space-2) * -1);
+  padding-inline: var(--space-2);
+  margin-inline: calc(var(--space-2) * -1);
+  /*
+   * And no scrollbar under it, in either engine's spelling. A bar is more
+   * height on the one screen this row exists to fit inside, and the row
+   * already says it scrolls the way a row of chips does: the last one visible
+   * is cut off by the edge.
+   */
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * What it takes to be on the row, said once by the row instead of by each
+ * thing that lands on it. The chips are not the only members: `before` is a
+ * slot, and whatever a caller hands it — the way back out of a chosen
+ * heading, in `BranchingChipField` — rides this row under exactly the rules
+ * the chips ride it under. Stated here, that is a rule the next caller cannot
+ * forget and a rule with one place to be wrong, which is the same reason
+ * `hitTarget` is a single class rather than a habit.
+ *
+ * Never squashed to make the row fit. ADR-0036 settled this for an amount and
+ * the reason carries: a name is not shorter for being drawn narrower, and
+ * "Restaurantes y delivery" compressed until the row fits either wraps to two
+ * lines inside a 44px box or clips its own label. The row gives way instead —
+ * it scrolls — and every member keeps the width of the words on it.
+ */
+.chips > * {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
 }
 
 .chip {
   position: relative;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
   padding: var(--space-3) var(--space-8);
   /*

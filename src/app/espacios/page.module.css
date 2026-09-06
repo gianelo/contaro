@@ -55,7 +55,6 @@
   color: var(--color-accent);
   font-size: var(--text-md);
   font-weight: var(--weight-semibold);
-  text-decoration: none;
 }
 
 .invitations {

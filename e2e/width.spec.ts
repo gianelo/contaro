@@ -1,22 +1,10 @@
-import type { BrowserContext, Locator } from "@playwright/test";
+import type { BrowserContext } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import { createMember, createSpaceFor, startSession } from "./session";
-
-/** What the canvas puts down both sides of every list, on every screen. */
-const GUTTER = 16;
+import { box, gutterOf } from "./layout";
 
 /** The width the canvas draws every artboard at (design/canvas.json). */
 const COLUMN = 390;
-
-async function box(of: Locator) {
-  const measured = await of.boundingBox();
-
-  // A visible element with no box cannot be measured at all, and saying so
-  // beats a null dereference three lines later.
-  if (!measured) throw new Error("the element has no box to measure");
-
-  return measured;
-}
 
 /** A Member with a Space, so the list has a row on it and the Space has screens. */
 async function aSpaceToLookAt(context: BrowserContext, baseURL: string) {
@@ -36,11 +24,15 @@ test("no card touches the glass", async ({ page, context, baseURL }) => {
   // A Space is a card of its own now rather than a row in one list (#38), so
   // the thing with a radius to be rounded against the glass is the article.
   const card = await box(page.locator("article").first());
+  // Asked of the shell rather than written down here: ADR-0025 gave the gutter
+  // one name so it cannot end up with two values, and a literal in a spec file
+  // would keep passing while the app moved.
+  const gutter = await gutterOf(page);
 
   // A 16px radius has nothing to be rounded against when the card runs edge to
   // edge (#36). The gutter is the same on both sides or it is not a gutter.
-  expect(card.x).toBeCloseTo(GUTTER, 0);
-  expect(card.x + card.width).toBeCloseTo(viewport.width - GUTTER, 0);
+  expect(card.x).toBeCloseTo(gutter, 0);
+  expect(card.x + card.width).toBeCloseTo(viewport.width - gutter, 0);
 });
 
 test.describe("on a laptop", () => {

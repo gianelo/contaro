@@ -20,6 +20,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * A link's decoration, said once for the whole product. Underline is how a
+ * link says it is one in a document; this product's links are rows, cards,
+ * tabs and buttons, which say it by being those things -- and not one of the
+ * ten artboards draws an underline anywhere.
+ *
+ * Should a link ever genuinely read as running text, it says
+ * `text-decoration: underline` where it is written, deliberately, rather than
+ * inheriting one by default.
+ */
 a {
   color: var(--color-accent);
+  text-decoration: none;
 }

@@ -1,7 +1,15 @@
+/*
+ * The whitespace between the blocks is what gives, and it is what gives on
+ * purpose. An iPhone 13 hands the web 664px of viewport and the blocks of this
+ * screen need 643 of them, so something had to be smaller; the alternative on
+ * the table was shrinking the 50px keys, and the keys are the thing a thumb
+ * lands on while somebody is standing at a till with a queue behind them
+ * (#60, story 18 in #1). Air is cheaper than aim.
+ */
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-9);
+  gap: var(--space-4);
 }
 
 /*

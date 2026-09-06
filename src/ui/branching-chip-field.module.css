@@ -1,32 +1,19 @@
 /*
- * The two groups a chosen heading turns into. The gap is the form's own, so
- * the offer under a heading sits at the same distance from it as any other
- * question on the screen sits from the one above it.
- */
-.branch {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-9);
-}
-
-/*
- * The chosen heading and the way back out of it, on one line. Aligned to the
- * bottom because the legend sits above the chip: aligning to the top would
- * put the way back beside the word "Categoría" rather than beside the answer
- * it changes.
- */
-.chosen {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-5);
-}
-
-/*
  * Written and not drawn as a chip: it is not one of the answers, and a third
  * pill beside the chosen one would read as one. The same plain accent
  * treatment the entry form gives its other way in (`form.module.css`).
+ *
+ * It rides the chip row itself rather than sitting beside the legend, because
+ * the row is the whole of the height this screen has for the picker (#60).
+ * What that costs it in shape is not restated here: `chip-field.module.css`
+ * says what being on its row means, for the chips and for anything handed to
+ * `before` alike, so this file only says the things that are this button's
+ * own. Height is the same bargain — `hitTarget` is where the 44px comes from.
+ * All that is left is not breaking across two lines inside a row that is one
+ * line tall, which no rule of the row's could know to ask for.
  */
 .change {
+  white-space: nowrap;
   padding: 0 var(--space-2);
   border: none;
   background: none;
@@ -35,4 +22,18 @@
   font-weight: var(--weight-medium);
   color: var(--color-accent);
   cursor: pointer;
+}
+
+/*
+ * Its own ring rather than the user agent's. Nothing in the product resets
+ * outlines, so a default would in fact be drawn — but its colour and its width
+ * would be whichever engine is drawing, and the room `.chips` keeps clear for
+ * a ring is sized for one exact ring: 2px sitting 2px off, the one every
+ * focusable thing here draws (`chip-field`, `segmented-field`, `field`). A
+ * wider default would be clipped by the scrolling row, and this is the member
+ * the row puts first, where there is no scrolling left to bring it back.
+ */
+.change:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

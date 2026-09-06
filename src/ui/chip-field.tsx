@@ -40,6 +40,18 @@ export type ChipFieldProps = {
   required?: boolean;
   /** Shown in place of the chips when there are none to offer. */
   empty?: ReactNode;
+  /**
+   * Put on the row ahead of the chips, for something that belongs beside the
+   * choice without being one of the answers — the way back out of a chosen
+   * heading, in `BranchingChipField`. It rides the row rather than sitting
+   * above it because the row is all the height this screen has (#60), and it
+   * shares the row's scrolling for the same reason.
+   *
+   * Nothing is drawn for it when there are no chips: it is company for a
+   * choice, and with no choice on the screen there is nothing for it to be
+   * beside — `empty` is what speaks then.
+   */
+  before?: ReactNode;
 };
 
 /**
@@ -65,6 +77,7 @@ export function ChipField({
   onChange,
   required = false,
   empty,
+  before,
 }: ChipFieldProps) {
   // Controlled or not, never half of each: React warns about a `checked` with
   // no `onChange`, and an input that switches between the two mid-life loses
@@ -79,6 +92,7 @@ export function ChipField({
         <p className={styles.empty}>{empty}</p>
       ) : (
         <div className={styles.chips}>
+          {before}
           {chips.map((chip) => (
             <label key={chip.value} className={cx(hitTarget, styles.chip)}>
               <input

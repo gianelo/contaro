@@ -18,7 +18,7 @@ export type BranchingChipFieldProps = {
   name: string;
   /** The question, over the headings and over whichever one is chosen. */
   legend: string;
-  /** The legend over what the chosen heading holds. */
+  /** The question asked in place of `legend` once a heading is open. */
   more: string;
   /** What is written on the way back to the whole list. */
   change: string;
@@ -41,18 +41,27 @@ export type BranchingChipFieldProps = {
  * (ADR-0021) — so a heading that could only be passed through would be the
  * screen disagreeing with the ledger.
  *
- * What the heading holds is then offered under a second legend, and required
- * of nobody. That is "the interface suggests a subcategory when one exists,
- * without forcing it" drawn rather than asserted: the suggestion is the group
- * that appears, and not forcing it is the heading staying chosen if nothing
- * in that group is touched.
+ * Choosing one does not add a group; it changes what the one group offers.
+ * The row that held the headings now holds the chosen heading and what it
+ * holds, under the question `more` asks, and required of nobody beyond the
+ * heading that is already chosen. That is "the interface suggests a
+ * subcategory when one exists, without forcing it" drawn rather than
+ * asserted: the suggestion is what the row turns into, and not forcing it is
+ * the heading staying chosen if nothing further is touched. The two-step
+ * reading ADR-0022 protects survives in the legend, which is the thing that
+ * changes to say a heading has been answered and something finer is on offer.
+ *
+ * One row and not two because this screen has room for one: the picker gets a
+ * legend line and a 44px row of chips, about 67px, and two stacked groups ask
+ * for 146 — which is the keys pushed off the bottom of an iPhone 13 (#60).
  *
  * The cost, stated where it is paid: a subcategory takes two taps rather than
- * one, and while a heading is open the others are off the screen until the
- * way back is tapped. That trade was chosen against a flat list that weights
- * the heading and against a row per branch, on a canvas of this screen (#45).
+ * one, and while a heading is open the other headings are not on the row —
+ * the way back, which rides the row ahead of the chips, is what brings them
+ * out again. That trade was chosen against a flat list that weights the
+ * heading and against a row per branch, on a canvas of this screen (#45).
  *
- * Both steps write one field under one name, because the answer is one
+ * Every step writes one field under one name, because the answer is one
  * Category. `ChipField` does the drawing, so the radio group, the 44px target,
  * the off-screen input and the focus ring are the same rules here as there.
  */
@@ -96,19 +105,23 @@ export function BranchingChipField({
     );
   }
 
+  // The chosen heading and what it holds, on one row and under one legend.
+  // Merging them changes nothing about what is being answered: the two groups
+  // this used to draw already shared a `name`, so the browser and the screen
+  // reader had one radio group all along and only the drawing was in halves.
+  // The heading leads because it is the answer that is already given, and what
+  // it holds follows because that is the offer being made.
   return (
-    <div className={styles.branch}>
-      <div className={styles.chosen}>
-        <ChipField
-          name={name}
-          legend={legend}
-          chips={[openBranch]}
-          value={chosen ?? ""}
-          onChange={setChosen}
-          required={required}
-        />
-        {/* Composes the one class that owns the 44px, rather than restating
-            the rule here: see src/ui/hit-target.ts. */}
+    <ChipField
+      name={name}
+      legend={more}
+      chips={[openBranch, ...openBranch.children]}
+      value={chosen ?? ""}
+      onChange={setChosen}
+      required={required}
+      before={
+        /* Composes the one class that owns the 44px, rather than restating
+           the rule here: see src/ui/hit-target.ts. */
         <button
           type="button"
           onClick={() => setChosen(null)}
@@ -116,21 +129,8 @@ export function BranchingChipField({
         >
           {change}
         </button>
-      </div>
-
-      {/*
-        Not `required`, and deliberately: the group is an offer. The answer is
-        already in the group above it, and the browser holds the whole radio
-        group to the one `required` up there either way.
-      */}
-      <ChipField
-        name={name}
-        legend={more}
-        chips={openBranch.children}
-        value={chosen ?? ""}
-        onChange={setChosen}
-      />
-    </div>
+      }
+    />
   );
 }
 

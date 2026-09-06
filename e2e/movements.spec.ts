@@ -5,6 +5,7 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
+import { box } from "./layout";
 import {
   createMember,
   createSpaceFor,
@@ -587,6 +588,63 @@ test("an expense is recorded on a phone without scrolling sideways", async ({
   );
 
   expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test("an expense is recorded on a phone without scrolling down either", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  // The worst screen a shipped Space can produce: two Members, so the head
+  // carries the "Compartido con" pill, and nothing added to the catalogue, so
+  // the picker offers the nine headings it ships with. A Space of one with a
+  // pruned catalogue is shorter; if this one fits, every one of them does.
+  const juli = await createMember("Juli Teléfono");
+  const ana = await createMember("Ana Gasta");
+  const space = await createSpaceFor(juli.id, "Casa de Juli", "ARS");
+  await joinSpace(space.id, ana.id);
+  await startSession(context, baseURL!, juli);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await expect(page.getByRole("status")).toBeVisible();
+  await expect(page.getByText("Compartido con Ana")).toBeVisible();
+
+  // Not `toBeInViewport`: it passes on a sliver. Guardar has to be whole, and
+  // the page has to be done -- a document taller than the phone is a scroll
+  // between the last digit and saving, which is the screen #1 says loses the
+  // expense (#60).
+  const fold = async () => {
+    // Asked for by its role and its word, the way the rest of this file finds
+    // anything: a `form button[type=submit]` is the one shape of Guardar a
+    // person on the screen never sees, and a selector goes on passing while
+    // the button it points at stops being reachable.
+    const guardar = await box(page.getByRole("button", { name: "Guardar" }));
+
+    return {
+      guardar: Math.round(guardar.y + guardar.height),
+      ...(await page.evaluate(() => ({
+        document: document.documentElement.scrollHeight,
+        viewport: window.innerHeight,
+      }))),
+    };
+  };
+
+  const offered = await fold();
+  expect(offered.guardar).toBeLessThanOrEqual(offered.viewport);
+  expect(offered.document).toBeLessThanOrEqual(offered.viewport);
+
+  // And still after answering, which is the state a thumb is actually in when
+  // it reaches for Guardar. Choosing a heading opens what is under it
+  // (ADR-0022), so the picker is at its tallest here and not above.
+  await type(page, "128400");
+  await categorise(page, "Comida", "Supermercado");
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toBeChecked();
+
+  const answered = await fold();
+  expect(answered.guardar).toBeLessThanOrEqual(answered.viewport);
+  expect(answered.document).toBeLessThanOrEqual(answered.viewport);
 });
 
 test("a Member records income in the same flow as an expense", async ({

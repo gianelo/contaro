@@ -17,7 +17,6 @@
   align-items: center;
   font-size: var(--text-lg);
   color: var(--color-accent);
-  text-decoration: none;
 }
 
 .title {
@@ -42,6 +41,7 @@
  * act on, so it reads as a caption and never as a control.
  */
 .shared {
+  margin: 0;
   align-self: center;
   display: flex;
   align-items: center;
