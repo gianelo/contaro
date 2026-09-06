@@ -93,6 +93,15 @@ const icons = {
   "chevron-down": {
     draw: <path d="M6 9l6 6 6-6" />,
   },
+  // The same chevron lying on its side, and its own entry rather than the one
+  // above turned by a stylesheet: the canvas draws both paths, and a screen
+  // that reached for `chevron-down` and rotated it would be naming the wrong
+  // drawing to get the right shape. Where a disclosure *turns* one into the
+  // other, that rotation is about the row opening and not about which icon it
+  // is -- so it is this one, and the stylesheet says the turn.
+  "chevron-right": {
+    draw: <path d="M9 6l6 6-6 6" />,
+  },
   "alert-circle": {
     draw: (
       <>

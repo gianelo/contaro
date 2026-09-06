@@ -9,7 +9,6 @@ import { currentSpace, viewingMember } from "./space";
 import { monthInView, spaceMembers } from "./movimientos/month";
 import { readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
-import { PlannedItems } from "./presupuesto/items";
 import { MonthSummary } from "./presupuesto/summary";
 import { Variables } from "./presupuesto/variables";
 import styles from "./page.module.css";
@@ -74,7 +73,14 @@ export default async function SpacePage({
   // A Budget is its items, of either kind (CONTEXT.md). A month with the rent
   // on it and nothing else has been planned, so the empty state is about the
   // whole plan rather than about the Variable half of it.
-  const nothingPlanned = plan.items.length === 0 && plan.fixed.length === 0;
+  //
+  // Read off the two sections the screen actually draws, now that the list of
+  // Variable items is gone (#63). That is exact rather than nearly so: every
+  // Variable item's Category is a measured one (ADR-0023), so a Category with
+  // a Variable item on it always has a row in `variables` -- which makes an
+  // empty `variables` the same fact as "no Variable item exists". With no
+  // Fixed item beside it, the month holds no item of either kind.
+  const nothingPlanned = plan.fixed.length === 0 && plan.variables.length === 0;
 
   return (
     <SpaceScreen
@@ -114,6 +120,30 @@ export default async function SpacePage({
       <MonthSummary summary={plan.summary} pace={plan.pace} />
 
       {/*
+        A month nobody has planned says what to do rather than that there is
+        nothing: there is no Budget to create first, and the first item is the
+        whole of it.
+
+        Here, above both sections, and not inside either -- it is about the
+        plan and not about one kind of item, and both sections draw nothing at
+        all when it shows. It used to live inside the list of Variable items,
+        which was the only list that always rendered; with that list gone
+        (#63) it belongs to the screen, which is the one thing here that can
+        see both halves of a Budget.
+
+        `labelHidden` for the case `grouped-list.tsx` documents it for: the
+        screen's own title already says this is the Presupuesto, and printing
+        the word again over a single sentence is the heading saying nothing.
+        Hidden and not absent, so the group is still one a screen reader can
+        name and skip to.
+      */}
+      {nothingPlanned ? (
+        <GroupedList label={t("nav.budget")} labelHidden>
+          <GroupedListItem>{t("budget.empty")}</GroupedListItem>
+        </GroupedList>
+      ) : null}
+
+      {/*
         What the month already owes on days it knows about, and what has been
         paid (#13). Above the Variables, because it is read first and for a
         different question: not "how much is left" but "have I paid it".
@@ -127,25 +157,21 @@ export default async function SpacePage({
       />
 
       {/*
-        The Variable items: one row per item, read by its name with the
-        Category quiet under it, the way a Fijos row is read (#79). Its own
-        component beside the other sections of this screen rather than markup
-        inlined here, so what a row draws is provable without a database.
-      */}
-      <PlannedItems
-        spaceId={space.id}
-        items={plan.items}
-        nothingPlanned={nothingPlanned}
-      />
-
-      {/*
-        What each Category expected and what it really cost (#11). One line
-        per Category and never one per item: the four weekly rows above are
-        how a month is planned in weeks, and they are one thing to be over or
+        What each Category expected, what it really cost, and — under each
+        row — the items that figure is made of (#11, #63). One line per
+        Category and never one per item: several items on one Category are how
+        a month is planned in weeks, and they are one thing to be over or
         under. This is the only place that can see a Member who is under on
         every single shop and over for the month.
+
+        It is also the only place the month's items are drawn now. There used
+        to be a second list of them above this one, headed "El plan del mes",
+        which drew every planned Category a second time under a second heading
+        and left a person reading two plans for one month. The items are all
+        still here and still correctable, one tap inside the figure they add
+        up to.
       */}
-      <Variables comparisons={plan.variables} />
+      <Variables spaceId={space.id} comparisons={plan.variables} />
 
       <div className={styles.plan}>
         <ButtonLink href={`/espacios/${space.id}/presupuesto/nuevo?mes=${month}`}>

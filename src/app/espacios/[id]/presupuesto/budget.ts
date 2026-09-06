@@ -98,19 +98,44 @@ export type ReadableBudgetItem =
     });
 
 /**
- * The Variable arm of that union, named because the month's list is made of
- * exactly these and nothing else.
+ * The Variable arm of that union, named so the function below that only ever
+ * builds one can say which arm it builds.
  *
- * `readableBudget` already sorts the two kinds into two fields, so a screen
- * drawing one of them is holding one kind whatever its prop says. Saying so in
- * the type is what stops the screen having to narrow a kind away that never
- * reaches it -- and what makes a fixture for it a whole Variable item rather
- * than half of either.
+ * No longer exported, and that is #63 showing through the type: it was the
+ * shape of the month's second list -- one row per Variable item, headed "El
+ * plan del mes" -- and that list is gone, because it drew every planned
+ * Category a second time under a second heading. What a screen holds now is
+ * either a `ReadableComparison` with its tray of items, or a whole
+ * `ReadableBudgetItem` on the way into a correction form, and neither of those
+ * is a bare Variable arm.
  */
-export type ReadableVariableItem = Extract<
+type ReadableVariableItem = Extract<
   ReadableBudgetItem,
   { kind: "variable" }
 >;
+
+/**
+ * One item of a Category's plan, as the tray under that Category's row draws
+ * it (#63): what it is called, what it expects to cost, and the way to open it.
+ *
+ * It carries no kind, and that is the shape of the answer rather than a field
+ * left out. The tray exists to say what the figure above it is made of, and
+ * which kind an item is, is the FIJOS section's question -- that section is
+ * where "have I paid the rent" is asked and answered with a badge. Here the
+ * rent is one of the amounts that add up to what its Category expects, and it
+ * is that for exactly the same reason a week of groceries is.
+ *
+ * So a Fixed item is read twice on this screen on purpose: once above, for
+ * whether it is paid, and once here, for what it is part of. Two questions,
+ * two rows, one item.
+ */
+export type ReadablePlannedItem = {
+  id: string;
+  /** What it is read by, and what tells four weeks of groceries apart (#79). */
+  name: string;
+  /** What it expects to cost, with the symbol on it. */
+  amount: string;
+};
 
 /**
  * One Category of the plan, what it expected, and what it really cost (#11).
@@ -138,6 +163,25 @@ export type ReadableComparison = {
    * draws. Past 1 on a Category that went over, which the meter clamps.
    */
   filled: number;
+  /**
+   * Every item filed on this exact Category, in the order they were planned:
+   * what the `expected` figure above is made of, and the way to reach any one
+   * of them (#63).
+   *
+   * On the exact `categoryId` and deliberately not on the ADR-0021 rollup that
+   * `spent` is measured through. Those two are about different things: the
+   * rollup is about *spending*, because money spent on "Comida · Súper" is
+   * money spent under a plan written on "Comida"; this is about what somebody
+   * wrote down, and an item filed on "Comida · Súper" was written down on
+   * "Comida · Súper" and nowhere else. Rolling it up here would print the same
+   * item under two Categories -- which is the shape of the bug #63 is about,
+   * rebuilt inside the fix.
+   *
+   * Both kinds, for the reason `ReadablePlannedItem` gives: `expectedByCategory`
+   * sums every item of the Category, so a tray of only the Variable ones would
+   * not add up to the figure it hangs under.
+   */
+  plan: readonly ReadablePlannedItem[];
 };
 
 /**
@@ -235,27 +279,24 @@ export type ReadableBudget = {
   /** Every month the pill at the top of the screen can be moved to. */
   choices: readonly ReadableMonthChoice[];
   /**
-   * The Variable items, in the order they were planned. Several on one
-   * Category stay several here: they are how a person thinks in weeks, and
-   * collapsing them on the screen would take away the four rows they meant to
-   * edit.
-   */
-  items: readonly ReadableVariableItem[];
-  /**
    * The Fixed items, in the order they were planned, drawn above the rest
    * (#13). Their own list and not rows among the others, because they are read
    * for a different question: not "how much is left" but "what have I paid".
    */
   fixed: readonly ReadableFixedItem[];
   /**
-   * The same items collapsed to one line per Category and measured against
-   * what really got spent (#11), which is what "several items on one Category
-   * behave as a single item of their combined amount" means once it reaches
-   * eyes.
+   * One line per Category, measured against what really got spent (#11), and
+   * carrying the items that line is made of (#63).
    *
-   * Every Category the month planned for, not only those with several items:
-   * #10 hid the single ones because the line only repeated the row above it,
-   * and now it carries what the row above cannot — the spending.
+   * Every Category the month planned for and *measured*, not only those with
+   * several items: #10 hid the single ones because the line only repeated the
+   * row above it, and now it carries what the row above cannot — the spending.
+   *
+   * There is no separate list of the month's Variable items beside this one
+   * any more, and that is the whole of #63. The screen drew both, so every
+   * Category with a plan on it appeared twice under two headings, and neither
+   * appearance said what the other was for. The items are still every one of
+   * them here, one tray deeper, under the figure they add up to.
    */
   variables: readonly ReadableComparison[];
   /**
@@ -297,14 +338,12 @@ export async function readableBudget(
   ]);
 
   const named = namesFrom(catalogue);
+  const trays = plannedByCategory(planned, reader);
 
   return {
     month,
     label: monthLabel(month, monthOf(reader.today)),
     choices: monthChoices(month, monthOf(reader.today)),
-    items: planned
-      .filter((item): item is VariableItem => item.kind === "variable")
-      .map((item) => readable(item, named, reader)),
     fixed: planned
       .filter((item): item is FixedItem => item.kind === "fixed")
       .map((item) => readableFixed(item, named, reader)),
@@ -320,6 +359,12 @@ export async function readableBudget(
       expected: formatAmount(expected, reader.locales),
       over: over === null ? null : formatMoney(over, reader.locales),
       filled: share,
+      // Never undefined in practice -- a Category only has a comparison
+      // because an item of its own put it there -- but read through `??` all
+      // the same, because "the row exists" and "the tray has rows" are two
+      // facts held by two functions, and a screen is not the place to find out
+      // they disagree.
+      plan: trays.get(categoryId) ?? [],
     })),
     // Both halves of the card from one answer, so the meter can never be a
     // picture of figures other than the two printed above it. Read off the
@@ -338,6 +383,49 @@ export async function readableBudget(
       reader,
     ),
   };
+}
+
+/**
+ * The month's items filed under the Category each one was written on, ready
+ * for the tray that opens under that Category's row (#63).
+ *
+ * Both kinds go in, and they go in by their exact `categoryId`. Neither of
+ * those is the rule `comparedToPlan` uses beside it, and the difference is the
+ * point of both:
+ *
+ * - It keeps only the *measured* Categories, because a Category planned with
+ *   Fixed items alone has one question and the Fijos badge answers it. This
+ *   keeps every item, because the ones it drops are the ones nothing will ask
+ *   it for -- there is no row for that Category, so there is no tray either.
+ * - It counts spending through the ADR-0021 rollup, so a purchase on
+ *   "Comida · Súper" tells against a plan written on "Comida". This does not,
+ *   because an item was written down on one Category and rolling it up would
+ *   print it under two.
+ *
+ * One walk of the items rather than a filter per Category: the same walk done
+ * inside a map is the plan re-read once for every row the screen draws, which
+ * is the shape `comparedToPlan` reads its headings out of a Map to avoid.
+ */
+function plannedByCategory(
+  planned: readonly BudgetItem[],
+  reader: Reader,
+): ReadonlyMap<string, readonly ReadablePlannedItem[]> {
+  const byCategory = new Map<string, ReadablePlannedItem[]>();
+
+  for (const item of planned) {
+    const tray = byCategory.get(item.categoryId) ?? [];
+    // Pushed in the order they arrive, which is the order they were planned:
+    // four weeks of groceries read down the tray the way they were written,
+    // for the reason `budgetItemsInMonth` returns them that way (#10).
+    tray.push({
+      id: item.id,
+      name: item.name,
+      amount: formatMoney(item.amount, reader.locales),
+    });
+    byCategory.set(item.categoryId, tray);
+  }
+
+  return byCategory;
 }
 
 /** The month against its plan, written the way its reader reads numbers. */

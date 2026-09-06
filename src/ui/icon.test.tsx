@@ -182,6 +182,7 @@ describe("Icon", () => {
       "check",
       "close",
       "chevron-down",
+      "chevron-right",
       "alert-circle",
       "alert-triangle",
       "cart",

@@ -205,11 +205,16 @@ test("not one link in the app is underlined", async ({
     // Cancelar, back to the list. A form of one field has nowhere else to go.
     "/espacios/nuevo": 1,
     // The tab bar's four tabs and the raised button between them, the Fixed
-    // item's row and the Variable one's, the two ways to plan another -- a
-    // Variable one (#10) and a Fixed one (#13) -- and the row to who shares
-    // this Space (#9). Every one of the rows #58 names is in this number; on
-    // a Space with nothing planned it would be five, which is the tab bar.
-    [`/espacios/${space.id}`]: 10,
+    // item's row, the two ways to plan another -- a Variable one (#10) and a
+    // Fixed one (#13) -- and the row to who shares this Space (#9). On a Space
+    // with nothing planned it would be five, which is the tab bar.
+    //
+    // Nine and no longer ten: the Variable item's row is inside its Category's
+    // tray now (#63), and a closed `<details>` draws nothing, so it is not a
+    // link on this screen until somebody opens it. It is read below instead,
+    // where it is drawn -- because #58 is about every link in the app and a
+    // link nobody counted is a link nobody checked.
+    [`/espacios/${space.id}`]: 9,
     // The same five and the one Movement's row. The step back to last month
     // went with the rest of the walker (#61): the month is a pill now, and a
     // pill is a button until it is opened.
@@ -223,6 +228,8 @@ test("not one link in the app is underlined", async ({
     // The fourteen months the pill offers: the twelve of the year in view and
     // one either side of it (`monthsToPlan`).
     "el mes": 14,
+    // The one Variable item, in the tray its Category's row opens (#63).
+    "el plan de una categoría": 1,
   };
 
   const underlined: string[] = [];
@@ -243,14 +250,23 @@ test("not one link in the app is underlined", async ({
     await read(screen);
   }
 
-  // And the one place links are drawn that no address reaches: the sheet the
-  // month pill opens, whose rows are links because a month is a place (#40).
-  // Opened the way `budget.spec.ts` opens it, and read through the dialog
-  // rather than through the page — the screen underneath is still visible, so
-  // counting the page would count the Budget screen's ten a second time.
+  // And the two places links are drawn that no address reaches. First the
+  // sheet the month pill opens, whose rows are links because a month is a
+  // place (#40). Read through the dialog rather than through the page — the
+  // screen underneath is still visible, so counting the page would count the
+  // Budget screen's nine a second time.
   await page.goto(`/espacios/${space.id}`);
   const sheet = await openMonths(page);
   await read("el mes", sheet);
+
+  // Then the tray a Category's row opens, which holds the items that Category
+  // expects (#63). Read through the opened row for the same reason, and
+  // reached by tapping the row because that is the only way there is: the
+  // disclosure is native and carries no address of its own.
+  await page.goto(`/espacios/${space.id}`);
+  const variables = page.getByRole("group", { name: "Variables" });
+  await variables.locator("summary").first().click();
+  await read("el plan de una categoría", variables.locator("details[open]"));
 
   expect(underlined).toEqual([]);
   expect(counted).toEqual(expected);

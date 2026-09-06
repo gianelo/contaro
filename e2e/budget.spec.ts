@@ -74,6 +74,20 @@ async function plan(
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
 
+/**
+ * Opens what a Category's row keeps inside it: the items its figure is made
+ * of (#63).
+ *
+ * By clicking the row rather than by setting the attribute, because tapping
+ * the comparison is the whole gesture -- and because every navigation away
+ * from this screen closes it again. A `<details>` holds no state a server
+ * render restores, so a journey that comes back here has to open it again,
+ * which is what a person does too.
+ */
+async function openPlanOf(variables: Locator, category: string) {
+  await variables.locator("summary").filter({ hasText: category }).click();
+}
+
 /** One expense, recorded the way a person records one on the way home. */
 async function spend(page: Page, spaceId: string, digits: string) {
   await page.goto(`/espacios/${spaceId}/movimientos`);
@@ -153,17 +167,26 @@ test("a Member plans the month and reads it back", async ({
 
   // A month nobody has planned says what to do, not that there is nothing.
   // There is no Budget to create first: the first item is the plan.
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await expect(budget).toContainText("Todavía no planeaste este mes.");
+  await expect(page.getByText("Todavía no planeaste este mes.")).toBeVisible();
 
   await plan(page, space.id, "Súper de la semana", "24000000");
 
-  // The name on the first line and what it is filed under on the quiet one
-  // beneath it, the way a Fijos row reads (#79). The Category used to be the
-  // first line, which made four weeks of groceries four identical rows.
-  await expect(budget).toContainText("Súper de la semana");
-  await expect(budget).toContainText("Supermercado · Comida");
-  await expect(budget).toContainText("$ 240.000,00");
+  // One row for the Category, saying what it expects and what it has cost.
+  // The screen used to draw a second list of the items beside this one, headed
+  // "El plan del mes", so a planned Category appeared twice under two headings
+  // and neither appearance said what the other was for (#63).
+  const variables = page.getByRole("group", { name: "Variables" });
+  await expect(variables).toContainText("Supermercado");
+  await expect(variables).toContainText("/ 240.000,00");
+  await expect(page.getByText("Todavía no planeaste este mes.")).toHaveCount(0);
+
+  // And the item is inside it, under the figure it adds up to, read by the
+  // name it was planned with (#79). Until items were called something, four
+  // weeks of groceries were four rows nothing on the screen told apart.
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables).toContainText("El plan de esta categoría");
+  await expect(variables).toContainText("Súper de la semana");
+  await expect(variables).toContainText("$ 240.000,00");
 
   // And the plan's total is on the card at the top of the screen now, beside
   // the figure it is meant to be read against (#40).
@@ -182,8 +205,9 @@ test("correcting an item opens on the branch its Category sits in", async ({
   await page.goto(`/espacios/${space.id}`);
   await plan(page, space.id, "Súper de la semana", "24000000");
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await budget.getByRole("link", { name: /Súper de la semana/ }).click();
+  const variables = page.getByRole("group", { name: "Variables" });
+  await openPlanOf(variables, "Supermercado");
+  await variables.getByRole("link", { name: /Súper de la semana/ }).click();
 
   // The same picker the entry screen asks with, opened the same way: on the
   // branch the saved Category sits in, with the Category itself chosen.
@@ -211,23 +235,74 @@ test("several items on one Category are read as one of their combined amount", a
   await plan(page, space.id, "Semana 3", "5500000");
   await plan(page, space.id, "Semana 4", "6500000");
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await expect(budget.getByRole("link")).toHaveCount(4);
+  const variables = page.getByRole("group", { name: "Variables" });
 
-  // And each of the four is a row a thumb can aim at, which is the whole of
-  // #79: four rows called the same thing are a plan a person can read down and
-  // cannot correct, because nothing on the screen says which week is which.
+  // One row and never four: what the Category expects of the month is the four
+  // added up, and that is the one thing there is to be over or under.
+  await expect(variables.locator("summary")).toHaveCount(1);
+  await expect(variables).toContainText("/ 240.000,00");
+
+  // And the four are still four rows a thumb can aim at, one tap inside the
+  // figure they make. That is the whole of #79 -- four rows called the same
+  // thing are a plan a person can read down and cannot correct, because
+  // nothing on the screen says which week is which -- and the whole of #63:
+  // they are here, under what they add up to, and nowhere else.
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables.getByRole("link")).toHaveCount(4);
+
   for (const week of ["Semana 1", "Semana 2", "Semana 3", "Semana 4"]) {
-    await expect(budget.getByRole("link", { name: new RegExp(week) })).toHaveCount(
-      1,
-    );
+    await expect(
+      variables.getByRole("link", { name: new RegExp(week) }),
+    ).toHaveCount(1);
   }
+});
 
-  // And what the Category expects of the month is the four added up: one line
-  // to be over or under, however many items make it.
-  await expect(page.getByRole("group", { name: "Variables" })).toContainText(
-    "/ 240.000,00",
-  );
+/*
+ * The half of #63 no component test can show: which items the read model files
+ * under a Category, rather than which ones the tray draws once it has them.
+ *
+ * A Fixed item is read twice on this screen and that is the decision, not an
+ * oversight. `expectedByCategory` sums every item of the Category, so the
+ * figure the tray hangs under already has the rent in it -- and a tray that
+ * left it out would not add up to the number above it. Fijos asks "have I paid
+ * it"; the tray asks "what is this total made of". Two questions, two rows.
+ */
+test("a Fixed item is inside the Category it was planned on, as well as in Fijos", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Rita Reparte", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+
+  // Both kinds on one Category: a week of groceries, and a box of vegetables
+  // that comes out of the same Category on the 1st every month.
+  await plan(page, space.id, "Súper de la semana", "24000000");
+  await planFixed(page, space.id, "Caja de verduras", "6000000", "1", [
+    "Comida",
+    "Supermercado",
+  ]);
+
+  const fijos = page.getByRole("group", { name: "Fijos" });
+  const variables = page.getByRole("group", { name: "Variables" });
+
+  // What the Category expects is both of them: the $240.000 planned in weeks
+  // and the $60.000 that comes out on the 1st.
+  await expect(variables).toContainText("/ 300.000,00");
+  await expect(fijos).toContainText("Caja de verduras");
+
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables).toContainText("Caja de verduras");
+  await expect(variables).toContainText("Súper de la semana");
+
+  // And the row opens the Fixed item's own screen, which is the same URL for
+  // either kind (#48) -- so the tray needs to know nothing about kinds to send
+  // a thumb to the right form.
+  await variables.getByRole("link", { name: /Caja de verduras/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Corregir el gasto fijo" }),
+  ).toBeVisible();
 });
 
 test("a Member is told when a Category has passed what it expected", async ({
@@ -304,12 +379,14 @@ test("a Member plans next month before it starts", async ({
   await plan(page, space.id, "Súper de la semana", "9000000");
   await expect(page).toHaveURL(new RegExp(`\\?mes=${next}$`));
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await expect(budget).toContainText("$ 90.000,00");
+  const variables = page.getByRole("group", { name: "Variables" });
+  await expect(variables).toContainText("/ 90.000,00");
 
-  // And this month is untouched by it.
+  // And this month is untouched by it: no Category to compare, and the empty
+  // state saying so about the whole plan rather than about half of it.
   await chooseMonth(page, `/espacios/${space.id}?mes=${thisMonth}`, thisMonth);
-  await expect(budget).toContainText("Todavía no planeaste este mes.");
+  await expect(page.getByText("Todavía no planeaste este mes.")).toBeVisible();
+  await expect(variables).toHaveCount(0);
 });
 
 test("a Member corrects an item and takes another off the plan", async ({
@@ -322,36 +399,59 @@ test("a Member corrects an item and takes another off the plan", async ({
   await page.goto(`/espacios/${space.id}`);
   await plan(page, space.id, "Súper de la semana", "24000000");
 
-  const budget = page.getByRole("group", { name: "El plan del mes" });
-  await budget.getByRole("link", { name: /Súper de la semana/ }).click();
+  const variables = page.getByRole("group", { name: "Variables" });
+  await openPlanOf(variables, "Supermercado");
+  await variables.getByRole("link", { name: /Súper de la semana/ }).click();
 
   // The keypad opens on what the item expects, so a correction is typed over
   // it rather than from nothing, and the name field on what it is called.
   await page.getByRole("button", { name: "Borrar el último número" }).click();
   await page.getByLabel("Cómo se llama").fill("Súper de la primera semana");
   await page.getByRole("button", { name: "Guardar" }).click();
-  await expect(budget).toContainText("$ 24.000,00");
-  await expect(budget).toContainText("Súper de la primera semana");
 
-  await budget.getByRole("link", { name: /Súper de la primera semana/ }).click();
+  // The Category's own figure moves with the item, because the figure is what
+  // the items add up to.
+  await expect(variables).toContainText("/ 24.000,00");
+
+  // Opened again, because coming back to the screen is a fresh render and a
+  // `<details>` keeps nothing across one -- which is exactly what makes it
+  // work before any JavaScript has loaded.
+  await openPlanOf(variables, "Supermercado");
+  await expect(variables).toContainText("Súper de la primera semana");
+  await expect(variables).toContainText("$ 24.000,00");
+
+  await variables
+    .getByRole("link", { name: /Súper de la primera semana/ })
+    .click();
   await page.getByRole("button", { name: "Sacar del plan" }).click();
 
-  await expect(budget).toContainText("Todavía no planeaste este mes.");
+  // The last item off the plan takes the Category's row with it, and the
+  // month is unplanned again -- of either kind.
+  await expect(page.getByText("Todavía no planeaste este mes.")).toBeVisible();
+  await expect(variables).toHaveCount(0);
 });
 
-/** One Fixed item, planned the way a person plans the rent. */
+/**
+ * One Fixed item, planned the way a person plans the rent.
+ *
+ * The Category is answered by the rent's own by default, because that is what
+ * almost every journey here is about. It is asked for at all so that one of
+ * them can put a Fixed item on the Category a Variable one is already on,
+ * which is where the two kinds meet on this screen (#63).
+ */
 async function planFixed(
   page: Page,
   spaceId: string,
   name: string,
   digits: string,
   dueDay: string,
+  filedUnder: readonly [heading: string, under: string] = ["Hogar", "Alquiler"],
 ) {
   await page.getByRole("link", { name: "Agregar un gasto fijo" }).click();
   await type(page, digits);
   await page.getByLabel("Cómo se llama").fill(name);
   await page.getByLabel("Qué día del mes vence").selectOption(dueDay);
-  await categorise(page, "Hogar", "Alquiler");
+  await categorise(page, filedUnder[0], filedUnder[1]);
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page).toHaveURL(new RegExp(`/espacios/${spaceId}\\?mes=`));
 }
