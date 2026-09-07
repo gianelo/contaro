@@ -395,8 +395,9 @@ export const movements = pgTable(
  * thing rather than a shortcut: a Budget *is* the items a Space has for a
  * month, so it comes into existence with the first one and there is no moment
  * anybody creates an empty plan. What the close of a month freezes (ADR-0002)
- * is the month -- its Movements as much as its plan -- so that will not hang
- * here either.
+ * is the month -- its Movements as much as its plan -- so it does not hang here
+ * either: it has its own table now (`closedMonths`, #117), which the Movements
+ * are asked against as much as these rows are.
  *
  * `kind` says which of the two an item is. `name` is asked of both (#79), and
  * the two columns after it are what only a Fixed one carries (#13). Those two
@@ -553,5 +554,97 @@ export const budgetItems = pgTable(
     // one Category are how a person plans a month in weeks, and they behave as
     // a single item of their combined amount rather than as a duplicate.
     index("budget_items_space_id_month_idx").on(table.spaceId, table.month),
+  ],
+);
+
+/**
+ * Which of a Space's months have been closed (#117).
+ *
+ * A table of its own and not a column, because there is nowhere to put a
+ * column: ADR-0019 refused a `budgets` row, and a flag on the plan would be a
+ * flag that half of what the close freezes does not point at -- a month with no
+ * plan at all can still be closed. So the close gets the home ADR-0019 said it
+ * would get, and it is a home the Movements can see too: they carry no month,
+ * only the day they happened on, and `YYYY-MM` here is what both sides are
+ * asked against.
+ *
+ * A row is the whole fact. There is no `closed` boolean anywhere and nothing to
+ * unset: a month is closed if it has a row here, and every month that does not
+ * is open -- including the ones nobody has reached yet. ADR-0029's argument,
+ * applied to a second thing: a flag has to be unset somewhere else.
+ *
+ * The row is written once and never again. Migration 0016 refuses UPDATE and
+ * DELETE on this table outright, because ADR-0002 says there is no unlock and a
+ * rule only the code knows about is a rule that survives until the second
+ * caller.
+ */
+export const closedMonths = pgTable(
+  "closed_months",
+  {
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    /**
+     * The month closed, written `YYYY-MM`, exactly as `budget_items.month` is
+     * and for the same reasons: a month is the unit, and written this way it
+     * sorts the way a calendar orders months.
+     */
+    month: text("month").notNull(),
+    /**
+     * The Member who closed it, which is always the Space's creator
+     * (ADR-0051).
+     *
+     * It does not cascade from `members`, the way `spaces.created_by` and
+     * `space_invitations.invited_by` do not: the close is irreversible, so the
+     * Space is owed an honest record of who performed it even if that Member's
+     * own row is one day gone.
+     */
+    closedBy: uuid("closed_by")
+      .notNull()
+      .references(() => members.id),
+    /**
+     * The day it was closed on, as the Reader was standing in it (ADR-0018).
+     *
+     * A `date` and not the `closed_at` timestamp beside it, because the two
+     * answer different questions: this is the day a person decided the month
+     * was finished, and that is when the row reached the database. At nine at
+     * night on the 30th in Bogota those are two different days, and the one
+     * worth reading back is theirs.
+     */
+    closedOn: date("closed_on").notNull(),
+    closedAt: timestamp("closed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // A month is closed once. The pair is the primary key rather than a unique
+    // index, because there is nothing else here to identify a row by: the row
+    // *is* the pair, and a second one would be a second answer to a question
+    // that has no undo.
+    primaryKey({ columns: [table.spaceId, table.month] }),
+    // The same twelve `budget_items.month` admits, refused here too. Every
+    // write in the product asks this table whether its month is closed, so a
+    // row written under a month no calendar has would be a row nothing could
+    // ever match -- a close that silently froze nothing.
+    check(
+      "closed_months_month_is_a_month",
+      sql`${table.month} ~ '^\\d{4}-(0[1-9]|1[0-2])$'`,
+    ),
+    // A month is closed after it has ended, never during it (ADR-0002 as
+    // `closeMonth` reads it). The domain refuses the same thing on the
+    // Reader's day; this refuses it for every path that never goes through the
+    // domain, and it is the one comparison that can be made from the row alone.
+    //
+    // The day is written out as a month and the two months compared as text,
+    // the way `budget_items_due_on_is_in_its_month` already does it, rather
+    // than reading `month` back into a date. A `to_date` here would be handed
+    // the very strings the constraint above exists to refuse, and it raises
+    // before that one is reached -- so a thirteenth month would be turned away
+    // by a message about a date range, which is a constraint lying about what
+    // was wrong with the row.
+    check(
+      "closed_months_is_closed_after_it_ended",
+      sql`to_char(${table.closedOn}, 'YYYY-MM') > ${table.month}`,
+    ),
   ],
 );

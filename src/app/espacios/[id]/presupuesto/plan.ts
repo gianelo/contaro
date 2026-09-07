@@ -1,5 +1,6 @@
 import type { ReadSession } from "@/auth/session";
 import type { CopiedPlan } from "@/db/budget-items";
+import { ClosedMonthError } from "@/db/closed-months";
 import {
   FixedItemAlreadyPaidError,
   MAX_BUDGET_ITEM_NAME_LENGTH,
@@ -111,6 +112,14 @@ export type Refusal =
    * and what a person wanted is already on the screen behind the sheet.
    */
   | { kind: "already-planned" }
+  /**
+   * The month is closed, and a closed month never changes (ADR-0002). Its own
+   * outcome and not a rejected field, for the reason `already-paid` is one:
+   * nothing on the screen was mistyped, so pointing at an input would send a
+   * person to correct something that was never the problem. What it earns is a
+   * sentence saying the month is finished.
+   */
+  | { kind: "month-closed" }
   | { kind: "failed"; cause: unknown };
 
 /**
@@ -335,6 +344,14 @@ async function inSpace<Done>(
     if (error instanceof FixedItemAlreadyPaidError) {
       return { kind: "already-paid" };
     }
+    // The one refusal a closed month makes, arriving from the one place it is
+    // decided (`refuseAClosedMonth`). Named here and not asked here: this
+    // handler would be a second half-answer, and the month it would have to
+    // ask about is not one it always holds -- a correction's month is the
+    // item's, which only the store has read.
+    if (error instanceof ClosedMonthError) {
+      return { kind: "month-closed" };
+    }
     return { kind: "failed", cause: error };
   }
 }
@@ -359,6 +376,8 @@ export function refusalMessage(refusal: Refusal): string {
       return t("budget.error.nothingToCopy");
     case "already-planned":
       return t("budget.error.alreadyPlanned");
+    case "month-closed":
+      return t("budget.error.monthClosed");
     case "failed":
       return t("budget.error.failed");
     case "rejected":

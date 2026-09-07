@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { calendarDate } from "@/domain/calendar/month";
+import { ClosedMonthError } from "@/db/closed-months";
+import { calendarDate, month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
 import {
   UnrecordableMovementError,
@@ -248,5 +249,69 @@ describe("what a refusal says on the screen", () => {
     for (const refusal of refusals) {
       expect(refusalMessage(refusal)).toMatch(/\S/);
     }
+  });
+});
+
+/*
+ * The close, met from the ledger's screen (#117). The same refusal the plan
+ * meets, from the same place, because the close freezes a month's Movements as
+ * much as its plan (ADR-0002).
+ */
+describe("a month that has been closed", () => {
+  const closed = () => new ClosedMonthError(month("2026-09"));
+
+  it("refuses a Movement recorded into it, and not as a failure", async () => {
+    await expect(
+      handleRecordMovement(
+        ports({
+          save: async () => {
+            throw closed();
+          },
+        }),
+        draft,
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  it("refuses a correction the same way", async () => {
+    await expect(
+      handleAmendMovement(
+        ports({
+          amend: async () => {
+            throw closed();
+          },
+        }),
+        CASA.id,
+        RECORDED.id,
+        { amount: 1_00 },
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  it("refuses striking one out the same way", async () => {
+    await expect(
+      handleStrikeMovement(
+        ports({
+          strike: async () => {
+            throw closed();
+          },
+        }),
+        CASA.id,
+        RECORDED.id,
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  /*
+   * The sentence points at where the money goes instead, because there is
+   * somewhere: ADR-0002 decided a late September ticket is an October expense,
+   * and a person holding one is owed that rather than a closed door.
+   */
+  it("says the month is closed and where the ticket goes instead", async () => {
+    const said = refusalMessage({ kind: "month-closed" });
+
+    expect(said).not.toBe("");
+    expect(said).not.toBe(refusalMessage({ kind: "failed", cause: null }));
+    expect(said.toLowerCase()).not.toContain("de nuevo");
   });
 });

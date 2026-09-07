@@ -3,6 +3,7 @@ import {
   calendarDate,
   firstDayOf,
   lastDayOf,
+  monthOf,
   type Month,
 } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
@@ -19,6 +20,7 @@ import {
 import type { Space } from "@/domain/space/space";
 import { bySpace } from "./by-space";
 import { categoriesTheSpaceCanSee } from "./categories";
+import { refuseAClosedMonth } from "./closed-months";
 import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
 import { movements, spaceMembers } from "./schema";
@@ -74,6 +76,15 @@ export async function recordMovementInSpace(
 ): Promise<Movement> {
   const checked = recordMovement(draft, await asRecording(db, context));
 
+  // The one refusal a closed month makes (`refuseAClosedMonth`), asked here
+  // because this is where the day is finally a day. A late ticket is not
+  // turned away by it: `recordMovement` dates a Movement by the day somebody
+  // says the money moved, and ADR-0002 already answered what happens to a
+  // September receipt found in October -- it is recorded in October and
+  // consumes October's Budget. What this refuses is a Movement aimed *into* a
+  // month that is closed.
+  await refuseAClosedMonth(db, checked.spaceId, monthOf(checked.occurredOn));
+
   const [created] = await db
     .insert(movements)
     .values({
@@ -116,6 +127,14 @@ export async function amendMovementInSpace(
     changes,
     await asRecording(db, context),
   );
+
+  // Both months, and they are not always the same one. A correction can move
+  // the day it happened on, so it can lift a Movement out of one month and
+  // drop it into another -- and either end being closed is a closed month
+  // changing. The month it leaves is asked first, because that is the one a
+  // person is looking at.
+  await refuseAClosedMonth(db, context.space.id, monthOf(existing.occurredOn));
+  await refuseAClosedMonth(db, context.space.id, monthOf(checked.occurredOn));
 
   const [updated] = await db
     .update(movements)
@@ -160,6 +179,33 @@ export async function strikeMovementInSpace(
   struckBy: string,
 ): Promise<boolean> {
   if (!isIdentifier(movementId)) return false;
+
+  // The day it happened on, read before the strike, because the month it falls
+  // in is what decides whether it may be struck at all and this is the one
+  // write here that never had to read the row. Nothing found reads as nothing
+  // to strike, exactly as the WHERE below would have answered.
+  const [standingRow] = await db
+    .select({ occurredOn: movements.occurredOn })
+    .from(movements)
+    .where(
+      and(
+        eq(movements.id, movementId),
+        eq(movements.spaceId, spaceId),
+        standing,
+      ),
+    )
+    .limit(1);
+
+  if (!standingRow) return false;
+
+  // Striking a Movement out is editing the month it is in: the figures every
+  // screen reads move, which is exactly what a closed month promises will
+  // never happen again (ADR-0002).
+  await refuseAClosedMonth(
+    db,
+    spaceId,
+    monthOf(calendarDate(standingRow.occurredOn)),
+  );
 
   const struck = await db
     .update(movements)

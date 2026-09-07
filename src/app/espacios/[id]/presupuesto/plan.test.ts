@@ -5,6 +5,7 @@ import {
   type BudgetItem,
   type FixedItem,
 } from "@/domain/budget/budget";
+import { ClosedMonthError } from "@/db/closed-months";
 import { calendarDate, month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
 import type { Movement } from "@/domain/movement/movement";
@@ -589,5 +590,69 @@ describe("carrying a month's plan into another month", () => {
   it("has something to say about every way it can be refused", () => {
     expect(refusalMessage({ kind: "nothing-to-copy" })).toBeTruthy();
     expect(refusalMessage({ kind: "already-planned" })).toBeTruthy();
+  });
+});
+
+/*
+ * The close, met from the screen (#117). `amendItem` and the correction screen
+ * both promised the refusal would live in one place above the domain, and this
+ * is what the person gets when it fires: an outcome the screen can say a
+ * sentence about, and never the blank apology a `failed` earns.
+ */
+describe("a month that has been closed", () => {
+  const closed = () => new ClosedMonthError(month("2026-09"));
+
+  it("refuses a new item, as a closed month and not as a failure", async () => {
+    await expect(
+      handlePlanBudgetItem(
+        ports({
+          plan: async () => {
+            throw closed();
+          },
+        }),
+        { ...draft, dueDay: null },
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  it("refuses a correction the same way", async () => {
+    await expect(
+      handleAmendBudgetItem(
+        ports({
+          amend: async () => {
+            throw closed();
+          },
+        }),
+        CASA.id,
+        PLANNED.id,
+        { amount: 1_00 },
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  /*
+   * Decision 1 of the #109 map: an unpaid Fixed item stays unpaid, in its own
+   * month, forever. The screen is owed the reason, not an apology.
+   */
+  it("refuses marking a Fixed item paid the same way", async () => {
+    await expect(
+      handlePayFixedItem(
+        ports({
+          pay: async () => {
+            throw closed();
+          },
+        }),
+        CASA.id,
+        FIXED.id,
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  it("says the month is closed, and does not invite a second try", async () => {
+    const said = refusalMessage({ kind: "month-closed" });
+
+    expect(said).not.toBe("");
+    expect(said).not.toBe(refusalMessage({ kind: "failed", cause: null }));
+    expect(said.toLowerCase()).not.toContain("de nuevo");
   });
 });

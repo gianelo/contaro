@@ -24,10 +24,17 @@ import styles from "./page.module.css";
  * not have to know which kind it is to link to it.
  *
  * A Budget stays editable throughout its month, and nothing here asks whether
- * the month is still open. The close is what shuts editing down — it freezes
- * a month's Movements as much as its plan (ADR-0002) — and it has not been
- * built yet, so it will refuse this in one place rather than in two that would
- * then have to agree.
+ * the month is still open. That promise is paid: the close exists (#117) and
+ * refuses every write into a closed month in one place, `refuseAClosedMonth`,
+ * which every store asks before it writes — its plan and its Movements alike
+ * (ADR-0002).
+ *
+ * So this screen still opens on an item of a closed month, and the forms below
+ * still render. What a closed month is *shown* as is #119's, and it is a
+ * question about a screen rather than about a rule: the shape the product
+ * already has for it is omission and a sentence, never a greyed-out control.
+ * Until then the refusal a person meets is the one the submission returns,
+ * which is late but never wrong.
  */
 export default async function BudgetItemPage({
   params,

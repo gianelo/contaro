@@ -13,6 +13,7 @@ import { createSpaceForMember } from "./spaces";
 import { addCategoryToSpace, catalogueForSpace } from "./categories";
 import { expected } from "@/domain/budget/budget";
 import { movementsInMonth, strikeMovementInSpace } from "./movements";
+import { ClosedMonthError, closeMonthInSpace } from "./closed-months";
 import {
   amendBudgetItemInSpace,
   amendFixedItemInSpace,
@@ -932,4 +933,161 @@ it("copies out of a month that is still being changed", async () => {
 
   expect(copied?.name).toBe("Semana 1");
   expect(copied?.amount).toEqual(money(400_000_00, "ARS"));
+});
+
+/*
+ * The close, from the side the plan feels it (#117).
+ *
+ * ADR-0002 said a closed month never changes and `amendItem` promised the
+ * refusal would live in one place above the domain. These are that promise,
+ * driven against real rows: every way a plan can be written into is asked, and
+ * every one of them is turned away by the same error.
+ */
+
+const IN_OCTOBER = calendarDate("2026-10-03");
+
+async function aClosedSeptember(name: string) {
+  const made = await aSpaceWithACategory(name);
+  const planned = await planBudgetItemInSpace(db, made.space, {
+    spaceId: made.space.id,
+    month: SEPTEMBER,
+    categoryId: made.categoryId,
+    amount: 100_000_00,
+    name: "Súper",
+  });
+  const fixed = await planFixedItemInSpace(db, made.space, {
+    spaceId: made.space.id,
+    month: SEPTEMBER,
+    categoryId: made.categoryId,
+    amount: 50_000_00,
+    name: "Alquiler",
+    dueDay: 10,
+  });
+
+  await closeMonthInSpace(
+    db,
+    { space: made.space, closedBy: made.member.id, today: IN_OCTOBER },
+    SEPTEMBER,
+  );
+
+  return { ...made, planned, fixed };
+}
+
+it("refuses a new item on a closed month", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado planear");
+
+  await expect(
+    planBudgetItemInSpace(db, space, {
+      spaceId: space.id,
+      month: SEPTEMBER,
+      categoryId,
+      amount: 10_000_00,
+      name: "Tarde",
+    }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses a new Fixed item on a closed month", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado fijo");
+
+  await expect(
+    planFixedItemInSpace(db, space, {
+      spaceId: space.id,
+      month: SEPTEMBER,
+      categoryId,
+      amount: 10_000_00,
+      name: "Tarde",
+      dueDay: 5,
+    }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses a correction to an item of a closed month", async () => {
+  const { space, planned } = await aClosedSeptember("Cerrado corregir");
+
+  await expect(
+    amendBudgetItemInSpace(db, space, planned.id, { amount: 1_00 }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses a correction to a Fixed item of a closed month", async () => {
+  const { space, fixed } = await aClosedSeptember("Cerrado corregir fijo");
+
+  await expect(
+    amendFixedItemInSpace(db, space, fixed.id, { amount: 1_00 }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses taking an item off a closed month's plan", async () => {
+  const { space, planned } = await aClosedSeptember("Cerrado sacar");
+
+  await expect(
+    removeBudgetItemFromSpace(db, space, planned.id),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+/*
+ * Decision 1 of the #109 map, read from the side that enforces it: an unpaid
+ * Fixed item stays unpaid, in its own month, forever. Nothing is deleted --
+ * the record that it went unpaid is the point -- and it is refused in October
+ * as much as in September, because what the payment writes is a pointer onto
+ * September's plan.
+ */
+it("refuses marking a Fixed item of a closed month paid, and leaves it pending", async () => {
+  const { space, member, fixed } = await aClosedSeptember("Cerrado pagar");
+
+  await expect(
+    payFixedItemInSpace(
+      db,
+      { space, recordedBy: member.id, today: IN_OCTOBER },
+      fixed.id,
+    ),
+  ).rejects.toThrow(ClosedMonthError);
+
+  const still = await findBudgetItemInSpace(db, space, fixed.id);
+  expect(still && still.kind === "fixed" && isPaid(still)).toBe(false);
+});
+
+it("refuses copying a plan onto a closed month", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado copiar");
+
+  await planBudgetItemInSpace(db, space, {
+    spaceId: space.id,
+    month: month("2026-08"),
+    categoryId,
+    amount: 10_000_00,
+    name: "Agosto",
+  });
+
+  await expect(
+    copyPlanIntoMonth(db, space, month("2026-08"), SEPTEMBER),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+/*
+ * A closed month is a month a plan may still be *read* out of. That is decision
+ * 24 of the #109 map, and ADR-0050's "the copy is a snapshot and not a link":
+ * waiting for a close would mean nobody could plan October until September was
+ * over, which is exactly the time they would.
+ */
+it("copies a closed month's plan into an open one", async () => {
+  const { space } = await aClosedSeptember("Cerrado copiar desde");
+
+  const copied = await copyPlanIntoMonth(db, space, SEPTEMBER, OCTOBER);
+
+  expect(copied.kind).toBe("copied");
+});
+
+it("leaves every other month of the Space writable", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado y el resto");
+
+  await expect(
+    planBudgetItemInSpace(db, space, {
+      spaceId: space.id,
+      month: OCTOBER,
+      categoryId,
+      amount: 10_000_00,
+      name: "Octubre",
+    }),
+  ).resolves.toMatchObject({ month: "2026-10" });
 });

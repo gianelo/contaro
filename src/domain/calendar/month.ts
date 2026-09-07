@@ -144,6 +144,29 @@ export function lastDayOf(month: Month): CalendarDate {
 }
 
 /**
+ * Whether a month is behind the day somebody is standing in.
+ *
+ * The one question the monthly close rests on, and the reason it takes a day
+ * rather than reading a clock. ADR-0018 made "today" the Reader's, and this is
+ * where that matters most in the whole product: at nine at night on the 30th in
+ * Bogota the server is already in October and the Member is not, so a close
+ * decided on the server's day would offer to permanently freeze a month that,
+ * for the person looking at it, is still running. There is no undo.
+ *
+ * The last day of a month is still inside it. Somebody standing on the 30th of
+ * September has not finished September -- money moves on the last day of a
+ * month like any other -- so the month is over on the 1st of October and not a
+ * day sooner.
+ */
+export function hasEnded(of: Month, today: CalendarDate): boolean {
+  // Compared as text, which is exactly what `WRITTEN` buys: two days written
+  // with the same leading zeros sort the way the calendar orders them, so this
+  // is the same answer `daysBetween` would give without building two `Date`s
+  // to throw away.
+  return today > lastDayOf(of);
+}
+
+/**
  * How many days a month has.
  *
  * `lastDayOf` said as a number, because two things want the count rather than

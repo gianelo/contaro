@@ -29,3 +29,9 @@ Several items on one Category are deliberately **not** a unique-key violation. T
 Where they stay several is under the Category's own comparison row, since ADR-0043. The screen used to draw them as a list of their own beside the comparison, which meant one Category name printed twice with a different figure against each; they are now the tray that row opens, which is the same sentence this paragraph makes — a Category's figure is its items added up — drawn instead of only written down.
 
 Do not "fix" this later by adding a `budgets` table so that a month can carry a status. The month is what carries a status, and a plan is what a Space has written down about it.
+
+## The home it got
+
+The sentence above — "the close gets its own home when its ticket arrives, and it will be a home the Movements can see too" — was paid by #117. It is `closed_months`, one row per Space and month, and ADR-0052 records why the shape came out exactly as this one predicted: a month with no plan can be closed, and the Movements are asked against the same rows the plan is.
+
+Nothing here changes. The `budgets` table this refused is still refused, and it is refused for a reason that got stronger rather than weaker: a status now exists in the product, and it hangs off the month, which is what this decision said it would hang off.
