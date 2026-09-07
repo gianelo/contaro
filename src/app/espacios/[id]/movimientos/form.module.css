@@ -1,15 +1,20 @@
 /*
- * The whitespace between the blocks is what gives, and it is what gives on
- * purpose. An iPhone 13 hands the web 664px of viewport and the blocks of this
- * screen need 643 of them, so something had to be smaller; the alternative on
- * the table was shrinking the 50px keys, and the keys are the thing a thumb
- * lands on while somebody is standing at a till with a queue behind them
- * (#60, story 18 in #1). Air is cheaper than aim.
+ * The whitespace between the blocks is what gives, and it gives first. An
+ * iPhone 13 hands the web 664px of viewport; #60 got the blocks of this screen
+ * down to 643 of them by spending air rather than by shrinking the 50px keys,
+ * because the keys are what a thumb lands on while somebody is standing at a
+ * till with a queue behind them (story 18 in #1). Air is cheaper than aim.
+ *
+ * #66 then asked for a seventh block -- what the expense was -- and 21px of
+ * headroom could not buy a 58px field. So the air gave what it still had, 8px
+ * down to 6, and the keys gave the rest down to `--hit-target`. First and not
+ * only: the order is the part of ADR-0037 that survived, and a screen that
+ * ever needs another block spends this before it spends aim again (ADR-0048).
  */
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 /*

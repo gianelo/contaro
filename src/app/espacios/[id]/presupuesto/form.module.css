@@ -1,7 +1,20 @@
+/*
+ * The whitespace between the blocks is what gives, and it is what gives on
+ * purpose -- the same trade the Movement entry form made in #60, arrived at
+ * here for the same reason. An iPhone 13 hands the web 664px of viewport. The
+ * plan's entry screen spends 607 of them on blocks nobody can shrink -- 553 of
+ * form and a 54px head -- which leaves 57 for the shell's padding and every gap
+ * on the screen. At 20px the four gaps here were 80 of that 57. The other thing
+ * on the table was the 50px keys, and the keys are what a thumb lands on
+ * (#86, ADR-0046). Air is cheaper than aim.
+ *
+ * It reaches the screen that corrects an item too, which keeps its tab bar and
+ * is taller than this one. Shorter is not worse there.
+ */
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-9);
+  gap: var(--space-4);
 }
 
 .error {

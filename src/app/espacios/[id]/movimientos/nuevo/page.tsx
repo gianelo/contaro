@@ -6,7 +6,7 @@ import { currentSpace, viewingMember } from "../../space";
 import { MovementForm } from "../form";
 import { categoryChips, spaceMembers, todayOnTheServer } from "../month";
 import { recordMovementAction } from "../actions";
-import { EntryHead } from "./head";
+import { MovementEntryHead } from "./head";
 
 /**
  * Recording an expense: the screen the whole product rests on (#7).
@@ -52,7 +52,7 @@ export default async function NewMovementPage({
 
   return (
     <AppShell>
-      <EntryHead
+      <MovementEntryHead
         back={`/espacios/${space.id}/movimientos`}
         sharedWith={other?.name ?? null}
       />
@@ -81,6 +81,9 @@ export default async function NewMovementPage({
           // `recordMovement` fills it in from the session either way, so a
           // form that carries nothing still lands on the right person.
           attributedTo: recordedBy,
+          // Nothing to open the field on: naming a Movement is something a
+          // person may do and never something the product guesses for them.
+          name: null,
         }}
         action={recordMovementAction}
         submit={t("movements.submit")}

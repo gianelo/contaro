@@ -143,6 +143,20 @@
    * words, so nothing depends on reading eleven pixels of colour. */
   --text-2xs: 11px;
   --text-xs: 12px;
+  /*
+   * How tall a one-line caption's box is, as a multiple of its own type.
+   *
+   * `line-height: normal` is not a value the app chose -- it is whatever the
+   * font the operating system happened to supply says, and the app names five
+   * fonts and a generic. On the SF the product is drawn for a 12px caption is
+   * 15px tall; on a Linux fallback the same caption is 17. That is the height
+   * of a screen depending on which machine is drawing it, which is ADR-0037's
+   * finding on a different property: space nobody chose (#86).
+   *
+   * 1.25 is what SF already renders at 12px, so nothing moves on the phone the
+   * product is for; what changes is that it stops moving anywhere else.
+   */
+  --line-caption: 1.25;
   --text-sm: 13px;
   --text-base: 14px;
   --text-md: 15px;

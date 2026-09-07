@@ -10,6 +10,8 @@ It is the counterpart of ADR-0027 rather than an exception to it. The raised but
 
 `Cancelar` moves into the head with the title, because a person who changes their mind is at the top of the screen or at the keypad, and the foot of the page is a scroll past both. The title is centred by an invisible copy of the word `Cancelar` taking the room on the other side: a fixed width would have to be guessed, and would be wrong in another language.
 
+#86 made it two screens rather than one. The plan's entry screen holds the same typed-but-unsaved amount under the same bar, so it makes the same trade, and ADR-0046 has the argument for why it transfers. The head both screens wear now lives in `@/ui/entry-head` -- including the invisible `Cancelar` below, which is the part a second copy would get subtly wrong. What stayed behind on this screen is the pill, because its argument is this screen's: an expense is about to be attributed to somebody, and a plan is not.
+
 There is no account row and no Space heading either. What somebody about to spend needs from that heading is which Space they are spending from, and the pill under the title says exactly that — and says nothing at all in a Space of one, where it would state the obvious above the figure that matters.
 
 ## The figure is one figure, set at two sizes
@@ -55,6 +57,8 @@ To somebody hearing it they were two buttons with one name, which is a real ambi
 ## Consequences
 
 `MovementForm` is shared with the screen that corrects a Movement, and that screen keeps its tab bar and its Space heading. #37 asks for the entry screen and this gives it that; the correction screen inherits the new keypad, the new line and the grey disabled button because they live in the form, and inherits nothing else. No seam was needed.
+
+**That last sentence is no longer true, and ADR-0047 is where it stopped being.** It was a statement of what #37 left alone rather than an argument for leaving it alone, and the argument above — the one about a bar being three ways to lose what has been typed — turned out to reach it. ADR-0046 read that argument again and found it is about the typed-but-unsaved state and not about standing at a till; the correction screen holds that state in this very component. It was also the only way that screen fits a phone: with 78px of tab bar on it there is no arrangement under 664px. It leaves the shell too, wearing the same head, and says who typed the Movement in, in the pill this one says which Space is being spent from.
 
 Two changes reach beyond this screen on purpose. A `ChipField` legend is one step quieter everywhere, because a section label is a signpost over the thing it names. And a disabled `Button` is filled with grey everywhere instead of faded to 40%, because a half-opacity control means "loading" in every other product a person has used.
 

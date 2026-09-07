@@ -28,6 +28,10 @@ _Avoid_: Transaction, Entry, Record
 Which way the money went: an expense or an income. It is what kind of Movement one is and never the sign of its amount, it is fixed when the Movement is recorded and can never be corrected afterwards, and it decides what the Movement carries — an expense is filed under a Category and an income is filed nowhere (ADR-0016).
 _Avoid_: Kind, Type, Sign, Flow
 
+**Movement name**:
+What a Movement was: "Éxito", "Uber", "la farmacia". It is what a row on the month's list is read by, with the Category as the quieter line beneath it. It is offered and never demanded — nobody is asked to name a Movement on the way in, and one that carries no name is read by its Category, the way every row was read before names existed (ADR-0048). This is the opposite of a Budget item, which must be called something, and the difference is the screen each is entered on rather than an inconsistency.
+_Avoid_: Description, Merchant, Payee, Concept, Note, Memo, Title
+
 **Recorded by**:
 The Member who created a Movement. Set automatically from the signed-in Member and never changed afterwards; it exists to answer "who typed this in".
 _Avoid_: Author, Creator, Owner

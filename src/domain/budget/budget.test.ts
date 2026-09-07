@@ -557,6 +557,7 @@ const expense = (changes: Partial<Movement> = {}): Movement => ({
   occurredOn: calendarDate("2026-09-12"),
   recordedBy: "member-gian",
   attributedTo: "member-gian",
+  name: null,
   ...changes,
 });
 
@@ -1009,6 +1010,7 @@ describe("marking a Fixed item paid", () => {
       amount: 180_000_00,
       occurredOn: "2026-09-18",
       attributedTo: null,
+      name: "Arriendo",
     });
   });
 
@@ -1020,6 +1022,14 @@ describe("marking a Fixed item paid", () => {
       paymentFor(fixed({ dueOn: calendarDate("2026-09-01") }), paying)
         .occurredOn,
     ).toBe("2026-09-18");
+  });
+
+  // The one field on the draft that is neither derived from the item's figures
+  // nor left for the domain: the item is already called something (ADR-0042),
+  // so the Movement paying "Netflix" reaches the month's list called Netflix
+  // instead of "Suscripciones" -- with nobody typing a character (#66).
+  it("names the expense after the item it is paying", () => {
+    expect(paymentFor(fixed({ name: "Netflix" }), paying).name).toBe("Netflix");
   });
 
   // Null, which `recordMovement` reads as the Member doing the recording.
@@ -1046,6 +1056,7 @@ describe("marking a Fixed item paid", () => {
       amount: 180_000_00,
       occurredOn: "2026-09-18",
       attributedTo: null,
+      name: "Arriendo",
     });
   });
 

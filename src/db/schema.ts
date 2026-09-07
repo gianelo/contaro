@@ -302,6 +302,18 @@ export const movements = pgTable(
       .notNull()
       .references(() => members.id),
     /**
+     * What it was: "Éxito", "Uber" (#66). The name a row on the month's list
+     * is read by, with its Category as the quieter second line.
+     *
+     * Nullable, unlike `budget_items.name`, and the difference is the screen
+     * each is entered on rather than an inconsistency. A plan is written
+     * sitting down, so ADR-0042 made every item called something. A Movement
+     * is recorded standing at a till on a screen ADR-0028 gives one thing to
+     * do, so a name is offered and never demanded -- a row without one is read
+     * by its Category, the way every row was before this column.
+     */
+    name: text("name"),
+    /**
      * Who struck this Movement out, and when. A correction that removes an
      * entry is itself an entry: a ledger that loses rows silently lies about
      * every figure downstream, so a deletion writes down whose it was rather
@@ -333,6 +345,16 @@ export const movements = pgTable(
       sql`(${table.direction} = 'expense' AND ${table.categoryId} IS NOT NULL)
         OR (${table.direction} = 'income' AND ${table.categoryId} IS NULL)`,
     ),
+    // Something or nothing, and never a blank. Written with `IS NULL OR` and
+    // not left implicit: 0012 found that a CHECK evaluating to NULL is
+    // satisfied in Postgres, so a bare `char_length(btrim(name)) > 0` is a
+    // rule about blanks that lets nulls past by accident rather than by
+    // decision. The sixty is `MAX_MOVEMENT_NAME_LENGTH` in the domain.
+    check(
+      "movements_name_is_something_or_nothing",
+      sql`${table.name} IS NULL
+        OR (char_length(btrim(${table.name})) > 0 AND char_length(${table.name}) <= 60)`,
+    ),
     check(
       "movements_struck_or_standing",
       sql`(${table.struckBy} IS NULL AND ${table.struckAt} IS NULL)
@@ -358,11 +380,12 @@ export const movements = pgTable(
  * is the month -- its Movements as much as its plan -- so that will not hang
  * here either.
  *
- * `kind` says which of the two an item is, and the three columns after it are
- * what only a Fixed one carries (#13). They are nullable and held together by
- * a check rather than split into a second table: the two kinds are one plan,
- * they add up into one total, and a month's items read as one list -- which a
- * union of two tables would turn into two queries agreeing by hand.
+ * `kind` says which of the two an item is. `name` is asked of both (#79), and
+ * the two columns after it are what only a Fixed one carries (#13). Those two
+ * are nullable and held together by a check rather than split into a second
+ * table: the two kinds are one plan, they add up into one total, and a month's
+ * items read as one list -- which a union of two tables would turn into two
+ * queries agreeing by hand.
  */
 export const budgetItems = pgTable(
   "budget_items",
@@ -410,13 +433,19 @@ export const budgetItems = pgTable(
      * Category -- four weeks of groceries under "Súper" are four lines a person
      * has to tell apart.
      *
-     * Still nullable here, and that is the expand half of an expand/contract
-     * (ADR-0008) rather than a column that permits a nameless row. The check
-     * below already refuses one; making the column itself `NOT NULL` is a third
-     * deploy, after this one has filled every row that was written without a
-     * name.
+     * Required here, and the check below says half of it again on purpose: the
+     * column is what refuses a name that is not there, the check is what
+     * refuses one that is only spaces, and neither covers the other.
+     *
+     * The running column permitted a null from 0009 to 0013. 0009 added it
+     * nullable, when a name was something only a Fixed item carried; 0012 made
+     * it a column both kinds carry and filled it (#79), bridging ADR-0008's
+     * window with a `BEFORE INSERT` trigger rather than a default, because the
+     * name a nameless row deserves is read off a sibling column and a default
+     * is a constant. 0013 dropped that bridge and made the column say this
+     * (#90), so this declaration and the running column now agree.
      */
-    name: text("name"),
+    name: text("name").notNull(),
     /**
      * The day a Fixed item falls due. A `date` like `movements.occurred_on`,
      * and held to being inside `month` by a check below -- the domain builds

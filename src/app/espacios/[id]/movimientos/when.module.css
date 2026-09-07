@@ -23,6 +23,31 @@
   font-size: var(--text-base);
 }
 
+/*
+ * One line, whatever is in it. `.line` is a flex row and never wraps as a row;
+ * what wraps is the name inside its own span, which is why the rule goes
+ * there and not here.
+ *
+ * ADR-0036 says an amount is never cut to fit and the line is. A name is not
+ * an amount -- `head.module.css` has cut the Space's own since #40 -- and it
+ * is the last thing on either entry screen whose height was somebody's name
+ * rather than the screen's own (ADR-0047).
+ */
+.who {
+  /* Flex items floor at their content width, so an unshrinkable span would
+     paint straight out of the line instead of ellipsising inside it. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Never squashed to buy the name a character: they are 15px because that is
+   what the canvas draws them at. */
+.line > svg {
+  flex-shrink: 0;
+}
+
 .dot {
   color: var(--color-disabled);
 }

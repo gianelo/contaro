@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useId, type ReactNode } from "react";
 import styles from "./grouped-list.module.css";
+import { visuallyHidden } from "./visually-hidden";
 import { cx } from "./cx";
 import { hitTarget } from "./hit-target";
 
@@ -32,7 +33,7 @@ export function GroupedList({
     <div className={styles.group} role="group" aria-labelledby={labelId}>
       <h2
         id={labelId}
-        className={labelHidden ? styles.hiddenLabel : styles.label}
+        className={labelHidden ? visuallyHidden : styles.label}
       >
         {label}
       </h2>

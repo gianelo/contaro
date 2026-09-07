@@ -160,6 +160,7 @@ async function aSpaceWithRowsOnIt(context: BrowserContext, baseURL: string) {
         amount: 6_000_000,
         occurredOn: day,
         attributedTo: null,
+        name: null,
       },
     );
   } finally {

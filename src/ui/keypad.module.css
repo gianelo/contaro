@@ -36,6 +36,11 @@
 .symbol {
   font-size: var(--text-3xl);
   font-weight: 300;
+  /* The same 1.1 the amount keeps, so the two halves of one figure agree about
+     how tall a line is. They are aligned on their baselines, so this is not
+     visible -- what it settles is `.figure`'s box, which would otherwise be one
+     more thing the operating system's font decides (#86). */
+  line-height: 1.1;
 }
 
 .amount {
@@ -67,6 +72,7 @@
   margin: 0;
   text-align: center;
   font-size: var(--text-xs);
+  line-height: var(--line-caption);
   color: var(--color-text-tertiary);
 }
 
@@ -77,16 +83,26 @@
 }
 
 /*
- * The canvas's key: 50px tall, on the same fill every quiet ground in the app
- * uses. Three of its numbers have no token because nothing else wants them --
- * the 50px height, the 10px corner and the 25px face are this keypad's and no
- * screen else's (ADR-0027 for why that is a value and not a token).
+ * 44px tall, on the same fill every quiet ground in the app uses. The corner
+ * and the face are the canvas's and have no token because nothing else wants
+ * them (ADR-0027 for why that is a value and not a token); the height is the
+ * one number here that is no longer the canvas's, and it is `--hit-target`
+ * written out rather than referenced, because it is a height a key happens to
+ * have arrived at and not a minimum being enforced.
+ *
+ * The canvas draws 50 and ADR-0037 kept it, weighing 50 against 44 and choosing
+ * the air between the blocks -- what `form.module.css` and ADR-0046 both call
+ * being cheaper than aim. #66 put a
+ * seventh block on the form and the air could not cover it: 21px of headroom
+ * against a 58px field. The air gave what it had (8px to 6) and the keys gave
+ * the rest, stopping at the floor the whole product measures a touch target
+ * against rather than at whatever made the screen fit. See ADR-0048.
  */
 .key {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 50px;
+  height: 44px;
   border: none;
   border-radius: 10px;
   background: var(--color-fill);

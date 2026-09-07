@@ -1,8 +1,24 @@
+/*
+ * The same 8px the form puts between its own blocks, and not the 24px that
+ * used to hold this off Guardar. It is the last thing this screen had left to
+ * sell, and what it bought is headroom: 24px leaves 9px under the fold and 8px
+ * leaves 25 (#73, ADR-0047).
+ *
+ * 9px would fit, and it is exactly what ADR-0046 shipped on the plan's entry
+ * screen -- where CI then measured 670 against 664, because a Linux runner
+ * draws the same screen in a taller font. That is the evidence this number is
+ * bought with: 9px is a measurement of one laptop.
+ *
+ * What it costs is a destructive control one gap from the button beside it,
+ * and it is affordable here for a reason it would not be everywhere: striking
+ * a Movement out asks first (#1), so a thumb that lands wrong loses a sheet
+ * and never an expense.
+ */
 .strike {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  margin-top: var(--space-10);
+  margin-top: var(--space-4);
 }
 
 .confirm {
