@@ -14,6 +14,16 @@ export type Space = {
   id: string;
   name: string;
   currency: CurrencyCode;
+  /**
+   * The Member who made it (#116). Recovered rather than invented for the
+   * Spaces that predate the column, and never changed afterwards.
+   *
+   * It is here and not on the membership row because it is a fact about the
+   * Space -- exactly one Member created it, and the other one arrived by
+   * Invitation -- and because a `role` on the membership would be a permission
+   * system growing out of the two acts ADR-0051 admits and no more.
+   */
+  createdBy: string;
 };
 
 /** A Space that does not exist yet, so it has no id to give. */
@@ -73,7 +83,11 @@ export function createSpace(
   }
 
   return {
-    space: { name: spaceName(draft.name), currency: currency(draft.currency) },
+    space: {
+      name: spaceName(draft.name),
+      currency: currency(draft.currency),
+      createdBy: creatorId,
+    },
     // The creator is a Member from the first instant: a Space nobody belongs to
     // is a Space nobody can open, and #9 adds the second Member to this list.
     memberIds: [creatorId],

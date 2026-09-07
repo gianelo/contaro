@@ -12,6 +12,10 @@ _Avoid_: Wallet, Group, Account, Cartera, Grupo, Cuenta
 A person with access to a Space. Members are added by Invitation, addressed to an email address and never mailed to it (ADR-0017).
 _Avoid_: User, Partner, Participant
 
+**Creator**:
+The Member who made a Space, remembered by it and never changed afterwards. The one asymmetry between a Space's two Members, and it covers exactly two acts: the Monthly close, and approving the Carry-over. Everything else stays symmetric — renaming the Space, recording Movements, editing the plan, inviting, and the colours each Member wears are all as much the invited Member's as the Creator's (ADR-0020, ADR-0051). It is a tie-break on two irreversible acts and never a rank: the Space says who made it, not who outranks whom. On the Spaces that predate the column it is recovered from the earliest membership row rather than invented.
+_Avoid_: Owner, Admin, Role, Host, Head
+
 **Reader**:
 The Member a screen is being shown to, considered as the person reading it. The separators a figure is written with are theirs, taken from what their browser says they read; the currency never is, and is always the Space's (ADR-0014). The day they are standing in is theirs too: "today" on any screen is their day, never the server's (ADR-0018). The two together decide how wide a figure is, and a screen never assumes it is narrow: an amount is written in full or the line it sits on gives way, and it is never cut, shrunk, or overprinted to fit (ADR-0036). Both halves are the type `Reader` in `src/app/reader.ts`, built from a request by `readerOf` — so the word here and the code say the same thing, and whatever turns out to be theirs next has one place to go. What is theirs and *not* a Reader's is the theme: it is chosen on a device rather than read off a request, it never reaches the server, and putting it here would mean sending a preference up on every request that has no use for it (ADR-0030).
 _Avoid_: Viewer, User, Audience
@@ -86,9 +90,9 @@ How much of a Budget's variable items a Space would have spent by today, were sp
 _Avoid_: Rhythm, Burn rate, Expected spend
 
 **Carry-over**:
-The unspent part of a month's Budget. At close the Members approve it, and it is recorded as income in the following month, attributed to no Member.
+The unspent part of a month's Budget. At close the Space's Creator approves it, and it is recorded as income in the following month, attributed to no Member (ADR-0003, ADR-0051).
 _Avoid_: Leftover, Rollover, Surplus
 
 **Monthly close**:
-The point, triggered by hand once a Member decides the month is complete, at which its Budget and Movements become permanently immutable: nothing in a closed month can be edited, and no Movement can be added to it.
+The point, triggered by hand once the Space's Creator decides the month is complete, at which its Budget and Movements become permanently immutable: nothing in a closed month can be edited, and no Movement can be added to it. The Creator and not either Member, because it is irreversible and the other one has to live inside it (ADR-0002, ADR-0051).
 _Avoid_: Lock, Freeze, Cutoff

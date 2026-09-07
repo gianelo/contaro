@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import type { Space } from "@/domain/space/space";
 import { SpaceHead } from "./head";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 
 describe("the head of a screen inside a Space", () => {
   /*

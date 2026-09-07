@@ -29,3 +29,16 @@ Sorted by the raw id and not by `inReadingOrder`, which exists to put text in fr
 It throws on a third Member too, and it checks the count before it looks up the seat. Checked afterwards, two of the three would still get a colour and the screen would look right; a Space holding three has gone wrong somewhere upstream, and this is not the place to smooth that over.
 
 The same Member may wear different colours in two different Spaces. That is not a defect of this rule, it is the rule: the pair says which of *these two* people it is, and a personal Space has no other one to be told apart from.
+
+## The one named exception
+
+ADR-0051 takes two acts out of this symmetry: **closing a month, and approving
+the carry-over, are the Space's creator's** and the invited Member performs
+neither. It is an exception and not an amendment — nothing decided above
+changes. A Member's colour is still decided by the Space, both Members still
+see the same two colours on the same two people, and the seat still comes from
+sorted ids and never from who arrived first.
+
+The list is closed at two. Renaming the Space, recording Movements, editing the
+plan, inviting — every other act stays exactly as symmetric as this decision
+made it, and none of them may ask who created the Space.

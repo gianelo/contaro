@@ -8,12 +8,14 @@ const casa = {
   id: "3f2b0c1e-0000-4000-8000-0000000000ca",
   name: "Casa",
   currency: "ARS",
+  createdBy: ana,
 } as const;
 
 const viaje = {
   id: "3f2b0c1e-0000-4000-8000-0000000000a1",
   name: "Viaje",
   currency: "USD",
+  createdBy: ana,
 } as const;
 
 const anaEnCasa = { id: ana, name: "Ana Gómez" };

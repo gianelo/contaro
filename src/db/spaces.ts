@@ -6,9 +6,9 @@ import {
   type SpaceWithMembers,
 } from "@/domain/space/access";
 import { createSpace, type Space } from "@/domain/space/space";
-import { isCurrencyCode } from "@/domain/money/currency";
 import type { Queries } from "./connection";
 import { members, spaceMembers, spaces } from "./schema";
+import { asSpace } from "./space-row";
 
 type Database = Queries;
 
@@ -17,6 +17,7 @@ const spaceColumns = {
   id: spaces.id,
   name: spaces.name,
   currency: spaces.currency,
+  createdBy: spaces.createdBy,
 };
 
 /**
@@ -91,22 +92,6 @@ export async function findSpaceForMember(
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/**
- * The currency column is text, because the set of codes belongs to the domain
- * and not to a database type. A row holding something outside that set can only
- * come from a write that went round the domain, and rendering it would put a
- * figure on screen in a money nobody can name.
- */
-function asSpace(row: { id: string; name: string; currency: string }): Space {
-  if (!isCurrencyCode(row.currency)) {
-    throw new Error(
-      `Space ${row.id} is stored in "${row.currency}", which is not a currency contaro offers.`,
-    );
-  }
-
-  return { id: row.id, name: row.name, currency: row.currency };
-}
 
 /**
  * Every Space a Member may open, oldest membership first, each with everyone

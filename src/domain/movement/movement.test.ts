@@ -19,7 +19,12 @@ import {
   type Recording,
 } from "./movement";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 const GIAN = "member-gian";
 const ANA = "member-ana";
 const BETO = "member-beto";
