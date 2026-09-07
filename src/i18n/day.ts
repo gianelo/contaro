@@ -88,11 +88,30 @@ const monthWithYear = new Intl.DateTimeFormat(locale, {
  * and a month from another year cannot be misread as this year's.
  */
 export function monthLabel(of: Month, thisMonth: Month): string {
-  const at = new Date(`${firstDayOf(of)}T00:00:00Z`);
-  const written =
-    of.slice(0, 4) === thisMonth.slice(0, 4)
-      ? monthAlone.format(at)
-      : monthWithYear.format(at);
+  const written = monthName(of, thisMonth);
 
   return written.charAt(0).toUpperCase() + written.slice(1);
+}
+
+/**
+ * The same month, written to be read inside a sentence: "Copiar el plan de
+ * agosto".
+ *
+ * The uncapitalised half of `monthLabel`, and its own function rather than a
+ * flag on that one, because the two are asked by two different kinds of place.
+ * A heading stands alone and is capitalised; a month named on a row is part of
+ * a sentence, and Spanish writes it in lower case there -- which is the rule
+ * `monthLabel`'s own comment states and then has to break for the one caller
+ * that is not a heading (#121).
+ *
+ * The year rides along on the same rule for the same reason: a plan carried
+ * forward can be years old, and "el plan de agosto" said about a month in 2024
+ * is an offer a person would accept for the wrong month.
+ */
+export function monthName(of: Month, thisMonth: Month): string {
+  const at = new Date(`${firstDayOf(of)}T00:00:00Z`);
+
+  return of.slice(0, 4) === thisMonth.slice(0, 4)
+    ? monthAlone.format(at)
+    : monthWithYear.format(at);
 }

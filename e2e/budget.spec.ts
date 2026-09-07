@@ -1127,3 +1127,82 @@ test("a gasto previsto is planned on a phone without scrolling down", async ({
   expect(answered.control).toBeLessThanOrEqual(answered.viewport);
   expect(answered.document).toBeLessThanOrEqual(answered.viewport);
 });
+
+test("a Member carries this month's plan into the next one instead of retyping it", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Copia Carrasco", context, baseURL!);
+  const { thisMonth, next } = months();
+
+  // This month gets a plan of both kinds, the way a person writes one.
+  await page.goto(`/espacios/${space.id}`);
+  await planFixed(page, space.id, "Arriendo", "1800000", "1");
+  await plan(page, space.id, "Semana 1", "400000");
+
+  // Next month is where the offer lives: it holds nothing, and the month
+  // behind it holds a plan.
+  await chooseMonth(page, `/espacios/${space.id}?mes=${next}`, next);
+
+  const offer = page.getByRole("button", { name: /^Copiar el plan de / });
+  await expect(offer).toBeVisible();
+
+  // The month is named and never called "el mes pasado" (decision 22 of #109).
+  await expect(offer).not.toContainText("mes pasado");
+
+  // Nothing is written from the row. The sheet says what is about to happen,
+  // and the person confirms -- the shape "Marcar pagado" already uses.
+  await offer.click();
+
+  const sheet = page.getByRole("dialog");
+  // ARS takes two decimals, so the keypad's 1800000 is $ 18.000,00
+  // (ADR-0007, ADR-0014). The figures are the Space's own money written the
+  // way this Member reads numbers, which is what `test.use({ locale })` fixes.
+  await expect(sheet).toContainText("1 gasto previsto · $ 18.000,00");
+  await expect(sheet).toContainText("1 gasto previsto · $ 4.000,00");
+  await expect(sheet).toContainText("Vas a poder editarlo todo el mes.");
+
+  await sheet.getByRole("button", { name: /^Copiar a / }).click();
+  await page.waitForURL(new RegExp(`\\?mes=${next}$`));
+
+  // Both kinds landed, at their amounts and under their names, and the Fijo
+  // came across pending on a day of the month it landed on (decision 9).
+  await expect(page.getByText("Arriendo")).toBeVisible();
+  await expect(page.getByText("Pendiente")).toBeVisible();
+  // Under the Category it was written on, at the amount it expected, still
+  // called what it was called.
+  const variables = page.getByRole("group", { name: "Variables" });
+  await expect(variables).toContainText("Supermercado");
+  await expect(variables).toContainText("$ 0,00 / 4.000,00");
+
+  // And the offer is gone, because the month it was about now has a plan.
+  await expect(
+    page.getByRole("button", { name: /^Copiar el plan de / }),
+  ).toHaveCount(0);
+
+  // The month it copied from is untouched: a copy is a snapshot and not a
+  // link (decision 24 of #109).
+  await chooseMonth(page, `/espacios/${space.id}?mes=${thisMonth}`, thisMonth);
+  await expect(page.getByText("Arriendo")).toHaveCount(1);
+});
+
+test("a month with nothing behind it is offered no plan to copy", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  // Case 2 of #121: the Space's first month. The card falls back to the
+  // sentence and the way in, which is what it does on every month today.
+  const { space } = await aMemberWithASpace("Primer Primero", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+
+  await expect(page.getByText("Todavía no planeaste este mes.")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Copiar el plan de / }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Agregar al plan" }),
+  ).toBeVisible();
+});

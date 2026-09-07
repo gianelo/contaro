@@ -6,7 +6,7 @@ import { MonthPill } from "./month-pill";
 import { SpaceScreen } from "./screen";
 import { currentSpace, viewingMember } from "./space";
 import { monthInView, spaceMembers } from "./movimientos/month";
-import { readableBudget } from "./presupuesto/budget";
+import { planToCopyForward, readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
 import { MonthSummary } from "./presupuesto/summary";
 import { Variables } from "./presupuesto/variables";
@@ -81,6 +81,14 @@ export default async function SpacePage({
   // Fixed item beside it, the month holds no item of either kind.
   const nothingPlanned = plan.fixed.length === 0 && plan.variables.length === 0;
 
+  // The plan there is to carry into this month, asked for only where it can be
+  // offered (#121). A month that already has a plan has nothing to be offered,
+  // and asking anyway would be a query paid for on every opening of this
+  // screen for an answer no card would draw.
+  const copy = nothingPlanned
+    ? await planToCopyForward(space, month, reader)
+    : null;
+
   return (
     <SpaceScreen
       space={space}
@@ -149,6 +157,7 @@ export default async function SpacePage({
         spaceId={space.id}
         month={month}
         nothingPlanned={nothingPlanned}
+        copy={copy}
       />
 
       {/*

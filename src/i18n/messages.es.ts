@@ -152,6 +152,46 @@ export const es = {
   // item is called wherever a person reads one, and the screen this row opens
   // is still titled with it.
   "budget.plan.new": "Agregar al plan",
+  // The offer to carry last month's plan forward (#121), on a row above
+  // "Agregar al plan" in the same card. Two answers to one sentence, in the
+  // order the artboard draws them: the plan a person almost certainly wants is
+  // first, and writing one from nothing stays where it always was.
+  //
+  // The month is named and never called "el mes pasado", which is decision 22
+  // of #109 and the thing that makes an unbounded lookback safe: the last plan
+  // there is can be from March, and "el plan del mes pasado" said about March
+  // in October is an offer accepted for a month nobody meant. Lower case,
+  // because a month inside a sentence is written that way in Spanish
+  // (`monthName`).
+  "budget.plan.copy": "Copiar el plan de {month}",
+  // The sheet the row opens, which is the shape "Marcar pagado" already uses:
+  // a row opens a sheet, the sheet says what is about to happen, the person
+  // confirms. The title names the month being copied *from*, because that is
+  // the fact a person is checking before they say yes; the button names the
+  // month it lands on, because that is what tapping it does.
+  "budget.plan.copy.title": "\u00bfCopiar el plan de {month}?",
+  // What the copy does, said before it happens rather than discovered after.
+  // The two facts a person cannot see from the row: the amounts come with it,
+  // and a Fijo arrives pending on a day in this month -- it does not arrive
+  // paid because somebody paid it last month (decision 9 of #109).
+  "budget.plan.copy.body":
+    "Se copian los gastos previstos con sus montos. Los gastos fijos vuelven a quedar pendientes y sus fechas se corren a {month}.",
+  // "4 gastos previstos \u00b7 $2.053.900". The noun in full and never
+  // "renglones", which `CONTEXT.md` refuses under Line and Row -- the artboard
+  // wrote it as working material and the vocabulary is decided here (ADR-0040).
+  "budget.plan.copy.tally": "{count} gastos previstos \u00b7 {total}",
+  "budget.plan.copy.tally.one": "1 gasto previsto \u00b7 {total}",
+  // The reassurance under the recap. It is the answer to the only real fear a
+  // person has about accepting a whole plan at once: that they are agreeing to
+  // it rather than starting from it.
+  "budget.plan.copy.reassurance": "Vas a poder editarlo todo el mes.",
+  "budget.plan.copy.confirm": "Copiar a {month}",
+  "budget.plan.copy.working": "Copiando\u2026",
+  // The way out, and it is not "Cancelar". Cancelling closes a sheet and
+  // leaves a person where they were; this names the other thing they can do,
+  // which is the plan they came to write. The row underneath does it, so this
+  // only has to close.
+  "budget.plan.copy.scratch": "Empezar de cero",
   // What a Budget item is called where a person reads it (#82, ADR-0040).
   // "Ítem" was never chosen for it: it is the container word `CONTEXT.md`'s
   // own avoid list already refuses under Line, Entry and Row, and it names
@@ -277,6 +317,15 @@ export const es = {
   // "Esa invitación ya no está" (#82).
   "budget.error.gone": "Ese gasto previsto ya no est\u00e1.",
   "budget.error.alreadyPaid": "Ese gasto fijo ya estaba pagado.",
+  // The month a copy was carrying emptied in between. Named as the month
+  // rather than as "el plan", because what is gone is every item on it and a
+  // person is about to look for it.
+  "budget.error.nothingToCopy": "Ese mes ya no tiene un plan para copiar.",
+  // The other thumb won. Not an apology and not "prob\u00e1 de nuevo": trying
+  // again is exactly the wrong move, because the plan they wanted is already
+  // there and a second copy would double it.
+  "budget.error.alreadyPlanned":
+    "Este mes ya tiene un plan. Volv\u00e9 a cargar la pantalla para verlo.",
   "budget.error.signedOut": "Se cerr\u00f3 tu sesi\u00f3n. Entr\u00e1 de nuevo.",
   "budget.error.failed": "No pudimos guardar el gasto previsto. Prob\u00e1 de nuevo.",
 

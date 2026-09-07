@@ -154,7 +154,19 @@ export function lastDayOf(month: Month): CalendarDate {
  * module's business and nobody else's.
  */
 export function daysIn(month: Month): number {
-  return Number(lastDayOf(month).slice(8));
+  return dayOfMonth(lastDayOf(month));
+}
+
+/**
+ * Which of its month's days a day is: `2026-09-22` is the 22nd.
+ *
+ * The other direction of `dayOf`, and here for the reason that one is: reading
+ * a `CalendarDate` apart by string offset is this module's business and
+ * nobody else's. It was spelled out as `Number(date.slice(8))` in four places
+ * before it had a name, which is four copies of one fact about a format.
+ */
+export function dayOfMonth(date: CalendarDate): number {
+  return Number(date.slice(8));
 }
 
 /**
@@ -181,6 +193,26 @@ export function dayOf(of: Month, dayOfMonth: number): CalendarDate {
   // `calendarDate` is what refuses a 31st of September: it builds the day and
   // asks whether it came back the same.
   return calendarDate(`${of}-${String(dayOfMonth).padStart(2, "0")}`);
+}
+
+/**
+ * The day a plan carried into another month falls on: the 22nd of August
+ * becomes the 22nd of September.
+ *
+ * The one place in this module where a day is moved rather than refused, and
+ * the difference from `dayOf` is who chose it. `dayOf` refuses the 31st of
+ * September because somebody typed a 31 and a typed day is an answer -- moving
+ * it back would be answering for them. Nobody types this one: it is the day an
+ * item already had, carried into a month that was not consulted about it, and
+ * a plan copied forward has to land somewhere.
+ *
+ * So the last day the month has, which is the nearest day that will actually
+ * arrive, and never a day in the month after (ADR-0050). It stays visible and
+ * correctable on the plan it lands on, which is what makes moving it honest
+ * here and dishonest there.
+ */
+export function sameDayIn(of: Month, date: CalendarDate): CalendarDate {
+  return dayOf(of, Math.min(dayOfMonth(date), daysIn(of)));
 }
 
 /**

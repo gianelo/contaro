@@ -8,6 +8,7 @@ import {
   amendFixedItem,
   amendItem,
   comparedToPlan,
+  copyOfPlan,
   dueNotice,
   expected,
   expectedByCategory,
@@ -1290,5 +1291,128 @@ describe("taking an item off the plan", () => {
     expect(() => unplan(fixed({ payment: paidBy("mov-1") }))).toThrow(
       FixedItemAlreadyPaidError,
     );
+  });
+});
+
+describe("a plan copied into another month", () => {
+  const variable = (changes: Partial<VariableItem> = {}): VariableItem => ({
+    kind: "variable",
+    id: "item-super",
+    spaceId: CASA.id,
+    month: SEPTEMBER,
+    categoryId: SUPER.id,
+    amount: money(400_000_00, "ARS"),
+    name: "Semana 1",
+    ...changes,
+  });
+
+  const fixed = (changes: Partial<FixedItem> = {}): FixedItem => ({
+    kind: "fixed",
+    id: "item-arriendo",
+    spaceId: CASA.id,
+    month: SEPTEMBER,
+    categoryId: MATE.id,
+    amount: money(1_800_000_00, "ARS"),
+    name: "Arriendo",
+    dueOn: calendarDate("2026-09-01"),
+    payment: null,
+    ...changes,
+  });
+
+  const OCTOBER = month("2026-10");
+
+  // What the sheet promises: "Se copian los gastos previstos con sus montos."
+  // Both kinds, at what they said they would cost, called what they were
+  // called -- a copy nobody has to check line by line is the whole offer.
+  it("carries both kinds across at their amounts and their names", () => {
+    const copied = copyOfPlan([fixed(), variable()], OCTOBER, planning());
+
+    expect(copied).toHaveLength(2);
+    expect(copied[0]).toMatchObject({
+      kind: "fixed",
+      name: "Arriendo",
+      categoryId: MATE.id,
+      amount: money(1_800_000_00, "ARS"),
+      month: OCTOBER,
+    });
+    expect(copied[1]).toMatchObject({
+      kind: "variable",
+      name: "Semana 1",
+      categoryId: SUPER.id,
+      amount: money(400_000_00, "ARS"),
+      month: OCTOBER,
+    });
+  });
+
+  /*
+   * Decision 9 of #109: a Fixed item that was never paid still copies, and
+   * one that was paid copies pending. The payment is a Movement in August's
+   * ledger; October has not been paid for.
+   */
+  it("brings every Fixed item across pending, paid or not", () => {
+    const paid: Payment = { movementId: "mov-1", struckAt: null };
+
+    const copied = copyOfPlan([fixed({ payment: paid }), fixed()], OCTOBER, planning());
+
+    expect(copied.every((item) => "payment" in item && item.payment === null)).toBe(
+      true,
+    );
+  });
+
+  it("moves a Fixed item's due day into the month it lands on", () => {
+    const [copied] = copyOfPlan(
+      [fixed({ dueOn: calendarDate("2026-09-22") })],
+      OCTOBER,
+      planning(),
+    );
+
+    expect(copied).toMatchObject({ dueOn: "2026-10-22" });
+  });
+
+  /*
+   * The 31st has no October answer in September and no February answer at all.
+   * It lands on the last day the month has rather than dropping the line
+   * (ADR-0050, `sameDayIn`): a plan that quietly loses the rent is worse than
+   * one whose date is two days early and correctable all month.
+   */
+  it("lands a due day the month is too short for on its last day", () => {
+    const [copied] = copyOfPlan(
+      [fixed({ month: month("2026-08"), dueOn: calendarDate("2026-08-31") })],
+      month("2026-09"),
+      planning(),
+    );
+
+    expect(copied).toMatchObject({ dueOn: "2026-09-30" });
+  });
+
+  // A copy is a snapshot and not a link (decision 24 of #109). Nothing that
+  // identifies the row it came from travels with it, so the two months are
+  // independent from the moment this lands.
+  it("carries no identity of its own across", () => {
+    const [copied] = copyOfPlan([variable()], OCTOBER, planning());
+
+    expect(copied).not.toHaveProperty("id");
+  });
+
+  /*
+   * A plan is carried *forward*. The offer only ever names a month behind the
+   * one being read, so a draft pointing the other way came from a form nobody
+   * was shown -- and copying December's plan onto September would put a plan
+   * on a month whose spending has already been measured against nothing.
+   */
+  it("refuses to carry a plan backwards", () => {
+    expect(() =>
+      copyOfPlan([variable({ month: OCTOBER })], SEPTEMBER, planning()),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  it("refuses to carry a month's plan onto itself", () => {
+    expect(() =>
+      copyOfPlan([variable()], SEPTEMBER, planning()),
+    ).toThrow(UnplannableBudgetItemError);
+  });
+
+  it("copies nothing out of a month with nothing on it", () => {
+    expect(copyOfPlan([], OCTOBER, planning())).toEqual([]);
   });
 });
