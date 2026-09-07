@@ -14,6 +14,7 @@ import {
   monthsToPlan,
   nextMonth,
   previousMonth,
+  sameDayIn,
   UnreadableDateError,
   UnreadableMonthError,
 } from "./month";
@@ -279,5 +280,41 @@ describe("how far through a month a day is", () => {
     // is a sentence about a day nobody is standing on.
     expect(monthSoFar(month("2026-08"), calendarDate("2026-09-18"))).toBeNull();
     expect(monthSoFar(month("2026-10"), calendarDate("2026-09-18"))).toBeNull();
+  });
+});
+
+describe("the same day of the month, carried into another month", () => {
+  it("keeps the day of the month it was on", () => {
+    expect(sameDayIn(month("2026-10"), calendarDate("2026-09-22"))).toBe(
+      "2026-10-22",
+    );
+    expect(sameDayIn(month("2026-01"), calendarDate("2025-12-01"))).toBe(
+      "2026-01-01",
+    );
+  });
+
+  /*
+   * The one case that has no exact answer, and the only place in this module
+   * where a day is moved rather than refused. `dayOf` refuses the 31st of
+   * September because a person typed it and a typed day is an answer; nobody
+   * types this one. A plan carried forward has to land somewhere, and the last
+   * day the month has is the nearest day that arrives (ADR-0050).
+   */
+  it("lands on the last day of a month too short to hold it", () => {
+    expect(sameDayIn(month("2026-09"), calendarDate("2026-08-31"))).toBe(
+      "2026-09-30",
+    );
+    expect(sameDayIn(month("2026-02"), calendarDate("2026-01-31"))).toBe(
+      "2026-02-28",
+    );
+    expect(sameDayIn(month("2024-02"), calendarDate("2024-01-31"))).toBe(
+      "2024-02-29",
+    );
+  });
+
+  it("carries a day into the month it is already on", () => {
+    expect(sameDayIn(month("2026-09"), calendarDate("2026-09-05"))).toBe(
+      "2026-09-05",
+    );
   });
 });
