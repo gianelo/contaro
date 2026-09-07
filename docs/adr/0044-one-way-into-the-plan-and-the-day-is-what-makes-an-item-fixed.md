@@ -60,6 +60,8 @@ That is #86, opened while measuring #79, and it is not this change's bug. The pl
 
 What this change does for it is halve it: there is one screen to fix instead of two, and the survivor is exactly as tall as the taller of the two it replaced. The measurements above are the current figures, and #86 owns them.
 
+**#86 paid it.** The screen leaves the shell the way the Movement entry screen does, `Cancelar` moves into the head, and `.form`'s gap drops from 20px to 8px: 655px of content against 664 of viewport, with `Guardar`'s bottom at 639. The table's last row is the number ADR-0046 replaces. The day question this ADR chose is untouched by that fix and was one of the reasons it fit -- one row in every state, whatever the month.
+
 ## `/presupuesto/nuevo/fijo` stays, as a redirect
 
 A permanent redirect to `/presupuesto/nuevo`, carrying the month across.

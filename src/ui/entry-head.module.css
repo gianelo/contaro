@@ -1,0 +1,46 @@
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-bottom: var(--space-5);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.cancel {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-lg);
+  color: var(--color-accent);
+}
+
+.title {
+  /*
+   * A flex item laid out by `.bar`, so the browser's default `0.67em` heading
+   * margin is not spacing -- it is 23px of nothing above and below a title
+   * sitting beside a 44px control. On SF the margin box comes to 43px and the
+   * bar stays exactly one hit target; on a taller font it comes to 46 and the
+   * head grows by pixels nobody chose. ADR-0037 found the identical thing on
+   * four paragraphs; this is the heading it missed (#86).
+   */
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+/*
+ * Takes exactly the room Cancelar takes, so the title sits in the middle of
+ * the screen. Hidden from a screen reader, which would otherwise hear the way
+ * out twice, and unreachable by a thumb or a tab.
+ */
+.mirror {
+  font-size: var(--text-lg);
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}

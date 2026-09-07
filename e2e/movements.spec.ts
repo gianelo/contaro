@@ -5,7 +5,7 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
-import { box } from "./layout";
+import { foldOf } from "./layout";
 import { chooseMonth, months, openMonths } from "./months";
 import {
   createMember,
@@ -667,28 +667,10 @@ test("an expense is recorded on a phone without scrolling down either", async ({
   await expect(page.getByRole("status")).toBeVisible();
   await expect(page.getByText("Compartido con Ana")).toBeVisible();
 
-  // Not `toBeInViewport`: it passes on a sliver. Guardar has to be whole, and
-  // the page has to be done -- a document taller than the phone is a scroll
-  // between the last digit and saving, which is the screen #1 says loses the
-  // expense (#60).
-  const fold = async () => {
-    // Asked for by its role and its word, the way the rest of this file finds
-    // anything: a `form button[type=submit]` is the one shape of Guardar a
-    // person on the screen never sees, and a selector goes on passing while
-    // the button it points at stops being reachable.
-    const guardar = await box(page.getByRole("button", { name: "Guardar" }));
-
-    return {
-      guardar: Math.round(guardar.y + guardar.height),
-      ...(await page.evaluate(() => ({
-        document: document.documentElement.scrollHeight,
-        viewport: window.innerHeight,
-      }))),
-    };
-  };
+  const fold = () => foldOf(page, page.getByRole("button", { name: "Guardar" }));
 
   const offered = await fold();
-  expect(offered.guardar).toBeLessThanOrEqual(offered.viewport);
+  expect(offered.control).toBeLessThanOrEqual(offered.viewport);
   expect(offered.document).toBeLessThanOrEqual(offered.viewport);
 
   // And still after answering, which is the state a thumb is actually in when
@@ -701,7 +683,7 @@ test("an expense is recorded on a phone without scrolling down either", async ({
   ).toBeChecked();
 
   const answered = await fold();
-  expect(answered.guardar).toBeLessThanOrEqual(answered.viewport);
+  expect(answered.control).toBeLessThanOrEqual(answered.viewport);
   expect(answered.document).toBeLessThanOrEqual(answered.viewport);
 });
 

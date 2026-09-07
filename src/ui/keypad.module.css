@@ -36,6 +36,11 @@
 .symbol {
   font-size: var(--text-3xl);
   font-weight: 300;
+  /* The same 1.1 the amount keeps, so the two halves of one figure agree about
+     how tall a line is. They are aligned on their baselines, so this is not
+     visible -- what it settles is `.figure`'s box, which would otherwise be one
+     more thing the operating system's font decides (#86). */
+  line-height: 1.1;
 }
 
 .amount {
@@ -67,6 +72,7 @@
   margin: 0;
   text-align: center;
   font-size: var(--text-xs);
+  line-height: var(--line-caption);
   color: var(--color-text-tertiary);
 }
 

@@ -6,7 +6,13 @@ import {
   type Page,
 } from "@playwright/test";
 import { createMember, createSpaceFor, startSession } from "./session";
-import { box, hitTargetOf, overlapping, withinTheGutter } from "./layout";
+import {
+  box,
+  foldOf,
+  hitTargetOf,
+  overlapping,
+  withinTheGutter,
+} from "./layout";
 import { chooseMonth, months, openMonths } from "./months";
 
 // Deliberately not the signed-in fixture: planning money needs a session
@@ -1039,4 +1045,85 @@ test("the Fixed item's old route lands on the one form, on the month it was aske
   await expect(
     page.getByRole("heading", { name: "Nuevo gasto previsto" }),
   ).toBeVisible();
+});
+
+/**
+ * The counterpart of ADR-0027, made a second time.
+ *
+ * The raised button in the middle of the tab bar is one of the two ways into
+ * this screen; the other is the row above the plan (#81). What either of them
+ * leads to is a screen with nothing else on it -- because by the time somebody
+ * is here they have an amount and a name typed in, and a bar offering three
+ * other places is three ways to lose both (#86).
+ */
+test("planning a gasto previsto is one thing, with nothing else offered", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Tere Planea", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/presupuesto/nuevo`);
+
+  await expect(page.getByRole("navigation", { name: "Principal" })).toHaveCount(
+    0,
+  );
+
+  // The way out is in the head, where a thumb reaching to leave already is,
+  // rather than a scroll past the keypad at the foot of the page. It goes back
+  // to the month this was opened on and never to "this month".
+  await expect(page.getByRole("link", { name: "Cancelar" })).toHaveAttribute(
+    "href",
+    new RegExp(`^/espacios/${space.id}\\?mes=\\d{4}-\\d{2}$`),
+  );
+
+  // The screen names itself once. It used to say the Space in a heading and
+  // then say what the screen was in a second one under it.
+  await expect(
+    page.getByRole("heading", { name: "Nuevo gasto previsto" }),
+  ).toHaveCount(1);
+});
+
+/**
+ * The plan's entry screen on a phone, whole, before and after it is answered.
+ *
+ * A form is only as good as the last answer a thumb can reach: a document
+ * taller than the glass is a scroll between the name and Guardar, which is the
+ * screen #1 says loses the entry (#60). Measured rather than eyeballed, the way
+ * the Movement entry screen's fold is measured in `movements.spec.ts` -- and
+ * measured in both states, because choosing a heading opens what is under it
+ * (ADR-0022) and the picker is at its tallest after the questions are answered.
+ *
+ * A Space of one is not a weaker case here than a shared one, which is the
+ * difference from the Movement screen: this screen has no pill naming who else
+ * is in the Space, and its Category picker is one row however long the
+ * catalogue grows (ADR-0037). Every block on it is a fixed height, so this
+ * measurement is the measurement.
+ */
+test("a gasto previsto is planned on a phone without scrolling down", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Fina Justa", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/presupuesto/nuevo`);
+  await expect(page.getByRole("status")).toBeVisible();
+
+  const fold = () => foldOf(page, page.getByRole("button", { name: "Guardar" }));
+
+  const offered = await fold();
+  expect(offered.control).toBeLessThanOrEqual(offered.viewport);
+  expect(offered.document).toBeLessThanOrEqual(offered.viewport);
+
+  await type(page, "24000000");
+  await page.getByLabel("Cómo se llama").fill("Súper de la semana");
+  await categorise(page, "Comida", "Supermercado");
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toBeChecked();
+
+  const answered = await fold();
+  expect(answered.control).toBeLessThanOrEqual(answered.viewport);
+  expect(answered.document).toBeLessThanOrEqual(answered.viewport);
 });

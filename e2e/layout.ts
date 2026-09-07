@@ -105,3 +105,37 @@ export async function measureOf(page: Page) {
 
   return Number.parseFloat(ceiling);
 }
+
+/**
+ * Whether a control and the document it sits in both fit the glass.
+ *
+ * The four numbers a fold question is asked in, read together: where the
+ * control's bottom edge lands, how tall the document is, and how tall the
+ * viewport is. Not `toBeInViewport`, which passes on a sliver -- the control
+ * has to be whole, and the page has to be done. A document taller than the
+ * phone is a scroll between the last answer and saving, which is the screen #1
+ * says loses the entry (#60, #86).
+ *
+ * It scrolls to the top of the document first, because a box is measured
+ * against the viewport: answering a question can scroll the page, and a control
+ * that came up the screen by being scrolled to is not a control that fits.
+ *
+ * The control is passed as a locator rather than named here, because both
+ * screens that ask this find their `Guardar` by its role and its word, the way
+ * the rest of those files find anything: a `form button[type=submit]` is the
+ * one shape of it a person on the screen never sees, and a selector goes on
+ * passing while the button it points at stops being reachable.
+ */
+export async function foldOf(page: Page, control: Locator) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  const measured = await box(control);
+
+  return {
+    control: Math.round(measured.y + measured.height),
+    ...(await page.evaluate(() => ({
+      document: document.documentElement.scrollHeight,
+      viewport: window.innerHeight,
+    }))),
+  };
+}
