@@ -1,6 +1,7 @@
 import type { ReadSession } from "@/auth/session";
 import type { CalendarDate } from "@/domain/calendar/month";
 import {
+  MAX_MOVEMENT_NAME_LENGTH,
   UnrecordableMovementError,
   type Movement,
   type MovementAmendment,
@@ -195,6 +196,8 @@ export function refusalMessage(refusal: Refusal): string {
           return t("movements.error.day");
         case "attribution":
           return t("movements.error.attribution");
+        case "name":
+          return t("movements.error.name", { max: MAX_MOVEMENT_NAME_LENGTH });
         case "direction":
           // Only reachable from a form that carried no direction or a word
           // that is neither, which is a broken screen rather than a typo. It

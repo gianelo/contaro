@@ -8,6 +8,7 @@ import {
   DirectionIsImmutableError,
   earned,
   MAX_MOVEMENT_AMOUNT,
+  MAX_MOVEMENT_NAME_LENGTH,
   movementsByDay,
   recordMovement,
   RecorderIsImmutableError,
@@ -46,6 +47,9 @@ const ELSEWHERE: Category = {
 
 const TODAY = calendarDate("2026-09-03");
 
+/** One character past what a row may be called. */
+const TOO_LONG = "x".repeat(MAX_MOVEMENT_NAME_LENGTH + 1);
+
 const recording = (changes: Partial<Recording> = {}): Recording => ({
   space: CASA,
   recordedBy: GIAN,
@@ -62,6 +66,7 @@ const draft = (changes: Partial<Parameters<typeof recordMovement>[0]> = {}) => (
   amount: 128_400,
   occurredOn: "2026-09-03",
   attributedTo: null,
+  name: null,
   ...changes,
 });
 
@@ -81,6 +86,7 @@ describe("recording an expense", () => {
       occurredOn: TODAY,
       recordedBy: GIAN,
       attributedTo: GIAN,
+      name: null,
     });
   });
 
@@ -223,6 +229,7 @@ describe("recording an expense", () => {
       [draft({ occurredOn: "mañana" }), "day"],
       [draft({ attributedTo: BETO }), "attribution"],
       [draft({ spaceId: "otro" }), "space"],
+      [draft({ name: TOO_LONG }), "name"],
     ] as const;
 
     for (const [bad, field] of fields) {
@@ -245,6 +252,7 @@ describe("recording income", () => {
       occurredOn: TODAY,
       recordedBy: GIAN,
       attributedTo: GIAN,
+      name: null,
     });
   });
 
@@ -311,6 +319,7 @@ describe("correcting a Movement that was got wrong", () => {
     occurredOn: TODAY,
     recordedBy: GIAN,
     attributedTo: GIAN,
+    name: null,
   };
 
   it("changes the amount that was typed wrong", () => {
@@ -460,6 +469,7 @@ const movement = (
   occurredOn,
   recordedBy: GIAN,
   attributedTo: GIAN,
+  name: null,
 });
 
 const expense = (amount: number, on?: CalendarDate) =>
@@ -550,5 +560,83 @@ describe("a month read a day at a time", () => {
       first,
       second,
     ]);
+  });
+});
+
+describe("what a Movement is called", () => {
+  const recorded: Movement = {
+    id: "mov-1",
+    spaceId: CASA.id,
+    direction: "expense",
+    categoryId: SUPER.id,
+    amount: money(128_400, "ARS"),
+    occurredOn: TODAY,
+    recordedBy: GIAN,
+    attributedTo: GIAN,
+    name: null,
+  };
+
+  it("records what somebody typed, trimmed", () => {
+    expect(recordMovement(draft({ name: "  Éxito  " }), recording()).name).toBe(
+      "Éxito",
+    );
+  });
+
+  it("records nothing at all when nobody typed a name", () => {
+    // #66's second acceptance criterion: recording an expense is still a
+    // keypad, a tap and Guardar for somebody who does not want to name it.
+    expect(recordMovement(draft({ name: null }), recording()).name).toBeNull();
+  });
+
+  it("treats a name of nothing but spaces as no name at all", () => {
+    // Null and never "": a row carrying an empty string is a row that has a
+    // name, and the month's list would draw a blank line where the Category
+    // it falls back to should be.
+    expect(recordMovement(draft({ name: "   " }), recording()).name).toBeNull();
+  });
+
+  it("refuses a name past the ceiling rather than cutting it to fit", () => {
+    // A name is not shortened to make it fit, for the reason ADR-0036 gives
+    // about an amount: what is stored is what somebody meant, and a screen is
+    // where a long one is ellipsised.
+    expect(() => recordMovement(draft({ name: TOO_LONG }), recording())).toThrow(
+      UnrecordableMovementError,
+    );
+  });
+
+  it("takes a name up to the ceiling", () => {
+    const longest = "x".repeat(MAX_MOVEMENT_NAME_LENGTH);
+
+    expect(recordMovement(draft({ name: longest }), recording()).name).toBe(
+      longest,
+    );
+  });
+
+  it("gives a name to a Movement recorded without one", () => {
+    expect(amendMovement(recorded, { name: "Éxito" }, recording()).name).toBe(
+      "Éxito",
+    );
+  });
+
+  it("takes the name away when the correction comes back empty", () => {
+    // The field is optional on the way in, so it has to be emptiable on the
+    // way back: a name typed by mistake would otherwise be permanent.
+    const named: Movement = { ...recorded, name: "Éxito" };
+
+    expect(amendMovement(named, { name: "" }, recording()).name).toBeNull();
+  });
+
+  it("leaves the name alone when the correction does not mention it", () => {
+    const named: Movement = { ...recorded, name: "Éxito" };
+
+    expect(amendMovement(named, { amount: 999 }, recording()).name).toBe(
+      "Éxito",
+    );
+  });
+
+  it("refuses a correction that names it past the ceiling", () => {
+    expect(() =>
+      amendMovement(recorded, { name: TOO_LONG }, recording()),
+    ).toThrow(UnrecordableMovementError);
   });
 });

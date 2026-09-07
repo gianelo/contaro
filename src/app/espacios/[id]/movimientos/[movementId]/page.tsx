@@ -91,6 +91,9 @@ export default async function MovementPage({
           categoryId: movement.categoryId,
           occurredOn: movement.occurredOn,
           attributedTo: movement.attributedTo,
+          // The name it already has, so a correction opens on it rather than
+          // asking again — and so leaving the field alone keeps it.
+          name: movement.name,
         }}
         action={amendMovementAction}
         submit={t("movements.edit.submit")}

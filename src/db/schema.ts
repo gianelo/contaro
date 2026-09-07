@@ -302,6 +302,18 @@ export const movements = pgTable(
       .notNull()
       .references(() => members.id),
     /**
+     * What it was: "Éxito", "Uber" (#66). The name a row on the month's list
+     * is read by, with its Category as the quieter second line.
+     *
+     * Nullable, unlike `budget_items.name`, and the difference is the screen
+     * each is entered on rather than an inconsistency. A plan is written
+     * sitting down, so ADR-0042 made every item called something. A Movement
+     * is recorded standing at a till on a screen ADR-0028 gives one thing to
+     * do, so a name is offered and never demanded -- a row without one is read
+     * by its Category, the way every row was before this column.
+     */
+    name: text("name"),
+    /**
      * Who struck this Movement out, and when. A correction that removes an
      * entry is itself an entry: a ledger that loses rows silently lies about
      * every figure downstream, so a deletion writes down whose it was rather
@@ -332,6 +344,16 @@ export const movements = pgTable(
       "movements_expense_is_filed_and_income_is_not",
       sql`(${table.direction} = 'expense' AND ${table.categoryId} IS NOT NULL)
         OR (${table.direction} = 'income' AND ${table.categoryId} IS NULL)`,
+    ),
+    // Something or nothing, and never a blank. Written with `IS NULL OR` and
+    // not left implicit: 0012 found that a CHECK evaluating to NULL is
+    // satisfied in Postgres, so a bare `char_length(btrim(name)) > 0` is a
+    // rule about blanks that lets nulls past by accident rather than by
+    // decision. The sixty is `MAX_MOVEMENT_NAME_LENGTH` in the domain.
+    check(
+      "movements_name_is_something_or_nothing",
+      sql`${table.name} IS NULL
+        OR (char_length(btrim(${table.name})) > 0 AND char_length(${table.name}) <= 60)`,
     ),
     check(
       "movements_struck_or_standing",

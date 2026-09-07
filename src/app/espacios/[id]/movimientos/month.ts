@@ -78,10 +78,24 @@ export type ReadableMovement = {
   id: string;
   direction: MovementDirection;
   /**
-   * What the row is called: the Category an expense is filed under, as a
-   * person reads it, and the word for income, which is filed nowhere (#8).
+   * The Category an expense is filed under, as a person reads it, and the word
+   * for income, which is filed nowhere (#8).
+   *
+   * What the row is *called* is `name` below when there is one; this is what a
+   * row falls back to when there is not, and the quieter half of the second
+   * line when there is (#66).
    */
   category: string;
+  /**
+   * What it was, if anybody said: "Éxito", "Uber". Null is the ordinary case
+   * and not a missing answer — nobody is asked to name a Movement on the way
+   * in (#66).
+   *
+   * Carried raw rather than folded into `category`, because two screens want
+   * different things from it: the month's list reads it as a title, and the
+   * correction screen opens its field on it.
+   */
+  name: string | null;
   /** The heading that Category sits under, if it sits under one. */
   heading: string | null;
   amount: string;
@@ -316,7 +330,7 @@ function readable(
   // that reached this line has one (`filing`, plus the check in migration
   // 0005). Written down rather than left as a mystery, because a fallback with
   // no reason reads like a case somebody expected.
-  const name =
+  const categoryName =
     movement.direction === "income"
       ? t("movements.income")
       : (category?.name ?? movement.categoryId ?? "");
@@ -324,7 +338,8 @@ function readable(
   return {
     id: movement.id,
     direction: movement.direction,
-    category: name,
+    category: categoryName,
+    name: movement.name,
     // The Category's own mark, the arrow for income, and — for a Movement
     // whose Category a migration retired — the letter of whatever the row is
     // showing instead, which is the identifier. That row already keeps its

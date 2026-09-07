@@ -88,6 +88,19 @@ keys are 50px because that is what a thumb lands on. Air is cheaper than aim.
 #86's second open question — *what happens to the 310px keypad?* — is answered
 by nothing happening to it. It stays whole, and this is what paid instead.
 
+**#66 later took 24px out of it, and this screen got them for free
+(ADR-0048).** `Keypad` is one component and `keypad.module.css` is one
+stylesheet, so when the Movement entry screen ran out of air for a seventh
+block and the keys went from 50px to 44, both plan entry screens went with
+them. The sentence above about a thumb is no longer why the keys are the size
+they are: 44px is `--hit-target`, the floor the whole product measures a touch
+target against, and what changed is that the keypad now sits on that floor
+instead of above it. Nothing here needed the room — this screen was already
+inside the fold and is now further inside it — so this is recorded rather than
+argued: it is the reason a change to the Movement screen moved two Budget
+screens, and the reason one key height is still one number in one file. Two
+sizes of the same key, one per screen, would have been the worse answer.
+
 Its third — *does `/nuevo/fijo` get the same fix, and how do the two screens
 avoid diverging?* — was answered before this change was written. #80 merged the
 two entry screens into one, so `/nuevo/fijo` is a `permanentRedirect` and has

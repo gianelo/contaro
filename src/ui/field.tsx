@@ -9,9 +9,18 @@ import {
 import styles from "./field.module.css";
 import { cx } from "./cx";
 import { hitTarget } from "./hit-target";
+import { visuallyHidden } from "./visually-hidden";
 
 type Common = {
   label: string;
+  /**
+   * Off the screen and still in the accessibility tree, the way a
+   * `GroupedList`'s hidden label is. For a field whose control already says
+   * what it is for and whose screen has no room to say it twice: the label is
+   * still a real <label> tied to the control, so the field keeps its name for
+   * anybody who is not reading the placeholder.
+   */
+  labelHidden?: boolean;
   /** Shown under the control and read out with it. */
   hint?: string;
 };
@@ -31,6 +40,7 @@ function useFieldIds(hint: string | undefined) {
 /** The frame every field wears: its label above, its hint below. */
 function Labelled({
   label,
+  labelHidden = false,
   hint,
   id,
   hintId,
@@ -38,7 +48,10 @@ function Labelled({
 }: Common & { id: string; hintId: string; children: ReactNode }) {
   return (
     <div className={styles.field}>
-      <label htmlFor={id} className={styles.label}>
+      <label
+        htmlFor={id}
+        className={labelHidden ? visuallyHidden : styles.label}
+      >
         {label}
       </label>
       {children}
@@ -62,11 +75,22 @@ export type TextFieldProps = Omit<
  * generated id, so every field is reachable by its name in a test and by a
  * screen reader for the same reason.
  */
-export function TextField({ label, hint, ...rest }: TextFieldProps) {
+export function TextField({
+  label,
+  labelHidden,
+  hint,
+  ...rest
+}: TextFieldProps) {
   const { id, hintId, describedBy } = useFieldIds(hint);
 
   return (
-    <Labelled label={label} hint={hint} id={id} hintId={hintId}>
+    <Labelled
+      label={label}
+      labelHidden={labelHidden}
+      hint={hint}
+      id={id}
+      hintId={hintId}
+    >
       <input
         {...rest}
         id={id}
