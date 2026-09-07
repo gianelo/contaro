@@ -75,6 +75,23 @@ export type Movement = {
   recordedBy: string;
   /** Whose money it was. What a per-Member report reads. */
   attributedTo: string;
+  /**
+   * What it was: "Éxito", "Uber". The name a row on the month's list is read
+   * by (#66).
+   *
+   * Null when nobody typed one, and null rather than "": a Movement is
+   * recorded standing at a till, and the screen it is recorded on cannot ask
+   * for a keyboard as the price of saving (#1's story 18). So a name is
+   * something a person may give and never something they owe, and a row
+   * without one falls back to being read by its Category, exactly as every
+   * row was before this field existed.
+   *
+   * This is the opposite of the answer a Budget item gets, and deliberately:
+   * ADR-0042 made a plan's items called something because a plan is written
+   * sitting down and three subscriptions under one Category are three rows to
+   * tell apart. Both answers are about the screen the thing is entered on.
+   */
+  name: string | null;
 };
 
 /**
@@ -111,6 +128,13 @@ export type MovementDraft = {
   occurredOn: string;
   /** Whose money it is. Null means the Member doing the recording. */
   attributedTo: string | null;
+  /**
+   * What it was, as somebody typed it. Null when the field was left alone,
+   * and a string of spaces means the same thing: `called` decides, so a form
+   * that posts an empty input and a form that posts nothing at all cannot
+   * come to mean two different things.
+   */
+  name: string | null;
 };
 
 /** What a correction may change. Not `recordedBy`: see `amendMovement`. */
@@ -119,6 +143,12 @@ export type MovementAmendment = {
   amount?: number;
   occurredOn?: string;
   attributedTo?: string;
+  /**
+   * What it was. `null` and `""` both take the name away, which is what makes
+   * the field emptiable: a name typed by mistake would otherwise be the one
+   * answer on the screen that cannot be undone. Absent leaves it as it is.
+   */
+  name?: string | null;
   /** Accepted only to be refused, the way `SpaceAmendment.currency` is. */
   recordedBy?: string;
   /**
@@ -175,6 +205,21 @@ export type Recording = Recorder & {
 export const MAX_MOVEMENT_AMOUNT = 999_999_999_999;
 
 /**
+ * The longest a Movement may be called.
+ *
+ * The same sixty a Budget item's name has, and for the same argument: it is a
+ * label on a row rather than a description, and a row of a Movement and a row
+ * of a Budget item sit at the same width in the same list shape.
+ *
+ * Not every name in the product agrees, and that is deliberate rather than
+ * drift: `MAX_CATEGORY_NAME_LENGTH` is 40, because a Category's name also
+ * rides a 44px chip on the entry screen and a chip is not a row. So this is
+ * matched to the ceiling of the thing it is drawn like, not to a single number
+ * the whole product shares.
+ */
+export const MAX_MOVEMENT_NAME_LENGTH = 60;
+
+/**
  * Which answer on the entry screen was the bad one. Its own type because two
  * places switch exhaustively over it -- the domain throwing and the screen
  * saying what went wrong -- and a sixth field added to one list and not the
@@ -186,7 +231,8 @@ export type MovementField =
   | "day"
   | "attribution"
   | "direction"
-  | "space";
+  | "space"
+  | "name";
 
 /**
  * Thrown when a Movement cannot be recorded or corrected as asked. `field`
@@ -263,6 +309,7 @@ export function recordMovement(
     // From the session, never from the draft, which has nowhere to say it.
     recordedBy: recording.recordedBy,
     attributedTo: attribution(draft.attributedTo, recording),
+    name: called(draft.name),
   };
 }
 
@@ -324,6 +371,7 @@ export function amendMovement(
       changes.attributedTo === undefined
         ? movement.attributedTo
         : attribution(changes.attributedTo, recording),
+    name: changes.name === undefined ? movement.name : called(changes.name),
   };
 }
 
@@ -554,6 +602,40 @@ function tomorrow(today: CalendarDate): CalendarDate {
   return calendarDate(
     new Date(at + 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
   );
+}
+
+/**
+ * What a Movement is called, or nothing at all, or a refusal.
+ *
+ * Trimmed the way a Budget item's name is, and empty means absent rather than
+ * refused, which is the whole difference between the two fields: `name` in
+ * `budget.ts` throws on a blank because a plan's row has nothing else to be
+ * read by, and this one answers null because a Movement's row falls back to
+ * its Category.
+ *
+ * A name past the ceiling is refused and never quietly cut down to it: what is
+ * stored is what somebody meant. Making a long one *fit a line* is a screen's
+ * job and the screens already do it -- `entry-head.module.css` ellipsises a
+ * Member's name and `when.module.css` says why -- which is a different thing
+ * from storing less than was typed. ADR-0036 is the neighbouring rule and not
+ * this one: it refuses an ellipsis outright, for an amount, because a cut
+ * figure reads as a smaller figure. A cut name reads as a shorter name.
+ */
+function called(proposed: string | null): string | null {
+  if (proposed === null) return null;
+
+  const trimmed = proposed.trim();
+
+  if (trimmed.length === 0) return null;
+
+  if (trimmed.length > MAX_MOVEMENT_NAME_LENGTH) {
+    throw new UnrecordableMovementError(
+      "name",
+      `it is longer than ${MAX_MOVEMENT_NAME_LENGTH} characters`,
+    );
+  }
+
+  return trimmed;
 }
 
 function attribution(proposed: string | null, recording: Recording): string {

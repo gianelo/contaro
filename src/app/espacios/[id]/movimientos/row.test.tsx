@@ -8,6 +8,7 @@ const movement = (changes: Partial<ReadableMovement> = {}): ReadableMovement => 
   id: "movement-1",
   direction: "expense",
   category: "Supermercado",
+  name: null,
   heading: "Comida",
   amount: "$128.400",
   minorUnits: 12840000,
@@ -31,11 +32,42 @@ describe("a Movement, as a row on the month's list", () => {
     expect(screen.getByRole("link")).toHaveAttribute("href", "/espacios/s/m");
   });
 
-  it("is named by its Category, with the heading it sits under beneath it", () => {
+  it("is named by its Category when nobody named it, with its heading beneath", () => {
+    // The shape every row had before a Movement could be called anything, and
+    // the shape most rows keep: nobody is asked to name one on the way in.
     row();
 
     expect(screen.getByText("Supermercado")).toBeInTheDocument();
     expect(screen.getByText("Comida")).toBeInTheDocument();
+  });
+
+  it("is read by what it was when somebody said, with the filing beneath", () => {
+    // #66: three trips to the same supermarket were three identical rows. The
+    // name takes the top line and the Category becomes the quieter second one,
+    // which is what `design/Movimientos.dc.html` draws.
+    row({ name: "Éxito" });
+
+    expect(screen.getByText("Éxito")).toBeInTheDocument();
+    expect(screen.getByText("Comida · Supermercado")).toBeInTheDocument();
+    expect(screen.queryByText("Supermercado")).not.toBeInTheDocument();
+  });
+
+  it("says the Category alone under a name filed on a heading", () => {
+    // No middot with nothing on its left: a Category that is a heading itself
+    // has nothing above it to name.
+    row({ name: "Uber", category: "Transporte", heading: null });
+
+    expect(screen.getByText("Uber")).toBeInTheDocument();
+    expect(screen.getByText("Transporte")).toBeInTheDocument();
+  });
+
+  it("tells two Movements of one Category apart once they are named", () => {
+    // The acceptance criterion #66 is written around, said as a test: the two
+    // rows differ in the line a person reads first and not only in the figure.
+    const { container: first } = row({ name: "Éxito" });
+    const { container: second } = row({ name: "Jumbo" });
+
+    expect(first.textContent).not.toBe(second.textContent);
   });
 
   /*

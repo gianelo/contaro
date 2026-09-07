@@ -297,6 +297,8 @@ export const es = {
   "movements.keypad": "Teclado del monto",
   "movements.keypad.erase": "Borrar el último número",
   "movements.category": "Categoría",
+  "movements.name": "Qué fue",
+  "movements.name.example": "Éxito, Uber, la farmacia",
   "movements.category.none": "Elegí una categoría",
   "movements.when.today": "Hoy",
   "movements.change": "Cambiar",
@@ -322,6 +324,8 @@ export const es = {
   "movements.error.category": "Elegí una categoría de este espacio.",
   "movements.error.day": "Elegí un día que ya haya pasado.",
   "movements.error.attribution": "Elegí a alguien de este espacio.",
+  "movements.error.name":
+    "Poné un nombre más corto, de hasta {max} caracteres.",
   "movements.error.direction": "Elegí si es un gasto o un ingreso.",
   "movements.error.space": "No pudimos ver de qué espacio se trata.",
   "movements.error.gone": "Ese movimiento ya no está.",

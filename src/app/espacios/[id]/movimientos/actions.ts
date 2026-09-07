@@ -75,6 +75,10 @@ export async function recordMovementAction(
     // The picker's "me" is an empty value, which is the Member recording it
     // and not an identifier nobody has.
     attributedTo: answer(form, "attributedTo") || null,
+    // An untouched field posts "", and "" means nobody named it (#66). The
+    // domain's `called` is what decides that, so this passes the string
+    // through as it arrived rather than answering the question twice.
+    name: answer(form, "name"),
   });
 
   report("Recording a Movement", outcome);
@@ -110,6 +114,10 @@ export async function amendMovementAction(
       amount: Number(answer(form, "amount")),
       occurredOn: answer(form, "occurredOn"),
       attributedTo: answer(form, "attributedTo"),
+      // Emptiable on the way back, which is what makes it optional on the way
+      // in mean anything: a name typed by mistake would otherwise be the one
+      // answer on this screen nobody could undo.
+      name: answer(form, "name"),
       // Read and not ignored, so the rule that refuses it is reachable from
       // the screen and not only from a test. The correction screen carries it
       // back unchanged, so the ordinary correction passes; a form that carried

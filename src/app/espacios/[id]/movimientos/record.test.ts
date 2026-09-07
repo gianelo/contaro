@@ -28,6 +28,7 @@ const RECORDED: Movement = {
   occurredOn: TODAY,
   recordedBy: GIAN,
   attributedTo: GIAN,
+  name: null,
 };
 
 const draft: MovementDraft = {
@@ -37,6 +38,7 @@ const draft: MovementDraft = {
   amount: 128_400,
   occurredOn: "2026-09-03",
   attributedTo: null,
+  name: null,
 };
 
 const ports = (changes: Partial<MovementPorts> = {}): MovementPorts => ({

@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { isCalendarDate, type CalendarDate } from "@/domain/calendar/month";
 import { nothingWrongYet } from "./record";
+import { MAX_MOVEMENT_NAME_LENGTH } from "@/domain/movement/movement";
 import { MovementForm, type MovementFormProps } from "./form";
 
 /** A day the domain agrees is one, so the fixture states a real date. */
@@ -28,6 +29,7 @@ const props = {
     categoryId: "",
     occurredOn: today,
     attributedTo: "m-gian",
+    name: null,
   },
   action: async () => nothingWrongYet,
   submit: "Guardar",
@@ -65,6 +67,9 @@ describe("the order the entry screen comes down in", () => {
       // The day and who the money belongs to, stated in one line.
       { block: "the day line", drawn: screen.getByRole("button", { name: "Cambiar cuándo y de quién" }) },
       { block: "the Category", drawn: screen.getByRole("group", { name: "Categoría" }) },
+      // What it was, under the Category: the finer grain of the same question
+      // the chips answer, so the two read as one thing narrowing (#66).
+      { block: "what it was", drawn: screen.getByRole("textbox", { name: "Qué fue" }) },
       // The keys after the chips, where the canvas puts them.
       { block: "the keys", drawn: screen.getByRole("group", { name: "Teclado del monto" }) },
       { block: "Save", drawn: screen.getByRole("button", { name: "Guardar" }) },
@@ -111,5 +116,45 @@ describe("the order the entry screen comes down in", () => {
     expect(
       screen.getByRole("group", { name: "Teclado del monto" }),
     ).not.toContainElement(figure);
+  });
+});
+
+describe("saying what a Movement was", () => {
+  it("offers a place to say it", () => {
+    render(<MovementForm {...props} />);
+
+    expect(screen.getByRole("textbox", { name: "Qué fue" })).toBeInTheDocument();
+  });
+
+  it("asks for nothing: the field is empty and optional", () => {
+    // #66's second acceptance criterion, and story 18 in #1: recording an
+    // expense is still a keypad, a tap and Guardar for somebody standing at a
+    // till who does not want to name it.
+    render(<MovementForm {...props} />);
+
+    const field = screen.getByRole("textbox", { name: "Qué fue" });
+
+    expect(field).toHaveValue("");
+    expect(field).not.toBeRequired();
+  });
+
+  it("stops a name at the domain's ceiling rather than after a round trip", () => {
+    render(<MovementForm {...props} />);
+
+    expect(screen.getByRole("textbox", { name: "Qué fue" })).toHaveAttribute(
+      "maxlength",
+      String(MAX_MOVEMENT_NAME_LENGTH),
+    );
+  });
+
+  it("opens on the name a Movement already has, so leaving it alone keeps it", () => {
+    render(
+      <MovementForm
+        {...props}
+        initial={{ ...props.initial, name: "Éxito" }}
+      />,
+    );
+
+    expect(screen.getByRole("textbox", { name: "Qué fue" })).toHaveValue("Éxito");
   });
 });

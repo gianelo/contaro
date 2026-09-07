@@ -35,6 +35,7 @@ const movementColumns = {
   occurredOn: movements.occurredOn,
   recordedBy: movements.recordedBy,
   attributedTo: movements.attributedTo,
+  name: movements.name,
   struckAt: movements.struckAt,
 };
 
@@ -47,6 +48,7 @@ type MovementRow = {
   occurredOn: string;
   recordedBy: string;
   attributedTo: string;
+  name: string | null;
   struckAt: Date | null;
 };
 
@@ -82,6 +84,7 @@ export async function recordMovementInSpace(
       occurredOn: checked.occurredOn,
       recordedBy: checked.recordedBy,
       attributedTo: checked.attributedTo,
+      name: checked.name,
     })
     .returning(movementColumns);
 
@@ -123,6 +126,7 @@ export async function amendMovementInSpace(
       amount: checked.amount.amount,
       occurredOn: checked.occurredOn,
       attributedTo: checked.attributedTo,
+      name: checked.name,
     })
     // The Space is in the WHERE as well as in the read above, so a correction
     // cannot outlive the check that allowed it.
@@ -338,6 +342,7 @@ function asMovement(row: MovementRow, space: Space): Movement {
     occurredOn: calendarDate(row.occurredOn),
     recordedBy: row.recordedBy,
     attributedTo: row.attributedTo,
+    name: row.name,
   };
 }
 

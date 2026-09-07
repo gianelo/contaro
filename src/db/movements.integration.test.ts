@@ -74,6 +74,7 @@ it("writes a Movement down and reads back what was recorded", async () => {
       amount: 128_400,
       occurredOn: "2026-09-03",
       attributedTo: null,
+      name: null,
     },
   );
 
@@ -88,7 +89,29 @@ it("writes a Movement down and reads back what was recorded", async () => {
     occurredOn: "2026-09-03",
     recordedBy: member.id,
     attributedTo: member.id,
+    name: null,
   });
+});
+
+it("writes down what a Movement was called and reads it back", async () => {
+  // The column is nullable and the check is `name IS NULL OR ...` (0014), so
+  // a round trip is what proves the constraint admits a real name rather than
+  // only the absence of one.
+  const { member, space, categoryId } = await aSpaceWithACategory("Nombre");
+
+  const recorded = await recordMovementInSpace(db, recording(space, member.id), {
+    spaceId: space.id,
+    direction: "expense",
+    categoryId,
+    amount: 128_400,
+    occurredOn: "2026-09-03",
+    attributedTo: null,
+    name: "  Éxito  ",
+  });
+
+  // Trimmed by the domain on the way in, so the column never holds the spaces.
+  expect(recorded.name).toBe("Éxito");
+  expect((await findMovementInSpace(db, space, recorded.id))?.name).toBe("Éxito");
 });
 
 it("denominates what it reads back in the Space's currency", async () => {
@@ -101,6 +124,7 @@ it("denominates what it reads back in the Space's currency", async () => {
     amount: 1_999,
     occurredOn: "2026-09-01",
     attributedTo: null,
+    name: null,
   });
 
   expect(recorded.amount).toEqual(money(1_999, "USD"));
@@ -123,6 +147,7 @@ it("refuses a Category belonging to somebody else's Space", async () => {
       amount: 500,
       occurredOn: "2026-09-03",
       attributedTo: null,
+      name: null,
     }),
   ).rejects.toThrow(UnrecordableMovementError);
 });
@@ -139,6 +164,7 @@ it("refuses to attribute a Movement to somebody outside the Space", async () => 
       amount: 500,
       occurredOn: "2026-09-03",
       attributedTo: stranger.id,
+      name: null,
     }),
   ).rejects.toThrow(UnrecordableMovementError);
 });
@@ -156,6 +182,7 @@ it("lists the Movements of one month, most recent first", async () => {
       amount,
       occurredOn,
       attributedTo: null,
+      name: null,
     });
 
   await record(100, "2026-08-31");
@@ -179,6 +206,7 @@ it("never lists a Movement recorded in another Space", async () => {
     amount: 777,
     occurredOn: "2026-09-02",
     attributedTo: null,
+    name: null,
   });
 
   expect(await movementsInMonth(db, mine.space, month("2026-09"))).toEqual([]);
@@ -194,6 +222,7 @@ it("corrects a Movement without changing who recorded it", async () => {
     amount: 1_284_000,
     occurredOn: "2026-09-03",
     attributedTo: null,
+    name: null,
   });
 
   const fixed = await amendMovementInSpace(
@@ -221,6 +250,7 @@ it("refuses to correct a Movement recorded in another Space", async () => {
       amount: 999,
       occurredOn: "2026-09-02",
       attributedTo: null,
+      name: null,
     },
   );
 
@@ -243,6 +273,7 @@ it("strikes a Movement out and remembers who struck it", async () => {
     amount: 500,
     occurredOn: "2026-09-03",
     attributedTo: null,
+    name: null,
   });
 
   expect(await strikeMovementInSpace(db, space.id, recorded.id, member.id)).toBe(
@@ -266,6 +297,7 @@ it("hides a struck Movement from every reader", async () => {
     amount: 500,
     occurredOn: "2026-09-03",
     attributedTo: null,
+    name: null,
   });
   await strikeMovementInSpace(db, space.id, recorded.id, member.id);
 
@@ -283,6 +315,7 @@ it("strikes a Movement out once, however many times it is asked", async () => {
     amount: 500,
     occurredOn: "2026-09-03",
     attributedTo: null,
+    name: null,
   });
 
   await strikeMovementInSpace(db, space.id, recorded.id, member.id);
@@ -308,6 +341,7 @@ it("refuses to strike out a Movement recorded in another Space", async () => {
       amount: 999,
       occurredOn: "2026-09-02",
       attributedTo: null,
+      name: null,
     },
   );
 
@@ -336,6 +370,7 @@ it("refuses an amount the database itself would call impossible", async () => {
       amount: 0,
       occurredOn: "2026-09-03",
       attributedTo: null,
+      name: null,
     }),
   ).rejects.toThrow(UnrecordableMovementError);
 });
@@ -362,6 +397,7 @@ it("refuses, in the database itself, to move a Movement to another recorder", as
     amount: 500,
     occurredOn: "2026-09-03",
     attributedTo: null,
+    name: null,
   });
 
   await expect(
@@ -408,6 +444,7 @@ it("writes income down and reads it back carrying no Category", async () => {
     amount: 850_000_00,
     occurredOn: "2026-09-01",
     attributedTo: null,
+    name: null,
   });
 
   expect(recorded.direction).toBe("income");
@@ -429,6 +466,7 @@ it("reads a month holding both kinds of Movement", async () => {
     amount: 128_400,
     occurredOn: "2026-09-03",
     attributedTo: null,
+    name: null,
   });
   await recordMovementInSpace(db, context, {
     spaceId: space.id,
@@ -437,6 +475,7 @@ it("reads a month holding both kinds of Movement", async () => {
     amount: 850_000_00,
     occurredOn: "2026-09-01",
     attributedTo: null,
+    name: null,
   });
 
   const read = await movementsInMonth(db, space, month("2026-09"));
@@ -513,6 +552,7 @@ it("refuses, in the database itself, any attempt to change a direction", async (
     amount: 128_400,
     occurredOn: "2026-09-03",
     attributedTo: null,
+    name: null,
   });
 
   await expect(
@@ -536,6 +576,7 @@ it("reads several Spaces' months in one go, each under its own Space", async () 
     amount: 120_00,
     occurredOn: "2026-09-03",
     attributedTo: casa.member.id,
+    name: null,
   });
   await recordMovementInSpace(db, recording(viaje.space, viaje.member.id), {
     spaceId: viaje.space.id,
@@ -544,6 +585,7 @@ it("reads several Spaces' months in one go, each under its own Space", async () 
     amount: 45_00,
     occurredOn: "2026-09-04",
     attributedTo: viaje.member.id,
+    name: null,
   });
 
   const grouped = await movementsInMonthForSpaces(
@@ -573,6 +615,7 @@ it("leaves out a Space that was not asked about", async () => {
     amount: 90_00,
     occurredOn: "2026-09-03",
     attributedTo: theirs.member.id,
+    name: null,
   });
 
   const grouped = await movementsInMonthForSpaces(
@@ -594,6 +637,7 @@ it("holds a batch to the same month a single Space is held to", async () => {
     amount: 70_00,
     occurredOn: "2026-08-31",
     attributedTo: member.id,
+    name: null,
   });
 
   const grouped = await movementsInMonthForSpaces(

@@ -3,11 +3,15 @@
 import { useActionState, useState, useSyncExternalStore } from "react";
 import { isCalendarDate, type CalendarDate } from "@/domain/calendar/month";
 import type { CurrencyCode } from "@/domain/money/currency";
-import type { MovementDirection } from "@/domain/movement/movement";
+import {
+  MAX_MOVEMENT_NAME_LENGTH,
+  type MovementDirection,
+} from "@/domain/movement/movement";
 import { t } from "@/i18n";
 import { Button } from "@/ui/button";
 import { BranchingChipField, type ChipBranch } from "@/ui/branching-chip-field";
 import { SegmentedField } from "@/ui/segmented-field";
+import { TextField } from "@/ui/field";
 import { Keys, Readout } from "@/ui/keypad";
 import { When } from "./when";
 import { nothingWrongYet, type MovementFormState } from "./record";
@@ -41,6 +45,8 @@ export type MovementFormProps = {
     categoryId: string | null;
     occurredOn: CalendarDate;
     attributedTo: string;
+    /** What it was, if this Movement was ever named. */
+    name: string | null;
   };
   action: (
     previous: MovementFormState,
@@ -223,6 +229,44 @@ export function MovementForm({
           required
         />
       ) : null}
+
+      {/*
+        Under the Category and above the keys, which is where what-it-was
+        belongs: it is the finer grain of the same question the chips answer,
+        so the two read as one thing narrowing rather than as two questions
+        (#66).
+
+        Optional, and nothing on the screen asks for it twice: no asterisk, no
+        "opcional" in the label. Somebody who does not want to name this taps
+        the keys and Guardar exactly as before, which is #66's second
+        acceptance criterion and story 18 in #1.
+
+        The label is off the screen and still in the accessibility tree, which
+        is a trade and not a tidy-up: the placeholder is what a sighted person
+        reads, and a placeholder is gone the moment they type. It bought 22 of
+        the 37px this block was over the fold by, and ADR-0048 spends the rest.
+
+        `maxLength` is the domain's ceiling, so an over-long name is stopped by
+        the keyboard rather than by a refusal after a round trip. It is not the
+        rule — `called` in the domain is — and a form that got past it is
+        refused there.
+
+        `autoComplete="off"` is aimed at one specific wrong offer rather than
+        at recall in general: this input is called `name`, and a browser that
+        reads that as a person's name would offer whoever is holding the phone
+        where a shop goes. #66 asks whether the product should instead remember
+        a name per Category and offer it; ADR-0048 says why that is not this
+        change.
+      */}
+      <TextField
+        name="name"
+        label={t("movements.name")}
+        labelHidden
+        placeholder={t("movements.name.example")}
+        defaultValue={initial.name ?? ""}
+        maxLength={MAX_MOVEMENT_NAME_LENGTH}
+        autoComplete="off"
+      />
 
       {/*
         Last, after the chips, which is where the canvas draws them and what

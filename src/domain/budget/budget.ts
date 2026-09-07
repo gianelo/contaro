@@ -370,6 +370,11 @@ export function paymentFor(item: FixedItem, paying: Paying): MovementDraft {
     amount: item.amount.amount,
     occurredOn: paying.today,
     attributedTo: null,
+    // What the item is already called, which is the one thing here nobody has
+    // to invent: ADR-0042 made every Budget item called something, so the
+    // Movement that pays "Netflix" arrives on the month's list called Netflix
+    // rather than "Suscripciones", with nobody typing a character (#66).
+    name: item.name,
   };
 }
 

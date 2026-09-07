@@ -32,6 +32,7 @@ const expense = (spaceId: string, amount: number, currency: CurrencyCode) =>
     occurredOn: calendarDate("2026-09-03"),
     recordedBy: gian.id,
     attributedTo: gian.id,
+    name: null,
   }) satisfies Movement;
 
 const planned = (spaceId: string, amount: number, currency: CurrencyCode) =>

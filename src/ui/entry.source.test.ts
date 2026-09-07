@@ -37,11 +37,31 @@ describe("the numbers the entry screen reads off the canvas", () => {
   });
 
   describe("the keypad", () => {
-    it("gives a key the height and the corner the canvas gives it", () => {
+    /*
+     * The one number on this screen the app no longer takes from the canvas,
+     * and the divergence is the point of the assertion rather than a drift it
+     * failed to catch (#66, ADR-0048).
+     *
+     * ADR-0037 budgeted this screen at 643px against the 664 a phone gives and
+     * said the air between the blocks would be what gave, never the keys. Then
+     * #66 put a seventh block on the form, and
+     * 21px of air could not pay for it: the air went to 6px and the screen was
+     * still over the fold on both entry and correction.
+     *
+     * So the keys pay the rest, down to 44px -- which is `--hit-target`, the
+     * floor this repo applies to everything a finger lands on and measures in
+     * a real browser. Below the canvas's number and not below the product's
+     * own rule, which is the whole of what makes it payable.
+     *
+     * The canvas is still asserted at 50 rather than edited to 44: it drew a
+     * screen with no name on it, and a canvas quietly rewritten to match the
+     * code stops being able to tell anybody the code moved.
+     */
+    it("gives a key the corner the canvas gives it, and the height ADR-0048 bought", () => {
       expect(key).toContain("height: 50px");
       expect(key).toContain("border-radius: 10px");
 
-      expect(keypad).toContain("height: 50px");
+      expect(keypad).toContain("height: 44px");
       expect(keypad).toContain("border-radius: 10px");
     });
 

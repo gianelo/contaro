@@ -169,3 +169,22 @@ only spaces, and the test is back on `INSERT`, where it belongs.
 And the migration now carries twenty-three Spanish words that a translation
 file also carries. They will drift, and they are supposed to: one is what the
 catalogue says today, the other is what a row was called in September 2026.
+
+## What #66 answered
+
+The passage above says #66 asks this same question of a **Movement** and answers
+it the other way. It does — a Movement carries a name now (ADR-0048) — but the
+reason given here is what decided its shape rather than what was overturned.
+
+A Movement's name is **nullable**, and a Budget item's is not, for exactly the
+argument set out above: a plan is written sitting down, and an expense is
+recorded standing at a till on a screen ADR-0028 gives one thing to do. So the
+field is offered and never demanded, and a Movement with no name is read by its
+Category — the two ways of titling a row that this ADR refused for a plan, taken
+on deliberately for a ledger, because there the second way is not a new design
+but the behaviour every row already had.
+
+The requirement this ADR added is also what makes paying a Fixed item work:
+because every item is called something, `paymentFor` names the Movement it
+creates after the item, and nobody types a character to get "Netflix" onto the
+month's list instead of "Suscripciones".

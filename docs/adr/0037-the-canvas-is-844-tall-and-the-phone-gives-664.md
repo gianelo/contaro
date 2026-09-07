@@ -115,6 +115,15 @@ wrong 24px. The whitespace between blocks gave instead: `.form`'s gap goes from
 21px is thin, and it is thin on purpose: the alternative was 45px bought with a
 smaller keypad.
 
+**That 21px is spent, and the keypad is what bought the rest (#66, ADR-0048).**
+A Movement is called something now, and the field is a seventh block this screen
+had no room for: 701px against 664 with the label drawn, 679 with the label off
+the screen and still in the accessibility tree. The air gave first, exactly as
+this ADR says it should — `.form`'s gap from 8px to 6 — and did not cover it.
+So the keys went to 44px, which is `--hit-target` and not a number chosen to make
+the screen fit. The table above is the shape of the screen before that block; the
+order in which it spends is what survives, and ADR-0048 carries the arithmetic.
+
 ## What it costs
 
 A sideways scroll is a worse offer than a wrapped list. Nine headings do not fit
