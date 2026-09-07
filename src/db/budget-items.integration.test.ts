@@ -693,65 +693,36 @@ it("refuses, in the database itself, a Budget item that names no kind", async ()
 
 it("refuses, in the database itself, a Budget item that is called nothing", async () => {
   const { space, categoryId } = await aSpaceWithACategory("Sin nombre");
-  const variable = await planBudgetItemInSpace(db, space, {
-    spaceId: space.id,
-    month: SEPTEMBER,
-    categoryId,
-    amount: 240_000_00,
-    name: "Súper",
-  });
-  const fixed = await aFixedItem(space, categoryId);
 
-  // Asked through UPDATE and not INSERT, and that is the bridge showing rather
-  // than a gap in the test: 0012's trigger is BEFORE INSERT, so an arriving row
-  // is named before the check ever sees it (which is the test below). Nothing
-  // stands between an UPDATE and the constraint, so this is where the rule can
-  // be read on its own -- of both kinds, and of a name that is only spaces as
-  // much as of none at all.
-  //
-  // The null case is the one that used to get through. A CHECK evaluating to
-  // NULL is satisfied in Postgres, so `char_length(btrim(name)) > 0` alone let
-  // a Fixed item with no name straight in; `name is not null` is what closes it.
-  for (const id of [variable.id, fixed.id]) {
-    for (const nothing of [null, "", "   "]) {
+  // Both kinds, because the name stopped belonging to one of them (#79), and
+  // both halves of the rule, because they are two different refusals. A name
+  // that is not there is refused by the column, which is what 0013 made
+  // `NOT NULL` once the bridge under it came down (#90); a name that is only
+  // spaces is refused by the check, which is the half that was always
+  // reachable.
+  for (const { kind, dueOn } of [
+    { kind: "variable", dueOn: null },
+    { kind: "fixed", dueOn: "2026-09-01" },
+  ] as const) {
+    // The two inserts are written out rather than built by a helper: which
+    // columns a statement names is the whole of what is being refused here.
+    //
+    // The column omitted rather than sent empty, which is the shape of an
+    // insert written by something that does not know the column is there.
+    await expect(
+      sql`
+        INSERT INTO budget_items (space_id, month, category_id, amount, kind, due_on)
+        VALUES (${space.id}, '2026-09', ${categoryId}, 240000, ${kind}, ${dueOn})
+      `,
+    ).rejects.toThrow(/null value in column "name"/);
+
+    for (const blank of ["", "   "]) {
       await expect(
-        sql`UPDATE budget_items SET name = ${nothing} WHERE id = ${id}`,
+        sql`
+          INSERT INTO budget_items (space_id, month, category_id, amount, kind, name, due_on)
+          VALUES (${space.id}, '2026-09', ${categoryId}, 240000, ${kind}, ${blank}, ${dueOn})
+        `,
       ).rejects.toThrow(/budget_items_carries_what_its_kind_carries/);
     }
   }
-});
-
-/*
- * The expand half of ADR-0008, which only exists for a few minutes and is
- * therefore the half nobody would notice was broken. Migrations run from an
- * Action while Vercel deploys in parallel, so the code of #10 -- which has
- * never heard of naming a Variable item -- is still inserting here without one.
- */
-it("names an insert that names nothing after its Category", async () => {
-  const { space, categoryId } = await aSpaceWithACategory("Puente");
-  const asado = await addCategoryToSpace(db, {
-    spaceId: space.id,
-    parentId: null,
-    name: "Asado",
-  });
-
-  // The old code's insert, exactly: the column is omitted rather than sent
-  // empty, because that code does not know it is there.
-  await sql`
-    INSERT INTO budget_items (space_id, month, category_id, amount, kind)
-    VALUES (${space.id}, '2026-09', ${asado.id}, 240000, 'variable')
-  `;
-
-  // The case that matters, because it is nearly every row there is: a shipped
-  // Category carries a slug and no name at all, and the name a person read was
-  // copy the screen resolved. `budget_item_name_for_category` borrows that
-  // copy, so this comes back "Supermercado" -- reading `categories.name` alone
-  // would have written the identifier here and left the plan full of UUIDs.
-  await sql`
-    INSERT INTO budget_items (space_id, month, category_id, amount, kind)
-    VALUES (${space.id}, '2026-09', ${categoryId}, 100000, 'variable')
-  `;
-
-  const planned = await budgetItemsInMonth(db, space, SEPTEMBER);
-  expect(planned.map((one) => one.name)).toEqual(["Asado", "Supermercado"]);
 });

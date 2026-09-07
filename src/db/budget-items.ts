@@ -72,7 +72,8 @@ type BudgetItemRow = {
   categoryId: string;
   amount: number;
   kind: string;
-  name: string | null;
+  /** Never absent: 0013 made the column `NOT NULL` (#90). */
+  name: string;
   dueOn: string | null;
   movementId: string | null;
   /** When the Movement this row points at was struck out, if it was. */
@@ -531,7 +532,7 @@ function asBudgetItem(row: BudgetItemRow, space: Space): BudgetItem {
         month: whichMonth(row),
         categoryId: row.categoryId,
         amount: money(row.amount, space.currency),
-        name: whichName(row),
+        name: row.name,
       };
 }
 
@@ -546,8 +547,6 @@ function asBudgetItem(row: BudgetItemRow, space: Space): BudgetItem {
  * is wrong and stops.
  */
 function asFixedItem(row: BudgetItemRow, space: Space): FixedItem {
-  const name = whichName(row);
-
   if (row.dueOn === null) {
     throw new Error(`Fixed item ${row.id} carries no due day.`);
   }
@@ -564,7 +563,7 @@ function asFixedItem(row: BudgetItemRow, space: Space): FixedItem {
     month: whichMonth(row),
     categoryId: row.categoryId,
     amount: money(row.amount, space.currency),
-    name,
+    name: row.name,
     dueOn: row.dueOn,
     // The pointer and the ledger's answer about it, together. `isPaid` is
     // what reads them as one thing; nothing here decides whether it is paid.
@@ -591,26 +590,4 @@ function whichMonth(row: BudgetItemRow): Month {
   }
 
   return row.month;
-}
-
-/**
- * What a row is called, or a refusal.
- *
- * Asked once for both kinds, because both are called something (#79). The
- * column is still nullable -- that is the expand half of ADR-0008, waiting on
- * the deploy that sets it `NOT NULL` -- so a null is a shape TypeScript can
- * still see and the reading has to answer for it.
- *
- * It answers by refusing. A row with no name is one the check constraint
- * cannot have written and the trigger under it would have named anyway, so
- * reaching here means both are gone rather than that the item is nameless.
- * Filling one in would put a line on the screen that nobody planned; throwing
- * says which row is wrong and stops.
- */
-function whichName(row: BudgetItemRow): string {
-  if (row.name === null) {
-    throw new Error(`Budget item ${row.id} carries no name.`);
-  }
-
-  return row.name;
 }

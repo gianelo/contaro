@@ -100,10 +100,10 @@ a direction.
 A column DEFAULT cannot do it this time. The honest name is read off
 `category_id` on the same row, and a default is a constant. A `BEFORE INSERT`
 trigger says the rule the backfill says, through the same function so the two
-cannot drift, and it has the same expiry both defaults had: the contraction
-drops the trigger, its function and `budget_item_name_for_category`, and adds
-`ALTER COLUMN "name" SET NOT NULL`. The frozen names stay; the machinery that
-produced them goes.
+cannot drift, and it has the same expiry both defaults had: `0013` drops the
+trigger, its function and `budget_item_name_for_category`, and adds
+`ALTER COLUMN "name" SET NOT NULL` (#90). The frozen names stay; the machinery
+that produced them goes.
 
 ## A CHECK that evaluates to NULL is satisfied
 
@@ -158,11 +158,13 @@ Planning a month costs a name per item, and the plan's rows can be told apart
 without their amounts. #63 is unblocked: once each Category's meter opens the
 items behind it, they have something to be drawn by.
 
-The database still permits a null name for one more deploy. Until the
-contraction lands, "every Budget item is called something" is held by a check,
-a trigger and the domain rather than by the column, and the trigger means the
-name half of that check is unreachable from `INSERT` — which is why the test
-that proves the database refuses a nameless item is written against `UPDATE`.
+The database permitted a null name for one deploy, and while it did, "every
+Budget item is called something" was held by a check, a trigger and the domain
+rather than by the column — with the trigger putting the name half of that
+check out of reach from `INSERT`, so the test proving the database refuses a
+nameless item had to be written against `UPDATE`. `0013` ended that (#90): the
+column refuses the name that is not there, the check refuses the one that is
+only spaces, and the test is back on `INSERT`, where it belongs.
 
 And the migration now carries twenty-three Spanish words that a translation
 file also carries. They will drift, and they are supposed to: one is what the
