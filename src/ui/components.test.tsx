@@ -8,6 +8,7 @@ import { AppShell } from "./app-shell";
 import { SelectField, TextField } from "./field";
 import { Notice } from "./notice";
 import { ChipField } from "./chip-field";
+import { EntryHead } from "./entry-head";
 
 describe("Button", () => {
   it("calls its handler", async () => {
@@ -147,6 +148,58 @@ describe("AppShell", () => {
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     expect(screen.queryByRole("region")).not.toBeInTheDocument();
     expect(screen.getByText("Contenido")).toBeInTheDocument();
+  });
+});
+
+describe("EntryHead", () => {
+  it("takes its words rather than picking any", () => {
+    // The head two screens wear (ADR-0028, ADR-0046), and neither of them is
+    // named in here: it is handed its title the way ChipField is handed its
+    // legend, so the screen that knows what it is called says so.
+    render(
+      <EntryHead back="/atras" cancel="Cancelar" title="Nuevo movimiento" />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Nuevo movimiento" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Cancelar" })).toHaveAttribute(
+      "href",
+      "/atras",
+    );
+  });
+
+  it("says the way out once, however many copies of the word it draws", () => {
+    // The title is centred by an invisible copy of Cancelar taking the room on
+    // the other side, so the word is on the screen twice. Heard rather than
+    // seen, the second one would be a way out that does not exist.
+    render(
+      <EntryHead back="/atras" cancel="Cancelar" title="Nuevo movimiento" />,
+    );
+
+    expect(screen.getAllByText("Cancelar")).toHaveLength(2);
+    expect(
+      screen.getAllByText("Cancelar", { ignore: "[aria-hidden='true']" }),
+    ).toHaveLength(1);
+  });
+
+  it("puts what a screen needs under its title, and nothing where none does", () => {
+    const { rerender } = render(
+      <EntryHead
+        back="/atras"
+        cancel="Cancelar"
+        title="Nuevo movimiento"
+        beneath={<p>Compartido con Ana</p>}
+      />,
+    );
+    expect(screen.getByText("Compartido con Ana")).toBeInTheDocument();
+
+    // The plan's entry screen has no attribution to name, so it wears the head
+    // with nothing beneath it (ADR-0046).
+    rerender(
+      <EntryHead back="/atras" cancel="Cancelar" title="Nuevo gasto previsto" />,
+    );
+    expect(screen.queryByText("Compartido con Ana")).not.toBeInTheDocument();
   });
 });
 

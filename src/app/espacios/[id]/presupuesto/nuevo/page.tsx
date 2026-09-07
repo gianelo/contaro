@@ -1,13 +1,12 @@
 import { headers } from "next/headers";
-import { ButtonLink } from "@/ui/button";
 import { t } from "@/i18n";
+import { AppShell } from "@/ui/app-shell";
+import { EntryHead } from "@/ui/entry-head";
 import { numberLocalesFor, todayFor } from "@/app/reader";
-import { SpaceScreen } from "../../screen";
 import { currentSpace } from "../../space";
 import { categoryChips, monthInView } from "../../movimientos/month";
 import { BudgetItemForm } from "../form";
 import { planBudgetItemAction } from "../actions";
-import styles from "./page.module.css";
 
 /**
  * Planning one item of either kind: the month's plan comes into existence here
@@ -20,6 +19,14 @@ import styles from "./page.module.css";
  * the Budget screen pointing at it. The form asks the day question now, and
  * whether it is answered is what makes an item Fixed — so nobody has to know
  * what "fijo" means to write down a number.
+ *
+ * It carries no tab bar, which is why it renders `AppShell` directly instead
+ * of going through `SpaceScreen` like every other screen inside a Space. That
+ * is ADR-0028's argument about the Movement entry screen, made again here
+ * because it is the same act: somebody has typed an amount and a name, and a
+ * bar offering three other places is three ways to lose them. There is no
+ * account row and no Space heading either, and Cancelar sits in the head
+ * rather than at the foot of the page (#86, ADR-0046).
  *
  * Membership is proved here the way every route under `/espacios/[id]` proves
  * it, and proved again by the action, because the form names the Space and a
@@ -49,8 +56,17 @@ export default async function NewBudgetItemPage({
   const month = monthInView(mes, todayFor(asked));
 
   return (
-    <SpaceScreen space={space} tab="budget">
-      <h2 className={styles.title}>{t("budget.item.new.title")}</h2>
+    <AppShell>
+      {/*
+        Back to the month this was opened on, and never to "this month": a
+        person planning October in September changed their mind about one item
+        and not about the month they were working on.
+      */}
+      <EntryHead
+        back={`/espacios/${space.id}?mes=${month}`}
+        cancel={t("action.cancel")}
+        title={t("budget.item.new.title")}
+      />
 
       <BudgetItemForm
         spaceId={space.id}
@@ -76,12 +92,6 @@ export default async function NewBudgetItemPage({
         submit={t("budget.item.save")}
         working={t("budget.item.save.working")}
       />
-
-      <div className={styles.back}>
-        <ButtonLink href={`/espacios/${space.id}?mes=${month}`} variant="plain">
-          {t("action.cancel")}
-        </ButtonLink>
-      </div>
-    </SpaceScreen>
+    </AppShell>
   );
 }

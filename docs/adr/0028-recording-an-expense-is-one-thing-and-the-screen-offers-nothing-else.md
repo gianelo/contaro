@@ -10,6 +10,8 @@ It is the counterpart of ADR-0027 rather than an exception to it. The raised but
 
 `Cancelar` moves into the head with the title, because a person who changes their mind is at the top of the screen or at the keypad, and the foot of the page is a scroll past both. The title is centred by an invisible copy of the word `Cancelar` taking the room on the other side: a fixed width would have to be guessed, and would be wrong in another language.
 
+#86 made it two screens rather than one. The plan's entry screen holds the same typed-but-unsaved amount under the same bar, so it makes the same trade, and ADR-0046 has the argument for why it transfers. The head both screens wear now lives in `@/ui/entry-head` -- including the invisible `Cancelar` below, which is the part a second copy would get subtly wrong. What stayed behind on this screen is the pill, because its argument is this screen's: an expense is about to be attributed to somebody, and a plan is not.
+
 There is no account row and no Space heading either. What somebody about to spend needs from that heading is which Space they are spending from, and the pill under the title says exactly that — and says nothing at all in a Space of one, where it would state the obvious above the figure that matters.
 
 ## The figure is one figure, set at two sizes
