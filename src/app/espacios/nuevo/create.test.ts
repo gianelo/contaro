@@ -51,7 +51,7 @@ describe("creating a Space", () => {
 
     expect(outcome).toEqual({
       kind: "created",
-      space: { id: "space-1", name: "Casa", currency: "ARS" },
+      space: { id: "space-1", name: "Casa", currency: "ARS", createdBy: ana },
     });
   });
 

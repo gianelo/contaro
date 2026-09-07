@@ -21,7 +21,12 @@ import {
   type PlannedItemDraft,
 } from "./plan";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 const GIAN = "member-gian";
 
 const PLANNED: BudgetItem = {

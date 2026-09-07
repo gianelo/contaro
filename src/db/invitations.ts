@@ -12,10 +12,10 @@ import {
   type PendingInvitation,
   type WaitingInvitation,
 } from "@/domain/space/invitation";
-import { isCurrencyCode } from "@/domain/money/currency";
 import type { Space } from "@/domain/space/space";
 import type { Queries } from "./connection";
 import { members, spaceInvitations, spaceMembers, spaces } from "./schema";
+import { asSpace } from "./space-row";
 
 type Database = Queries;
 
@@ -163,6 +163,7 @@ export async function invitationsWaitingFor(
       invitedByName: members.name,
       spaceName: spaces.name,
       spaceCurrency: spaces.currency,
+      spaceCreatedBy: spaces.createdBy,
     })
     .from(spaceInvitations)
     .innerJoin(members, eq(members.id, spaceInvitations.invitedBy))
@@ -181,6 +182,7 @@ export async function invitationsWaitingFor(
       id: row.spaceId,
       name: row.spaceName,
       currency: row.spaceCurrency,
+      createdBy: row.spaceCreatedBy,
     }),
   }));
 
@@ -227,7 +229,12 @@ export async function acceptInvitationAsMember(
   });
 
   const [space] = await db
-    .select({ id: spaces.id, name: spaces.name, currency: spaces.currency })
+    .select({
+      id: spaces.id,
+      name: spaces.name,
+      currency: spaces.currency,
+      createdBy: spaces.createdBy,
+    })
     .from(spaces)
     .where(eq(spaces.id, invitation.spaceId))
     .limit(1);
@@ -434,15 +441,4 @@ function asInvitation(row: InvitationRow): Invitation {
     invitedBy: row.invitedBy,
     status: row.status,
   };
-}
-
-/** The same refusal `spaces.ts` makes, for the same reason. */
-function asSpace(row: { id: string; name: string; currency: string }): Space {
-  if (!isCurrencyCode(row.currency)) {
-    throw new Error(
-      `Space ${row.id} is stored in "${row.currency}", which is not a currency contaro offers.`,
-    );
-  }
-
-  return { id: row.id, name: row.name, currency: row.currency };
 }

@@ -28,7 +28,12 @@ import {
   type VariableItem,
 } from "./budget";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 
 const COMIDA: Category = {
   id: "cat-food",

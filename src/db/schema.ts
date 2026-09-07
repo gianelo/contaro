@@ -51,11 +51,29 @@ export const members = pgTable("members", {
  * is that the column never changes after the insert: migration 0002 puts a
  * trigger on it, so ADR-0001 holds against every path into this table, not only
  * the one that goes through `amendSpace`.
+ *
+ * `created_by` is the one asymmetry between a Space's two Members (#116,
+ * ADR-0051): the creator closes a month and approves the carry-over, and the
+ * invited Member does neither. Here rather than a `role` on the membership
+ * row, because it is a fact about the Space and because a role column is a
+ * permission system growing out of two acts.
+ *
+ * It does not cascade from `members`, the way `space_invitations.invited_by`
+ * does not: the Space is owed an honest record of who made it even if that
+ * Member's own row is one day gone. Migration 0015 also freezes it -- the
+ * creator is recovered once and never changed, so ADR-0051's exception cannot
+ * be handed to somebody by an UPDATE.
+ *
+ * Nullable only because ADR-0008 forbids adding a required column in one
+ * deploy; 0015 backfills every existing row and bridges the window, so a row
+ * that reaches a reader without one has gone round the domain, and `asSpace`
+ * refuses it the way it refuses an unknown currency.
  */
 export const spaces = pgTable("spaces", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   currency: text("currency").notNull(),
+  createdBy: uuid("created_by").references(() => members.id),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

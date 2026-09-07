@@ -15,7 +15,12 @@ import {
   type MovementPorts,
 } from "./record";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 const GIAN = "member-gian";
 const TODAY = calendarDate("2026-09-03");
 

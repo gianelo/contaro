@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { afterAll, expect, it } from "vitest";
 import { createDatabase, databaseUrl } from "./connection";
 import { memberFromGoogle } from "./members";
@@ -220,8 +222,8 @@ it("keeps two Spaces of the same Member apart, down to the currency", async () =
   const listed = await listSpacesForMember(db, sofi.id);
 
   expect(listed.map((row) => row.space)).toEqual([
-    { id: pesos.id, name: "Casa", currency: "ARS" },
-    { id: dolares.id, name: "Viaje", currency: "USD" },
+    { id: pesos.id, name: "Casa", currency: "ARS", createdBy: sofi.id },
+    { id: dolares.id, name: "Viaje", currency: "USD", createdBy: sofi.id },
   ]);
 });
 
@@ -315,4 +317,195 @@ it("refuses an identifier that is not one, rather than erroring on it", async ()
   await expect(
     markSpaceOpened(db, "not-a-uuid", vera.id),
   ).resolves.toBeUndefined();
+});
+
+/*
+ * Who created it (#116, ADR-0051).
+ *
+ * The database owns this rather than the domain alone, for the reason 0002
+ * owns the currency: two acts rest on the answer, and a rule only `createSpace`
+ * knows about is a rule that survives until the second writer.
+ */
+
+it("remembers the Member who created it", async () => {
+  const sara = await aMember("Sara");
+
+  const space = await createSpaceForMember(db, sara.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  expect(space.createdBy).toBe(sara.id);
+});
+
+it("gives both Members the same answer about who created it", async () => {
+  const tino = await aMember("Tino");
+  const uma = await aMember("Uma");
+  const space = await createSpaceForMember(db, tino.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  await sql`
+    INSERT INTO space_members (space_id, member_id) VALUES (${space.id}, ${uma.id})
+  `;
+
+  // Read by the invited Member, so the trigger that fills an empty column
+  // cannot be promoting whoever asks last.
+  await expect(findSpaceForMember(db, space.id, uma.id)).resolves.toMatchObject(
+    { createdBy: tino.id },
+  );
+});
+
+it("recovers the creator of a Space written without one", async () => {
+  const vero = await aMember("Vero");
+
+  // The window ADR-0008 opens: migrations run from CI while Vercel deploys in
+  // parallel, so for a few minutes the code inserting here has never heard of
+  // the column. The first Member seated is the answer, and 0015's trigger is
+  // what writes it down.
+  const [written] = await sql<{ id: string }[]>`
+    INSERT INTO spaces (name, currency) VALUES ('Casa', 'ARS') RETURNING id
+  `;
+  const spaceId = written!.id;
+  await sql`
+    INSERT INTO space_members (space_id, member_id) VALUES (${spaceId}, ${vero.id})
+  `;
+
+  await expect(findSpaceForMember(db, spaceId, vero.id)).resolves.toMatchObject(
+    { createdBy: vero.id },
+  );
+});
+
+it("does not hand the creation over to the Member seated second", async () => {
+  const walt = await aMember("Walt");
+  const xime = await aMember("Xime");
+  const space = await createSpaceForMember(db, walt.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  await sql`
+    INSERT INTO space_members (space_id, member_id) VALUES (${space.id}, ${xime.id})
+  `;
+
+  await expect(
+    findSpaceForMember(db, space.id, walt.id),
+  ).resolves.toMatchObject({ createdBy: walt.id });
+});
+
+it("refuses to change who created a Space, even from outside the domain", async () => {
+  const yani = await aMember("Yani");
+  const zoe = await aMember("Zoe");
+  const space = await createSpaceForMember(db, yani.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  await expect(
+    sql`UPDATE spaces SET created_by = ${zoe.id} WHERE id = ${space.id}`,
+  ).rejects.toThrow(/never be changed/i);
+
+  await expect(
+    findSpaceForMember(db, space.id, yani.id),
+  ).resolves.toMatchObject({ createdBy: yani.id });
+});
+
+it("guards the creator without freezing the rest of the Space", async () => {
+  const abel = await aMember("Abel");
+  const space = await createSpaceForMember(db, abel.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  // The same measurement the currency guard gets: a trigger that refused every
+  // UPDATE would pass the test above and break the rename #5 needs.
+  await sql`UPDATE spaces SET name = 'Casa nueva' WHERE id = ${space.id}`;
+
+  await expect(
+    findSpaceForMember(db, space.id, abel.id),
+  ).resolves.toMatchObject({ name: "Casa nueva", createdBy: abel.id });
+});
+
+/**
+ * The two signals compared, run as the migration ships it.
+ *
+ * The block is read out of `0015` rather than retyped here, because a copy of
+ * the query is a copy that goes on passing after the shipped one stops being
+ * right. It only reads and raises, so running it a second time changes
+ * nothing.
+ */
+const disagreementCheck = () => {
+  const sql = readFileSync(
+    path.join(
+      import.meta.dirname,
+      "migrations",
+      "0015_a_space_remembers_who_created_it.sql",
+    ),
+    "utf8",
+  );
+  const block = /DO \$\$\s*\n\s*DECLARE\s*\n\s*disagreeing[\s\S]*?END \$\$;/.exec(sql);
+  if (!block) throw new Error("Migration 0015 no longer holds the check this tests.");
+  return block[0];
+};
+
+const warningsFrom = async (statement: string): Promise<string> => {
+  const heard: string[] = [];
+  const listening = createDatabase(databaseUrl(), {
+    max: 1,
+    onnotice: (notice) => heard.push(notice.message ?? ""),
+  });
+
+  try {
+    await listening.sql.unsafe(statement);
+  } finally {
+    await listening.sql.end();
+  }
+
+  return heard.join("\n");
+};
+
+it("names the Spaces whose two signals disagree about who created them", async () => {
+  const nadia = await aMember("Nadia");
+  const omar = await aMember("Omar");
+  const space = await createSpaceForMember(db, nadia.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  await sql`
+    INSERT INTO space_members (space_id, member_id) VALUES (${space.id}, ${omar.id})
+  `;
+  // The Invitation says Omar did the inviting, and the membership rows say
+  // Nadia was seated first. Two honest signals that cannot both be right, which
+  // is the case #116 asked to have surfaced rather than resolved in silence.
+  await sql`
+    INSERT INTO space_invitations (space_id, email, invited_by, status, resolved_at)
+    VALUES (${space.id}, 'omar-invited@example.com', ${omar.id}, 'accepted', now())
+  `;
+
+  await expect(warningsFrom(disagreementCheck())).resolves.toContain(space.id);
+});
+
+it("says nothing about a Space whose two signals agree", async () => {
+  const pablo = await aMember("Pablo");
+  const quena = await aMember("Quena");
+  const space = await createSpaceForMember(db, pablo.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  await sql`
+    INSERT INTO space_members (space_id, member_id) VALUES (${space.id}, ${quena.id})
+  `;
+  await sql`
+    INSERT INTO space_invitations (space_id, email, invited_by, status, resolved_at)
+    VALUES (${space.id}, 'quena-invited@example.com', ${pablo.id}, 'accepted', now())
+  `;
+
+  // Measured against what the check must let by, the way the currency guard is:
+  // one that named every Space would pass the test above and say nothing.
+  await expect(warningsFrom(disagreementCheck())).resolves.not.toContain(
+    space.id,
+  );
 });

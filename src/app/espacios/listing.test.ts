@@ -20,7 +20,10 @@ const listed = (
   name: string,
   currency: CurrencyCode,
   members: readonly { id: string; name: string }[] = [gian],
-): SpaceWithMembers => ({ space: { id, name, currency }, members });
+): SpaceWithMembers => ({
+  space: { id, name, currency, createdBy: members[0]?.id ?? gian.id },
+  members,
+});
 
 const expense = (spaceId: string, amount: number, currency: CurrencyCode) =>
   ({
