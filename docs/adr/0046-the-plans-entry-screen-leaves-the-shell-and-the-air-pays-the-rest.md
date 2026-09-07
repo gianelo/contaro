@@ -114,6 +114,53 @@ row in every state it has (ADR-0044). A Space of one with the shipped catalogue
 and a Space of four with sixty Categories measure the same 655px. The 9px is
 not slack absorbing a worst case — the worst case is the only case.
 
+## Except it did vary, and the font was deciding
+
+The first version of this change was written, measured at 655, and shipped to
+CI, where the same screen came out **670** against the same 664. Three retries,
+the same number: not a flake, a different machine.
+
+The app names its type `-apple-system, BlinkMacSystemFont, "SF Pro Text",
+system-ui, "Segoe UI", Roboto, sans-serif`. On the phone it is drawn for that
+resolves to SF. On a Linux runner it falls through to whatever is installed, and
+**nothing in the app said how tall a line of text is**, so the browser used the
+font's own idea of `normal`. Measured on Linux WebKit against the same build:
+
+| | SF | a Linux fallback |
+| --- | --- | --- |
+| `.label` (13px) | 16 | 18 |
+| `.legend` (12px) | 15 | 17 |
+| `.currency` (12px) | 15 | 17 |
+| `.title` (17px) | 20 | 23 |
+
+That is ADR-0037's finding on a different property. There it was four
+paragraphs carrying `margin: 1em 0` — *space nobody chose, sized off each
+element's own font*. Here it is every caption in the product carrying
+`line-height: normal`, which is the same sentence: the height of a screen was a
+function of which fonts the machine drawing it happened to have.
+
+**`--line-caption: 1.25`** is what SF already renders at 12px, so nothing moves
+on the phone the product is for; what changes is that it stops moving anywhere
+else. It is applied to `.label`, `.legend` and `.currency`, and `.symbol` takes
+the `1.1` the amount beside it already had, so `.figure`'s box stops being one
+more thing the operating system decides.
+
+**And the head's `<h1>` was carrying the browser's `0.67em` heading margin.**
+ADR-0037 zeroed four paragraphs and did not look at headings. On SF that margin
+box comes to 43px beside a 44px `Cancelar`, so it never bound and nobody could
+see it; on a taller font it comes to 46 and the bar grew. The Movement entry
+screen has had this since #37 — invisible there for the same reason, and fixed
+here for both.
+
+Measured after, on Linux WebKit: head 54, keypad 310.19, name 66.25, Category
+67, day 66.25, `Guardar` 44 — **the same numbers as SF, to a quarter of a
+pixel.** The 9px is real now. Before this it was 9px on one laptop.
+
+The lesson is the one ADR-0037 already wrote down and this change had to learn
+again: a number measured in one browser on one machine is evidence about that
+machine. What makes it evidence about the screen is a rule in the stylesheet
+that says the number is not the font's to choose.
+
 ## What the fit does not cover
 
 A refusal. `state.error` renders a paragraph between the day question and
@@ -143,6 +190,15 @@ of that is a second chance to get it subtly wrong.
 `movimientos/nuevo/head.tsx` keeps the "Compartido con" pill and became
 `MovementEntryHead`, which composes the two. The pill's argument is that
 screen's and not the head's, which is exactly why it stayed behind.
+
+**`--line-caption` and the heading's margin reach every screen.** Three rules
+in `field.module.css`, `chip-field.module.css` and `keypad.module.css` are the
+label, legend and currency line of every form in the product, and the head's
+`<h1>` is the Movement entry screen's too. On SF nothing moves — 1.25 is what
+SF already draws, and the heading margin never bound. Everywhere else, every
+screen in the app stops being as tall as the machine's fonts. Both fold tests
+hold it, and they are the only two assertions in the suite that could have
+caught this at all.
 
 **`.form`'s gap lands on the screen that corrects an item**, because planning
 and correcting are one form (#80). That screen keeps its tab bar and its Space

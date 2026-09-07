@@ -20,6 +20,15 @@
 }
 
 .title {
+  /*
+   * A flex item laid out by `.bar`, so the browser's default `0.67em` heading
+   * margin is not spacing -- it is 23px of nothing above and below a title
+   * sitting beside a 44px control. On SF the margin box comes to 43px and the
+   * bar stays exactly one hit target; on a taller font it comes to 46 and the
+   * head grows by pixels nobody chose. ADR-0037 found the identical thing on
+   * four paragraphs; this is the heading it missed (#86).
+   */
+  margin: 0;
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
 }

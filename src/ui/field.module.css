@@ -7,6 +7,7 @@
 
 .label {
   font-size: var(--text-sm);
+  line-height: var(--line-caption);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.4px;
   color: var(--color-text-tertiary);
