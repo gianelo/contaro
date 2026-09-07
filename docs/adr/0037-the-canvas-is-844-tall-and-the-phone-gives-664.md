@@ -153,6 +153,21 @@ over before and it is less over now. It is a different route with a different
 job, #60 names only `/movimientos/nuevo`, and fixing it is not this change; but
 nobody should read this ADR and believe every screen in the app now fits.
 
+**#73 is that number, and ADR-0047 is where it was paid.** It comes to 639px
+against 664, with `Guardar los cambios` ending at 571 rather than 750. It did not
+come out of the cuts here: nothing was left to cut on that screen with 78px of
+tab bar on it, so it leaves the shell the way this one does. The 21px above is
+untouched, which was the constraint — `MovementForm` is shared, and a change on
+that screen that reached into this one would have failed here silently.
+
+Two things this ADR missed reach back onto this screen, and they are the same
+thing twice: a block on it was as tall as somebody's name. The pill whose margin
+is zeroed above wraps onto a second line for a long enough name — 30px that 21px
+never covered — and the `Hoy · <Member>` line wraps for the same reason, at 14px.
+ADR-0047 makes both one line, and the fold test above now seeds names long
+enough to prove it. Until then, 643 was a measurement of `Ana Gasta` rather than
+of the screen; it is 643 for any Member now.
+
 ## Where it is held
 
 `e2e/movements.spec.ts`, in "an expense is recorded on a phone without scrolling

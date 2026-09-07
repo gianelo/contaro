@@ -317,6 +317,45 @@ test("recording an expense is one thing, with nothing else offered", async ({
   ).toBeVisible();
 });
 
+test("correcting a Movement is one thing too, with nothing else offered", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Nina Corrige", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "4500");
+  await categorise(page, "Otros");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await page.getByRole("link", { name: /Otros/ }).click();
+
+  // ADR-0028 kept the bar on this screen and ADR-0047 takes it off, on the
+  // reading ADR-0046 gave: what the bar costs is not the act of standing at a
+  // till but the answers already typed and not yet saved, and this screen
+  // holds those in the very same form. The fold test would fail if the bar
+  // came back, but it would fail as a number, and the number is not the reason.
+  await expect(page.getByRole("navigation", { name: "Principal" })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByRole("link", { name: "Anotar un movimiento" }),
+  ).toHaveCount(0);
+
+  // The way out is in the head rather than a scroll past the keypad, and the
+  // screen names itself once: `SpaceScreen` used to draw the Space's name as
+  // an <h1> with "Corregir el movimiento" as an <h2> under it, which is the
+  // same screen saying what it is twice, at two sizes (ADR-0046).
+  await expect(page.getByRole("link", { name: "Cancelar" })).toHaveAttribute(
+    "href",
+    `/espacios/${space.id}/movimientos`,
+  );
+  await expect(
+    page.getByRole("heading", { name: "Corregir el movimiento", level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2 })).toHaveCount(0);
+});
+
 test("a button that cannot be pressed says so in grey, not in a fade", async ({
   page,
   context,
@@ -657,8 +696,14 @@ test("an expense is recorded on a phone without scrolling down either", async ({
   // carries the "Compartido con" pill, and nothing added to the catalogue, so
   // the picker offers the nine headings it ships with. A Space of one with a
   // pruned catalogue is shorter; if this one fits, every one of them does.
+  //
+  // And both names are long ones, because until #73 they were the two things
+  // on this screen that could still vary: the pill under the title wraps onto
+  // a second line at 30px, the `Hoy · <Member>` line at 14px, and 21px never
+  // covered either. Both are cut to one line now, so this screen measures 643
+  // in every Space there could be rather than 643 for the names a test picked.
   const juli = await createMember("Juli Teléfono");
-  const ana = await createMember("Ana Gasta");
+  const ana = await createMember("Ana Bartolomé de la Concepción Gasta");
   const space = await createSpaceFor(juli.id, "Casa de Juli", "ARS");
   await joinSpace(space.id, ana.id);
   await startSession(context, baseURL!, juli);
@@ -677,6 +722,49 @@ test("an expense is recorded on a phone without scrolling down either", async ({
   // it reaches for Guardar. Choosing a heading opens what is under it
   // (ADR-0022), so the picker is at its tallest here and not above.
   await type(page, "128400");
+  await categorise(page, "Comida", "Supermercado");
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toBeChecked();
+
+  const answered = await fold();
+  expect(answered.control).toBeLessThanOrEqual(answered.viewport);
+  expect(answered.document).toBeLessThanOrEqual(answered.viewport);
+});
+
+test("a Movement is corrected on a phone without scrolling down either", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  // The worst screen a shipped Space can produce, the same way the entry
+  // screen's fold test builds one -- and worse in the one way this screen can
+  // be: the pill under the title names whoever typed the Movement in and the
+  // line above the picker names whoever the money was, so the name that goes in
+  // both is a long one. A short name is a screen this one contains.
+  const gian = await createMember("Maximiliano Bartolomé de la Concepción");
+  const ana = await createMember("Ana Corrige");
+  const space = await createSpaceFor(gian.id, "Casa compartida", "ARS");
+  await joinSpace(space.id, ana.id);
+  await startSession(context, baseURL!, gian);
+
+  await page.goto(`/espacios/${space.id}/movimientos/nuevo`);
+  await type(page, "128400");
+  await categorise(page, "Otros");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await page.getByRole("link", { name: /Otros/ }).click();
+  await expect(page.getByRole("note")).toContainText("Anotado por");
+
+  const fold = () =>
+    foldOf(page, page.getByRole("button", { name: "Guardar los cambios" }));
+
+  const offered = await fold();
+  expect(offered.control).toBeLessThanOrEqual(offered.viewport);
+  expect(offered.document).toBeLessThanOrEqual(offered.viewport);
+
+  // And still after answering, which is the state a thumb is actually in when
+  // it reaches for Guardar. Choosing a heading opens what is under it
+  // (ADR-0022), so the picker is at its tallest here and not above.
   await categorise(page, "Comida", "Supermercado");
   await expect(
     page.getByRole("radio", { name: "Supermercado, Comida" }),

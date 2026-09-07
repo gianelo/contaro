@@ -1,10 +1,5 @@
 import { t } from "@/i18n";
-import { EntryHead } from "@/ui/entry-head";
-import { Icon } from "@/ui/icon";
-import styles from "./head.module.css";
-
-/** What the canvas draws the pill's icon at. */
-const PILL_ICON = 13;
+import { EntryHead, EntryPill } from "@/ui/entry-head";
 
 export type MovementEntryHeadProps = {
   /** Where Cancelar goes: the list this was opened from. */
@@ -23,9 +18,10 @@ export type MovementEntryHeadProps = {
  * where it would state the obvious above the figure that matters.
  *
  * That argument is this screen's and not the entry head's, which is why the
- * pill stayed here when the head moved to `@/ui/entry-head`: the plan's entry
- * screen makes the same trade against the shell and has no attribution to
- * name, so it wears the head with nothing beneath it.
+ * decision to draw it at all stayed here when the pill's shape moved to
+ * `@/ui/entry-head`: the screen that corrects a Movement wears the same shape
+ * to say something else entirely (#73), and the plan's entry screen has no
+ * attribution to name and wears the head with nothing beneath it.
  */
 export function MovementEntryHead({
   back,
@@ -38,11 +34,9 @@ export function MovementEntryHead({
       title={t("movements.new.title")}
       beneath={
         sharedWith === null ? null : (
-          <p className={styles.shared}>
-            {/* The words beside it say what it is. */}
-            <Icon name="users" size={PILL_ICON} />
+          <EntryPill icon="users">
             {t("movements.shared", { member: sharedWith })}
-          </p>
+          </EntryPill>
         )
       }
     />
