@@ -8,7 +8,7 @@ import { AppShell } from "./app-shell";
 import { SelectField, TextField } from "./field";
 import { Notice } from "./notice";
 import { ChipField } from "./chip-field";
-import { EntryHead } from "./entry-head";
+import { EntryHead, EntryPill } from "./entry-head";
 
 describe("Button", () => {
   it("calls its handler", async () => {
@@ -200,6 +200,40 @@ describe("EntryHead", () => {
       <EntryHead back="/atras" cancel="Cancelar" title="Nuevo gasto previsto" />,
     );
     expect(screen.queryByText("Compartido con Ana")).not.toBeInTheDocument();
+  });
+});
+
+describe("EntryPill", () => {
+  it("says what it is to a screen reader only where the screen says so", () => {
+    // Two screens wear the same pill to say different things: one is context
+    // about the Space an expense is about to land in, and the other is a note
+    // about the Movement being corrected -- something true about it rather
+    // than something to act on (#73, story 22 in #1). The shape is shared and
+    // what it means is not, which is why the role is handed in.
+    const { rerender } = render(
+      <EntryPill icon="person" role="note">
+        Anotado por Gian
+      </EntryPill>,
+    );
+    expect(screen.getByRole("note")).toHaveTextContent("Anotado por Gian");
+
+    rerender(<EntryPill icon="users">Compartido con Ana</EntryPill>);
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+    expect(screen.getByText("Compartido con Ana")).toBeInTheDocument();
+  });
+
+  it("puts its words in an element of their own, so the line can be cut", () => {
+    // `text-overflow` has nothing to act on in a flex container: a name long
+    // enough to wrap this pill costs 30px neither entry screen has, so the
+    // words have to be an element before they can be the thing that gives
+    // (ADR-0047). Held here because the stylesheet cannot say it alone -- a
+    // rule on `.words` is inert the day the span goes away.
+    render(<EntryPill icon="person">Anotado por Gian</EntryPill>);
+
+    const words = screen.getByText("Anotado por Gian");
+
+    expect(words.tagName).toBe("SPAN");
+    expect(words.parentElement?.tagName).toBe("P");
   });
 });
 

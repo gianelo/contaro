@@ -71,7 +71,14 @@ export function When({
           ·
         </span>
         <Icon name="person" size={LINE_ICON} />
-        <span>{attributedTo?.label ?? ""}</span>
+        {/*
+          The one thing on this line whose length is somebody else's: a Member
+          named at length wraps it onto a second line, and a second line is
+          14px neither entry screen can spare (#73, ADR-0047). It is a span of
+          its own already, so the name is what is cut and the day, the dot and
+          both icons stay whole.
+        */}
+        <span className={styles.who}>{attributedTo?.label ?? ""}</span>
       </p>
 
       <button

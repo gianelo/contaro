@@ -44,3 +44,58 @@
   pointer-events: none;
   user-select: none;
 }
+
+/*
+ * Centred and quiet: it is context for what follows rather than something to
+ * act on, so it reads as a caption and never as a control.
+ *
+ * `margin: 0` for the reason ADR-0037 zeroed four of these and ADR-0046 zeroed
+ * the heading above it: a paragraph's default margin is space nobody chose,
+ * sized off its own font, on a screen whose whole budget is 664px.
+ */
+.pill {
+  margin: 0;
+  /*
+   * Centred, and shrink-to-fit rather than as wide as its words: the used
+   * width of a cross-axis-centred flex item is already clamped by the room the
+   * head leaves it, which is what makes the line below the thing that gives
+   * rather than the head's height. No ceiling is written here and none is
+   * wanted -- `--measure` is the app's one answer to how wide anything is, and
+   * a second one here would be a second place to change it (ADR-0041).
+   */
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-fill);
+  border-radius: var(--radius-pill);
+  /* 5px, which has no token because nothing else wants it: a pill this small
+     sits between --space-2 and --space-3 and matches neither. */
+  padding: 5px var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/*
+ * One line, whatever is in it.
+ *
+ * A Member called Maximiliano Bartolomé de la Concepción wraps this pill onto
+ * a second line, and a second line is 30px the screen under it does not have:
+ * it puts Guardar past the fold on the screen that corrects a Movement and on
+ * the screen that records one, whose 21px never covered it either (#73).
+ *
+ * So the name is what is cut and not the fit. ADR-0036 says an amount is never
+ * cut to fit and the line is; a name is not an amount, and `head.module.css`
+ * already cuts the Space's own name for the same reason. What it buys is a
+ * head that is 90px in every Space there could ever be, which is the only
+ * thing that makes the 25px under it a real measurement rather than a
+ * measurement of one Member's name.
+ */
+.words {
+  /* Flex items floor at their content width, so an unshrinkable span would
+     paint straight out of the pill instead of ellipsising inside it. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

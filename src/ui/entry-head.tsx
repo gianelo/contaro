@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import type { AriaRole, ReactNode } from "react";
 import Link from "next/link";
 import { cx } from "./cx";
 import { hitTarget } from "./hit-target";
+import { Icon, type IconName } from "./icon";
 import styles from "./entry-head.module.css";
 
 export type EntryHeadProps = {
@@ -56,5 +57,48 @@ export function EntryHead({ back, cancel, title, beneath }: EntryHeadProps) {
 
       {beneath}
     </div>
+  );
+}
+
+/** What the canvas draws the pill's icon at. */
+const PILL_ICON = 13;
+
+export type EntryPillProps = {
+  /** The shape beside the words, which say what it is. */
+  icon: IconName;
+  /**
+   * What this line is to a screen reader, where it is more than the words.
+   * The screen decides, because the pill is the shape two screens share and
+   * not the thing they are: one is a note about the Movement being corrected
+   * and the other is context about the Space being spent from.
+   *
+   * Typed as React's own `AriaRole` and not a `string`, which would take
+   * "nte" as readily as "note" -- everywhere else in `src/` a role is a
+   * literal, and the type is what keeps this one as honest as those.
+   */
+  role?: AriaRole;
+  children: ReactNode;
+};
+
+/**
+ * The one quiet line an entry screen puts under its title.
+ *
+ * Two screens now say something there -- which Space an expense is about to be
+ * attributed in, and who typed in the Movement being corrected -- and the pill
+ * is the part that had to not be copied. What it says, which shape it says it
+ * with and whether it is said at all are each screen's own argument, which is
+ * why they are handed in rather than picked here (ADR-0046).
+ */
+export function EntryPill({ icon, role, children }: EntryPillProps) {
+  return (
+    <p role={role} className={styles.pill}>
+      <Icon name={icon} size={PILL_ICON} />
+      {/*
+        A span rather than the words loose in the pill, because `text-overflow`
+        has nothing to act on in a flex container: the line has to be an
+        element before it can be the thing that gives (ADR-0036, ADR-0047).
+      */}
+      <span className={styles.words}>{children}</span>
+    </p>
   );
 }

@@ -1,9 +1,8 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { ButtonLink } from "@/ui/button";
+import { AppShell } from "@/ui/app-shell";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
-import { SpaceScreen } from "../../screen";
 import { currentSpace } from "../../space";
 import { monthOf } from "@/domain/calendar/month";
 import { MovementForm } from "../form";
@@ -14,9 +13,8 @@ import {
   todayOnTheServer,
 } from "../month";
 import { amendMovementAction } from "../actions";
-import { Notice } from "@/ui/notice";
+import { MovementCorrectionHead } from "./head";
 import { StrikeMovement } from "./strike";
-import styles from "./page.module.css";
 
 /**
  * Correcting or striking out one Movement (#7, story 27 in #1).
@@ -25,6 +23,15 @@ import styles from "./page.module.css";
  * says. Any Member of the Space may do either: the money is one pot, and
  * `recordedBy` is a record of who typed a figure in rather than a claim to own
  * it — so the recorder is shown and never offered as something to change.
+ *
+ * It carries no tab bar, no account row and no Space heading, which is why it
+ * renders `AppShell` directly rather than going through `SpaceScreen` like
+ * every other screen inside a Space. ADR-0028 made that trade for the entry
+ * screen and kept it off this one; ADR-0046 read the argument again and found
+ * that what it protects is not the act of standing at a till but the
+ * typed-but-unsaved state — and this screen holds exactly that, in the same
+ * form, under the same thumb. It was also the only way it fits a phone: the
+ * bar's 78px are structural, and without them nothing else adds up (#73).
  */
 export default async function MovementPage({
   params,
@@ -52,19 +59,17 @@ export default async function MovementPage({
   const recorder = members.find((member) => member.id === movement.recordedBy);
 
   return (
-    <SpaceScreen space={space} tab="movements">
-      <h2 className={styles.title}>{t("movements.edit.title")}</h2>
-
+    <AppShell>
       {/*
-        Who typed it in, said out loud. It is the half of story 22 a screen
-        owes: "never editable" is enforced by there being no field for it, and
-        this is what makes it a record somebody can actually read. A Member of
-        a shared Space correcting their partner's entry should be able to see
-        whose entry it was.
+        Who typed it in is said in the head, under the title, where the entry
+        screen says which Space is being spent from. It is the half of story 22
+        a screen owes: "never editable" is enforced by there being no field for
+        it, and this is what makes it a record somebody can actually read.
       */}
-      {recorder ? (
-        <Notice>{t("movements.recordedBy", { member: recorder.name })}</Notice>
-      ) : null}
+      <MovementCorrectionHead
+        back={`/espacios/${space.id}/movimientos`}
+        recordedBy={recorder?.name ?? null}
+      />
 
       <MovementForm
         spaceId={space.id}
@@ -97,12 +102,6 @@ export default async function MovementPage({
         movementId={movement.id}
         month={monthOf(movement.occurredOn)}
       />
-
-      <div className={styles.back}>
-        <ButtonLink href={`/espacios/${space.id}/movimientos`} variant="plain">
-          {t("action.cancel")}
-        </ButtonLink>
-      </div>
-    </SpaceScreen>
+    </AppShell>
   );
 }
