@@ -113,9 +113,40 @@
       "w": 390,
       "h": 1080,
       "title": "Idea C · el + no se toca"
+    },
+    {
+      "file": "CorregirElGastoPrevisto.dc.html",
+      "x": 940,
+      "y": 2300,
+      "w": 390,
+      "h": 913,
+      "title": "Corregir el gasto previsto"
+    },
+    {
+      "file": "CorregirElGastoFijo.dc.html",
+      "x": 1410,
+      "y": 2300,
+      "w": 390,
+      "h": 987,
+      "title": "Corregir el gasto fijo"
+    },
+    {
+      "file": "CorregirElGastoFijoPagado.dc.html",
+      "x": 1880,
+      "y": 2300,
+      "w": 390,
+      "h": 664,
+      "title": "Corregir el gasto fijo · pagado"
     }
   ],
   "annotations": [
+    {
+      "id": "nota-como-esta-dibujado",
+      "x": 0,
+      "y": -320,
+      "w": 700,
+      "text": "CON QUÉ SE COMPARA ESTE LIENZO\nTodo lo que está dibujado acá está en COP, leído por alguien que lee es-CO, a 390×844.\nLas tres cosas importan al comparar: el peso colombiano toma 0 decimales y el argentino 2 (src/domain/money/currency.ts), así que una captura sacada en ARS produce hallazgos falsos sobre centavos. Y un importe se escribe «$ 1.800.000», con el espacio que CLDR pone entre el símbolo y las cifras (ADR-0014): así lo escribe Intl y así lo escribe la app.\nDe los 844px de alto, el fondo del iPhone 13 está en 664 (ADR-0037). Lo que quede debajo de esa línea existe en el dibujo y no en el teléfono."
+    },
     {
       "id": "nota-pantallas",
       "x": 0,
@@ -143,6 +174,13 @@
       "y": 3540,
       "w": 700,
       "text": "TRES IDEAS PARA AGREGAR AL PLAN\nHoy son dos links al pie del Presupuesto («Agregar un gasto previsto» y «Agregar un gasto fijo») y el + de la barra va siempre a cargar un gasto.\n\nA · UN SOLO FORMULARIO — Los dos links se vuelven uno. El día de vencimiento es lo que hace que un gasto previsto sea Fijo; si no elegís día, es Variable. La línea roja es el fondo del iPhone 13 (664px de alto real, no 844): mirá dónde queda Guardar. Es una estimación a mano, no una medición.\nB · EL + PREGUNTA — Tocás + y elegís. Una sola puerta desde cualquier pantalla, pero le cuesta un toque más a cargar un gasto, que es lo que la app promete hacer en diez segundos.\nC · EL + NO SE TOCA — El + sigue siendo el gasto. Los dos links se vuelven una sola fila ARRIBA de las dos listas, entre la tarjeta del mes y FIJOS, y no adentro de VARIABLES: el plan son los gastos previstos de los dos tipos, así que su puerta de entrada no pertenece a ninguna de las dos secciones. Arriba y no al pie porque al pie la distancia al pulgar crece con el plan.\n\nEn B y en C, la puerta abre A. A no compite con ninguna de las dos: es lo que hace que B tenga dos filas en vez de tres, y que C sea una fila en vez de dos."
+    },
+    {
+      "id": "nota-correcciones",
+      "x": 940,
+      "y": 2180,
+      "w": 700,
+      "text": "LAS DOS PANTALLAS DE CORRECCIÓN, Y EL ESTADO QUE NO TIENE FORMULARIO (#68)\nSe llega a las tres desde una fila del Presupuesto, que es el artboard de al lado. Son una sola ruta — /espacios/{id}/presupuesto/{itemId} — que se ramifica en lo que el ítem es. No estaban dibujadas en ningún lado: se diseñaron escribiendo TSX y nadie las había mirado al lado de las pantallas entre las que viven.\n\nA diferencia del resto del lienzo, estas tres NO son un dibujo de cómo debería ser: están calcadas de lo que hay, medidas en el navegador (Playwright, iPhone 13) y dibujadas al alto que midieron. Por eso el alto de cada tabla no es 844: es el alto real del documento.\n\nEL GASTO PREVISTO — 913px de documento contra 664 de pantalla. Guardar termina en 699, 35px abajo del pliegue; Sacar del plan en 759 y Cancelar en 819.\nEL GASTO FIJO — 987 contra 664. Una pregunta más («Qué día del mes vence»), y Guardar termina en 773: 109px abajo del pliegue. Es el formulario más alto del producto.\nEL FIJO PAGADO — 664 clavados, sin línea de pliegue porque el borde de la tabla es el pliegue. Sin formulario y sin Sacar del plan, porque mientras el pago está en el libro el plan no lo toca (ADR-0034): la salida es anular el movimiento, y está nombrada como un lugar al que ir.\n\nDos cosas que el dibujo fiel deja a la vista y no son un error del dibujo:\nEl teclado no tiene fondo. --color-fill y --color-background son el mismo #F2F2F7 en claro, así que las doce teclas son cifras sueltas sobre la página. Es #102, ya abierto. La tarjeta gris del fijo pagado es lo mismo y no estaba en esa lista: se apoya directamente en la página, no adentro de una card.\nEstas pantallas conservan la barra de tabs, el nombre de la cuenta y el encabezado del Espacio. presupuesto/form.module.css lo dice al pasar («keeps its tab bar and is taller than this one»), pero ADR-0047 —que se los sacó a la corrección de un movimiento porque lo que protege es lo tipeado y no guardado— nunca las miró. Que sigan adentro del shell no es una decisión escrita: es un hueco."
     }
   ],
   "launch": {
