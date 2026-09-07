@@ -22,7 +22,7 @@ Three things, and the innermost is the one that actually holds.
 
 ## Two kinds, one table, one plan
 
-`BudgetItem` is a union of `VariableItem` and `FixedItem`, and both live in `budget_items` with a `kind` column. What only a Fixed one carries — its name, its due day, its payment — is nullable, and a check holds each kind to exactly what its kind carries.
+`BudgetItem` is a union of `VariableItem` and `FixedItem`, and both live in `budget_items` with a `kind` column. A name is asked of both kinds and required of them (#79, ADR-0042); what only a Fixed one carries — its due day, its payment — is nullable, and a check holds each kind to exactly what its kind carries.
 
 Not a second table, because the two kinds are one plan: they add into one total, they are read as one month's list, and a union of two tables would turn each of those into two queries kept in agreement by hand.
 
