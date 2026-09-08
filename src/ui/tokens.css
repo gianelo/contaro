@@ -15,8 +15,52 @@
   --color-background: light-dark(#f2f2f7, #000000);
   --color-surface: light-dark(#ffffff, #1c1c1e);
   --color-surface-raised: light-dark(#ffffff, #2c2c2e);
-  --color-fill: light-dark(#f2f2f7, #1c1c1e);
+  /*
+   * The quiet block that sits on the *page*: a keypad key, the groove a
+   * segmented control's halves sit in, the pill on the entry head, the
+   * "Hoy · <Member> · Cambiar" line, the card a refusal takes. Its only
+   * boundary is its own ground, so a value that equals --color-background is
+   * no boundary at all -- and this was that same #f2f2f7 in light, which left
+   * twelve 44px targets as a field of loose numerals and the segmented control
+   * as a white pill floating beside bare text (#102).
+   *
+   * #f2f2f7 was right where it was read off: `design/Main.dc.html` draws the
+   * whole entry screen on #FFFFFF and everything quiet on it in that grey. The
+   * app draws that screen inside AppShell, whose ground is #F2F2F7. The value
+   * was lifted out of a context that supplied its own contrast.
+   *
+   * The step goes *down* in light and *up* in dark, and that is not an
+   * inconsistency -- it is the only direction each palette leaves. The light
+   * page is already near-white and the dark page is black, so "recessed" and
+   * "a step away" are the same move in dark and opposite ones in light. Down
+   * is what keeps the whole set working: it is the direction that leaves
+   * --color-segment-thumb's white above the groove it is lifted out of, which
+   * is the trap that token was named apart for in the first place.
+   *
+   * #e9e9ee is --color-meter-track's light hex, and is deliberately not
+   * written as var() of it for the reason the Member and Category colours are
+   * not written as var() of --color-info and --color-accent: they agree by
+   * coincidence of depth, not of meaning. A meter's track is a length being
+   * measured; this is a ground.
+   */
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
   --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+
+  /*
+   * The same quiet block, on a surface that is already raised: the recap tray
+   * in the three confirmation sheets. Named apart from --color-fill for the
+   * reason --color-disabled-surface is named apart from --color-disabled --
+   * one hex cannot be a step off two different grounds, and this one is a step
+   * off --color-surface rather than off the page.
+   *
+   * The step goes up here too, which is what a sheet asks for: in dark,
+   * elevation lightens, so a tray on the #1c1c1e sheet reads at #2c2c2e --
+   * the same near-black --color-surface-raised is drawn in. Cutting the tray
+   * down to --color-background instead, the way variables.module.css cuts its
+   * own into a card, would put a black notch on the sheet: a heavier line than
+   * anything the light theme draws for the same tray (#123).
+   */
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
 
   /* Text */
   --color-text: light-dark(#1c1c1e, #ffffff);
