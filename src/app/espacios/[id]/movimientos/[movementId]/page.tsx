@@ -97,8 +97,64 @@ export default async function MovementPage({
           recordedBy={recorder?.name ?? null}
         />
 
-        <MovementRecord movement={movement} />
+        <MovementRecord
+          movement={movement}
+          refusal={{
+            title: t("movements.closed.title"),
+            body: t("movements.closed.body"),
+          }}
+        />
       </AppShell>
+    );
+  }
+
+  /*
+   * The one Movement in the product nobody typed (#120). A carry-over is not
+   * corrected: its amount is what a closed month came to, its day is the first
+   * of the month it landed in, it carries no Category, and whose money it is,
+   * is nobody's -- which is the exact field a correction form would post back.
+   *
+   * So the form comes off and the strike stays, which is where this parts
+   * company with the closed month above and follows the paid item instead
+   * (ADR-0034): this refusal has an undo, and a sentence with no exit beside a
+   * refusal that *does* have one would be a dead end with good manners. Striking
+   * it out offers the month it came from again (ADR-0031).
+   */
+  if (movement.carriedFrom !== null) {
+    return (
+      <AppShell>
+        <MovementCorrectionHead
+          back={`/espacios/${space.id}/movimientos`}
+          recordedBy={recorder?.name ?? null}
+        />
+
+        <MovementRecord
+          movement={movement}
+          refusal={{
+            title: t("movements.carriedOver.title"),
+            body: t("movements.carriedOver.body"),
+          }}
+        />
+
+        <StrikeMovement
+          spaceId={space.id}
+          movementId={movement.id}
+          month={month}
+        />
+      </AppShell>
+    );
+  }
+
+  /*
+   * Every Movement that reaches this line came from a Member, which is what
+   * `movements_comes_from_a_member_or_from_a_month` guarantees and what the
+   * branch above has just taken out of the way. Said out loud rather than
+   * defaulted to an empty string: an attribution field opened on nobody is the
+   * one field on this form that would silently change an answer.
+   */
+  if (movement.attributedTo === null) {
+    throw new Error(
+      `Movement ${movement.id} is attributed to nobody and is not a carry-over.`,
     );
   }
 

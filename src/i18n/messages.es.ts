@@ -172,6 +172,13 @@ export const es = {
   "movements.closed.title": "Este mes está cerrado",
   "movements.closed.body":
     "Lo que quedó anotado en un mes cerrado no se puede corregir ni anular. Nunca.",
+  // The other reason a Movement's screen has no form (#120). A carry-over is
+  // not typed, so there is nothing on it to correct -- but unlike the close,
+  // this refusal has a way out, and it is the "Anular" left standing under the
+  // card rather than a link inside it (ADR-0031, ADR-0034).
+  "movements.carriedOver.title": "Esto es un arrastre",
+  "movements.carriedOver.body":
+    "El monto es lo que sobró del mes que se cerró, así que no se corrige. Si te equivocaste, anulalo y aprobalo de nuevo.",
   // The words on the row that opens the plan, above both of its sections
   // (#81, ADR-0045). They name the destination and not the kind, which is what
   // #80 made sayable: there is one way in for both kinds now, so the row can
@@ -456,6 +463,71 @@ export const es = {
   // reason somebody backs out of this sheet.
   "close.sheet.notYet": "Todavía no",
 
+  /*
+   * The Carry-over (#120, ADR-0003). What a closed month left the next one, and
+   * the one thing about it that is not symmetric.
+   *
+   * The whole voice of this section is that a surplus and a deficit are two
+   * different sentences with two different jobs. The surplus offers, and says
+   * where the money goes and that it belongs to neither Member. The deficit
+   * only ever states -- there is no verb anywhere in it, because approving a
+   * debt into existence was never a thing to put under a thumb -- and it has to
+   * answer, unasked, the question anybody would have: why is this not coming
+   * off this month.
+   */
+  "carry.title": "Arrastre",
+  // The surplus, as the card's own sentence. It names both months, because the
+  // whole of what a person needs to decide is where it came from and where it
+  // is going.
+  "carry.surplus.mine": "Sobraron {amount} en {month}.",
+  // The invited Member's row: it states, and names who it is waiting on, the
+  // same way the close's does (ADR-0051, ADR-0053). Never a greyed-out button.
+  "carry.surplus.theirs":
+    "Sobraron {amount} en {month} y espera que {member} lo apruebe.",
+  // The surplus on a month that has since been closed: shown and not offered
+  // (ADR-0054). The control comes off and the sentence stays.
+  "carry.surplus.closed": "Sobraron {amount} en {month} y no se aprobó.",
+  "carry.surplus.act": "Aprobar el arrastre",
+  // The deficit. Two sentences and not one: the first is what happened, and the
+  // second is the rule -- and the rule is the half a person would otherwise
+  // read as a bug.
+  "carry.deficit": "Se gastaron {amount} de más en {month}.",
+  "carry.deficit.why":
+    "No se descuenta de este mes: esa plata ya se gastó, y lo que la pagó se anota acá como gasto.",
+
+  // The sheet the surplus opens. It confirms one act and explains the one thing
+  // about it that surprises people: the money comes back with nobody's name on
+  // it, because nobody earned it (ADR-0003).
+  "carry.sheet.title": "Sobraron {amount} en {month}",
+  "carry.sheet.body":
+    "Si lo aprobás, entra como ingreso de {next}. No se atribuye a ninguno de los dos, porque no lo ganó nadie.",
+  "carry.sheet.confirm": "Aprobar el arrastre",
+  "carry.sheet.working": "Aprobando\u2026",
+  // "Ahora no" and not "Cancelar", which the artboard already drew: this act
+  // does not expire, and the honest reason somebody backs out of it is that
+  // they are not deciding it right now.
+  "carry.sheet.notNow": "Ahora no",
+
+  /*
+   * The refusals. The two in the middle are the ones nothing fixes -- a deficit
+   * is never carried, and a month that landed on its plan left nothing -- so
+   * neither invites a retry. The last one does, and for the reason the close's
+   * does: a dropped connection is the one refusal here where nothing happened
+   * and trying again is the fix.
+   */
+  "carry.error.notTheCreator":
+    "Solo quien creó el espacio puede aprobar el arrastre.",
+  "carry.error.nothingToCarry": "Ese mes no dejó nada para arrastrar.",
+  "carry.error.aDeficit":
+    "Lo que se gastó de más no se arrastra: esa plata ya se gastó, y lo que la pagó se anota en el mes en que se paga.",
+  "carry.error.notOverYet": "Todavía no terminó ese mes.",
+  "carry.error.notClosed":
+    "Ese mes todavía no está cerrado, así que lo que sobró no es definitivo.",
+  "carry.error.monthIsClosed":
+    "Este mes está cerrado y no se le puede agregar nada.",
+  "carry.error.month": "No pudimos ver de qué mes se trata.",
+  "carry.error.failed": "No pudimos aprobar el arrastre. Probá de nuevo.",
+
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",
   "movements.shared": "Compartido con {member}",
@@ -465,6 +537,10 @@ export const es = {
   // What an income row is called on the month's list. It carries no Category
   // (#8), so this is the whole of its name.
   "movements.income": "Ingreso",
+  // The one income nobody earned, read by where it came from (ADR-0003, #120).
+  // "Ingreso" alone would put a figure on the list that a person cannot account
+  // for, and there is no Category and no typed name to fall back on.
+  "movements.carriedOver": "Arrastre de {month}",
   // The one mark that tells money coming in from money going out at a glance.
   // A written sign, and since #39 a colour as well: the sign is what somebody
   // who cannot tell the two greens apart reads, and the colour is what makes

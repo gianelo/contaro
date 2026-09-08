@@ -563,6 +563,7 @@ const expense = (changes: Partial<Movement> = {}): Movement => ({
   occurredOn: calendarDate("2026-09-12"),
   recordedBy: "member-gian",
   attributedTo: "member-gian",
+  carriedFrom: null,
   name: null,
   ...changes,
 });

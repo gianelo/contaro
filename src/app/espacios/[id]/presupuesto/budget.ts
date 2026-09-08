@@ -25,6 +25,7 @@ import {
   dayOfMonth,
   monthOf,
   monthSoFar,
+  previousMonth,
   type Month,
 } from "@/domain/calendar/month";
 import type { Category } from "@/domain/category/category";
@@ -304,6 +305,19 @@ export type ReadableBudget = {
    */
   closed: boolean;
   /**
+   * Whether the month before this one has been closed (#120).
+   *
+   * Not a fact about this month's plan either, and here for the reason the two
+   * above it are: it comes off the one set of rows this screen reads about
+   * closed months, and asking for it separately would be a second query
+   * answering out of the same table over a narrower window.
+   *
+   * What it decides is whether there is a Carry-over to say anything about at
+   * all: what a month left behind is only a figure once nothing more can go
+   * into it (ADR-0003, decision 6 of #109).
+   */
+  previousClosed: boolean;
+  /**
    * The Fixed items, in the order they were planned, drawn above the rest
    * (#13). Their own list and not rows among the others, because they are read
    * for a different question: not "how much is left" but "what have I paid".
@@ -380,6 +394,16 @@ export async function readableBudget(
     label: monthLabel(month, monthOf(reader.today)),
     choices: monthChoices(month, monthOf(reader.today), closed),
     closed: closed.has(month),
+    // Whether the month *before* this one has been closed, and so has a figure
+    // to have left behind (#120). Read off the same set the two answers above
+    // come out of, because it is the same fact and the window already covers it
+    // -- the pill reaches fourteen months back, and this reaches one.
+    //
+    // Here rather than in a query of its own, which is ADR-0054's "one
+    // question, asked in one place" arriving one ticket later: a second
+    // `closedMonthsFrom` on this screen would be a second round trip spent
+    // agreeing with the first.
+    previousClosed: closed.has(previousMonth(month)),
     fixed: planned
       .filter((item): item is FixedItem => item.kind === "fixed")
       .map((item) => readableFixed(item, named, reader)),

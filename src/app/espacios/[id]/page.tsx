@@ -3,6 +3,8 @@ import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { Notice } from "@/ui/notice";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
+import { theCarryOver } from "./carried";
+import { CarryNotice } from "./carry-notice";
 import { CloseNotice } from "./close-notice";
 import { MonthPill } from "./month-pill";
 import { SpaceScreen } from "./screen";
@@ -128,6 +130,34 @@ export default async function SpacePage({
       ? await planToCopyForward(space, month, reader)
       : null;
 
+  /*
+   * What the month before this one left behind (#120).
+   *
+   * Read on *this* month and not on the one it came out of, which is the
+   * decision rather than a placement: the surplus becomes income of this month
+   * and the deficit is a fact about this month, so the screen it belongs on is
+   * the one whose money it is about. It is also what keeps #119 whole -- an
+   * approve button standing on September after September was closed would be
+   * the one control that survived the close (ADR-0054).
+   *
+   * Asked only where the month before this one is closed, off the rows
+   * `readableBudget` has already read: what a month left behind is not a figure
+   * until nothing more can go into it (decision 6), so the ordinary screen --
+   * this month, with last month still open -- pays nothing for this.
+   */
+  const carried = plan.previousClosed
+    ? await theCarryOver({
+        space,
+        memberId,
+        creatorName:
+          members.find((member) => member.id === space.createdBy)?.name ?? "",
+        inView: month,
+        previousClosed: plan.previousClosed,
+        inViewClosed: plan.closed,
+        reader,
+      })
+    : null;
+
   return (
     <SpaceScreen
       space={space}
@@ -194,6 +224,20 @@ export default async function SpacePage({
         about, which is where the canvas draws it.
       */}
       <MonthSummary summary={plan.summary} pace={plan.pace} />
+
+      {/*
+        And what the month before this one left it (#120).
+
+        Under the summary and never over it, which is decision 4 drawn: a
+        deficit "does not enter that month's arithmetic", so it comes after the
+        four figures rather than standing between a person and them. A card
+        above the summary would read as part of the sum.
+
+        Under it and not further down for the surplus's sake: approving changes
+        the figures directly above, and a control whose effect is off the top of
+        the screen is a control whose effect nobody sees.
+      */}
+      {carried ? <CarryNotice spaceId={space.id} carried={carried} /> : null}
 
       {/*
         One way in, for both kinds (#80), and here rather than at the foot of

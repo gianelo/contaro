@@ -70,13 +70,76 @@ export async function refuseAClosedMonth(
   spaceId: string,
   of: Month,
 ): Promise<void> {
+  if (await isClosed(db, spaceId, of)) throw new ClosedMonthError(of);
+}
+
+/**
+ * Thrown by `refuseAnOpenMonth` when a month's figure is asked for before the
+ * month is frozen.
+ *
+ * Its own error and not the one above inverted, because the two mean opposite
+ * things to whoever reads them: one says "this is finished, nothing more goes
+ * in", and this one says "this is not finished yet, so its figure is not a
+ * figure". A screen that showed either sentence for the other would be telling
+ * somebody the exact opposite of what happened.
+ */
+export class OpenMonthError extends Error {
+  readonly month: Month;
+
+  constructor(of: Month) {
+    super(
+      `${of} has not been closed, and what a month left behind is only firm once it is (ADR-0003).`,
+    );
+    this.name = "OpenMonthError";
+    this.month = of;
+  }
+}
+
+/**
+ * The mirror refusal, asked by the one act that reads a month's total rather
+ * than writing into it: approving the Carry-over (#120, decision 6 of #109).
+ *
+ * Every other question in the product is "may I still write here", and this is
+ * the only one that is "is this figure finished". A surplus approved out of a
+ * running month would be money moved twice -- the month goes on spending after
+ * the leftover has already left it -- and there is no second approval to
+ * correct it with, because a month is carried over once.
+ *
+ * Here rather than beside the act, for the same reason the refusal above is
+ * here: whether a month is closed is a question about rows, and this file is
+ * the one place in the codebase that reads them.
+ */
+export async function refuseAnOpenMonth(
+  db: Database,
+  spaceId: string,
+  of: Month,
+): Promise<void> {
+  if (!(await isClosed(db, spaceId, of))) throw new OpenMonthError(of);
+}
+
+/**
+ * One month, one row, one answer -- and one query, which the two refusals above
+ * both ask.
+ *
+ * Private, and written once rather than twice: the two refusals differ only in
+ * which answer they throw on, and a second copy of this SELECT would be the
+ * second implementation the whole module exists to refuse. It is not exported,
+ * because a caller who wants a boolean about one month is a caller who has not
+ * decided what to do about it -- and the two things there are to do about it are
+ * above.
+ */
+async function isClosed(
+  db: Database,
+  spaceId: string,
+  of: Month,
+): Promise<boolean> {
   const [closed] = await db
     .select({ month: closedMonths.month })
     .from(closedMonths)
     .where(and(eq(closedMonths.spaceId, spaceId), eq(closedMonths.month, of)))
     .limit(1);
 
-  if (closed) throw new ClosedMonthError(of);
+  return closed !== undefined;
 }
 
 /**

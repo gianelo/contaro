@@ -203,9 +203,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the seventeen artboards its manifest lists, and the manifest", () => {
+  it("holds the eighteen artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(18);
+    expect(files).toHaveLength(19);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });

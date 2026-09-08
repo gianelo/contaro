@@ -16,7 +16,7 @@ import type { SpaceMember } from "@/domain/space/access";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
 import type { ReadableBranch } from "@/i18n/category";
-import { dayLabel, monthLabel } from "@/i18n/day";
+import { dayLabel, monthLabel, monthName } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
 import type { ChipBranch } from "@/ui/branching-chip-field";
 import { incomeMark } from "@/i18n/category";
@@ -114,7 +114,22 @@ export type ReadableMovement = {
   day: string;
   occurredOn: CalendarDate;
   categoryId: string | null;
-  attributedTo: string;
+  /**
+   * Whose money it was, or nothing at all on the one Movement nobody earned:
+   * the Carry-over (ADR-0003). The correction screen never opens on one, so
+   * this is read and never posted back.
+   */
+  attributedTo: string | null;
+  /**
+   * The month a carry-over came out of, and nothing on every other Movement
+   * (**Origin** in CONTEXT.md).
+   *
+   * The month itself and not a `carried: boolean`, because the two screens that
+   * read it read different things from it: the row already has the sentence it
+   * is named by, and the detail screen has a refusal to draw and needs to know
+   * this is the row it is about at all.
+   */
+  carriedFrom: Month | null;
   /**
    * What is drawn in the circle at the start of the row (#39).
    *
@@ -348,10 +363,19 @@ function readable(
   // that reached this line has one (`filing`, plus the check in migration
   // 0005). Written down rather than left as a mystery, because a fallback with
   // no reason reads like a case somebody expected.
+  // A carry-over is read by where it came from, which is the only thing there
+  // is to say about it: it has no Category because income carries none, and no
+  // name because nobody typed one. "Ingreso" alone would put a figure on the
+  // month's list that a person cannot account for -- the one row in the ledger
+  // whose explanation is a month rather than a purchase (ADR-0003).
   const categoryName =
-    movement.direction === "income"
-      ? t("movements.income")
-      : (category?.name ?? movement.categoryId ?? "");
+    movement.carriedFrom !== null
+      ? t("movements.carriedOver", {
+          month: monthName(movement.carriedFrom, monthOf(reader.today)),
+        })
+      : movement.direction === "income"
+        ? t("movements.income")
+        : (category?.name ?? movement.categoryId ?? "");
 
   return {
     id: movement.id,
@@ -380,8 +404,14 @@ function readable(
     day: dayLabel(movement.occurredOn, reader.today),
     occurredOn: movement.occurredOn,
     categoryId: movement.categoryId,
+    carriedFrom: movement.carriedFrom,
     attributedTo: movement.attributedTo,
-    whose: whose.get(movement.attributedTo) ?? null,
+    // Nothing on a carry-over, which is ADR-0003's "attributed to no Member"
+    // arriving on the screen: no circle, because there is nobody to draw in it.
+    whose:
+      movement.attributedTo === null
+        ? null
+        : (whose.get(movement.attributedTo) ?? null),
     recordedBy: movement.recordedBy,
   };
 }

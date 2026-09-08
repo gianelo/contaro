@@ -63,6 +63,7 @@ const PAYMENT: Movement = {
   occurredOn: TODAY,
   recordedBy: GIAN,
   attributedTo: GIAN,
+  carriedFrom: null,
   name: null,
 };
 
