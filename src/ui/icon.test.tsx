@@ -169,7 +169,17 @@ describe("Icon", () => {
     }
   });
 
-  it("offers every icon the canvas draws", () => {
+  /*
+   * The set is the canvas's, and `lock` is the one exception in it -- named
+   * here so that adding a second one is a line somebody had to write on
+   * purpose rather than a list quietly drifting away from the artboards.
+   *
+   * #119 draws the screen the canvas never had: what a closed month looks like
+   * when somebody goes back to it. Its month picker marks a closed row with a
+   * mark and words, never a colour on its own, and there was no drawing for
+   * "shut" anywhere in the product to reach for.
+   */
+  it("offers every icon the canvas draws, and one it does not", () => {
     const canvas: readonly IconName[] = [
       "calendar",
       "calendar-day",
@@ -189,6 +199,7 @@ describe("Icon", () => {
       "car",
       "arrow-up",
       "rotate",
+      "lock",
     ];
 
     expect([...iconNames].sort()).toEqual([...canvas].sort());

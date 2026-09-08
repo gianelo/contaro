@@ -9,6 +9,15 @@ export type ReadableMonthChoice = {
   label: string;
   /** Whether it is the month the screen is currently showing. */
   inView: boolean;
+  /**
+   * Whether it has been closed, and so behaves differently once opened (#119).
+   *
+   * The second per-row state this list has ever carried, and it is not a
+   * variation on the first: `inView` is about where the reader is standing,
+   * this is about what they will find when they land. A person sent into a
+   * closed month unwarned discovers the missing controls by reaching for one.
+   */
+  closed: boolean;
 };
 
 /**
@@ -34,13 +43,35 @@ export type ReadableMonthChoice = {
  * month is *written*, so that the year appears exactly where it is not the
  * year the reader is standing in (ADR-0018).
  */
+/**
+ * The earliest month the pill offers, and so how far back a screen has to ask
+ * about closed ones (#119).
+ *
+ * Here rather than worked out inside each reader, for the same reason
+ * `monthChoices` is one function: the question and the list it marks have to
+ * cover the same stretch. A reader that asked over a shorter one would leave
+ * the top of the sheet unmarked, and unmarked in that list reads as open.
+ */
+export function earliestOffered(inView: Month): Month {
+  const [earliest] = monthsToPlan(inView);
+
+  // `monthsToPlan` returns fourteen months and never none, so this is the
+  // window's first and not a fallback anybody is meant to reach.
+  return earliest ?? inView;
+}
+
 export function monthChoices(
   inView: Month,
   today: Month,
+  closed: ReadonlySet<string>,
 ): readonly ReadableMonthChoice[] {
   return monthsToPlan(inView).map((offered) => ({
     month: offered,
     label: monthLabel(offered, today),
     inView: offered === inView,
+    // A set of plain strings and not of `Month`s, which is what
+    // `closedMonthsFrom` hands back and for the reason it gives: a
+    // `Set<Month>` is a set nothing can look a month up in without a cast.
+    closed: closed.has(offered),
   }));
 }

@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { isCalendarDate, type CalendarDate } from "@/domain/calendar/month";
+import {
+  isCalendarDate,
+  monthOf,
+  type CalendarDate,
+} from "@/domain/calendar/month";
 import { t } from "@/i18n";
-import { dayLabel } from "@/i18n/day";
+import { dayLabel, monthLabel } from "@/i18n/day";
 import { BottomSheet } from "@/ui/bottom-sheet";
 import { Button } from "@/ui/button";
 import { SelectField, TextField } from "@/ui/field";
@@ -24,6 +28,20 @@ export type WhenProps = {
   attributedTo: { value: string; label: string } | undefined;
   onDayChange: (day: string) => void;
   onMemberChange: (member: string) => void;
+  /**
+   * The Space's closed months, as the plain `YYYY-MM` the column holds (#119).
+   *
+   * An array and not a `Set`, because these props cross from a server
+   * component into a client one and what crosses has to be something the RSC
+   * payload carries plainly.
+   *
+   * It reaches as far back as the pill the screens above this one wear, which
+   * is fourteen months. A day older than that is possible here and unwarned,
+   * and it still meets `refuseAClosedMonth` on the way in -- late, and never
+   * wrong. What this closes is the gap a person can actually walk into: the
+   * month that ended a fortnight ago and was closed on Monday.
+   */
+  closedMonths: readonly string[];
 };
 
 /**
@@ -48,9 +66,39 @@ export function When({
   attributedTo,
   onDayChange,
   onMemberChange,
+  closedMonths,
 }: WhenProps) {
   const [changing, setChanging] = useState(false);
+  // The month a day just picked fell in, where the picker would not take it.
+  const [refused, setRefused] = useState<string | null>(null);
   const shared = members.length > 1;
+
+  /*
+   * The picker refusing a day inside a closed month (#119, decision 20).
+   *
+   * A refusal and not a disabled control anywhere. Decision 16 is the whole
+   * rule -- "no greying, no disabling" -- and a Save button that had gone
+   * quiet because of the day above it would be exactly the greyed-out control
+   * the product has never had. The day simply does not become that day: the
+   * field is controlled by what the form holds, so declining to move it is
+   * what puts the old one back on the screen.
+   *
+   * It never has to fight an initial value. A Movement already in a closed
+   * month has no form at all -- its screen shows the record and the card that
+   * says why -- so the only way a closed day reaches this is a thumb choosing
+   * one, which is the moment the sentence is owed.
+   */
+  const chooseDay = (picked: string) => {
+    const shut = closedMonthOf(picked, closedMonths, today);
+
+    if (shut !== null) {
+      setRefused(shut);
+      return;
+    }
+
+    setRefused(null);
+    onDayChange(picked);
+  };
 
   return (
     <div className={styles.when}>
@@ -80,6 +128,7 @@ export function When({
         */}
         <span className={styles.who}>{attributedTo?.label ?? ""}</span>
       </p>
+
 
       <button
         type="button"
@@ -120,8 +169,25 @@ export function When({
             type="date"
             label={t("movements.day")}
             value={day}
-            onChange={(event) => onDayChange(event.target.value)}
+            onChange={(event) => chooseDay(event.target.value)}
           />
+
+          {/*
+            Why the day did not move (#119). Inside the sheet and under the
+            field it is about, because the sheet is open at the moment it is
+            said and the line outside can never carry it -- the day out there
+            is the one that was kept, and a sentence about a day nobody can see
+            explains nothing.
+
+            `role="alert"`, for the reason the form's own errors carry one: it
+            appears in answer to something a thumb just did, and a field that
+            silently ignored a tap is a field somebody taps again.
+          */}
+          {refused ? (
+            <p role="alert" className={styles.refused}>
+              {t("movements.when.closed", { month: refused })}
+            </p>
+          ) : null}
 
           {shared ? (
             <SelectField
@@ -135,6 +201,26 @@ export function When({
       </BottomSheet>
     </div>
   );
+}
+
+/**
+ * The month a chosen day falls in, named, where that month has been closed --
+ * and nothing at all otherwise (#119).
+ *
+ * Named against the Reader's own month for the reason every other month on
+ * these screens is: the year is written exactly where it is not the year they
+ * are standing in (ADR-0018).
+ */
+export function closedMonthOf(
+  day: string,
+  closedMonths: readonly string[],
+  today: CalendarDate,
+): string | null {
+  if (!isCalendarDate(day)) return null;
+
+  const of = monthOf(day);
+
+  return closedMonths.includes(of) ? monthLabel(of, monthOf(today)) : null;
 }
 
 /** Whatever the date field currently holds, named the way a person says it. */

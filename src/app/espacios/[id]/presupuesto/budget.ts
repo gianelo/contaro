@@ -5,6 +5,7 @@ import {
   latestPlannedMonthBefore,
 } from "@/db/budget-items";
 import { categoriesTheSpaceCanSee } from "@/db/categories";
+import { closedMonthsFrom } from "@/db/closed-months";
 import { movementsInMonth } from "@/db/movements";
 import {
   comparedToPlan,
@@ -39,7 +40,11 @@ import {
   readableCatalogueFor,
   type Naming,
 } from "../categorias/catalogue";
-import { monthChoices, type ReadableMonthChoice } from "../months";
+import {
+  earliestOffered,
+  monthChoices,
+  type ReadableMonthChoice,
+} from "../months";
 
 /** What both kinds of item carry into their correction screen. */
 type ReadableItemInCommon = {
@@ -289,6 +294,16 @@ export type ReadableBudget = {
   /** Every month the pill at the top of the screen can be moved to. */
   choices: readonly ReadableMonthChoice[];
   /**
+   * Whether this month has been closed, and so is read and never written
+   * (#119).
+   *
+   * On the screen it is one thing and one thing only: every control comes off.
+   * It is not a variation of `nothingPlanned` or of anything else here -- those
+   * are facts about the plan, and this is a fact about the month the plan is
+   * on, decided over a row in another table entirely (ADR-0052).
+   */
+  closed: boolean;
+  /**
    * The Fixed items, in the order they were planned, drawn above the rest
    * (#13). Their own list and not rows among the others, because they are read
    * for a different question: not "how much is left" but "what have I paid".
@@ -334,7 +349,7 @@ export async function readableBudget(
   month: Month,
   reader: Reader,
 ): Promise<ReadableBudget> {
-  const [planned, spending, categories, catalogue] = await Promise.all([
+  const [planned, spending, categories, catalogue, closed] = await Promise.all([
     budgetItemsInMonth(database(), space, month),
     // Read here rather than handed in by the screen, so this stays one
     // question anybody can ask: a reader that only works when another reader
@@ -345,6 +360,16 @@ export async function readableBudget(
     // which sits under which, and `comparedToPlan` needs the second.
     categoriesTheSpaceCanSee(database(), space.id),
     readableCatalogueFor(space.id),
+    /*
+     * Which of the months this screen can reach have been closed (#119).
+     *
+     * One query answering two questions, because it is one fact: the pill
+     * marks the closed months in its list, and the month in view is one of
+     * them or it is not. Asked over the pill's own window (`earliestOffered`)
+     * rather than about this month alone, so the list cannot end up marked
+     * over a shorter stretch than it offers.
+     */
+    closedMonthsFrom(database(), space.id, earliestOffered(month)),
   ]);
 
   const named = namesFrom(catalogue);
@@ -353,7 +378,8 @@ export async function readableBudget(
   return {
     month,
     label: monthLabel(month, monthOf(reader.today)),
-    choices: monthChoices(month, monthOf(reader.today)),
+    choices: monthChoices(month, monthOf(reader.today), closed),
+    closed: closed.has(month),
     fixed: planned
       .filter((item): item is FixedItem => item.kind === "fixed")
       .map((item) => readableFixed(item, named, reader)),

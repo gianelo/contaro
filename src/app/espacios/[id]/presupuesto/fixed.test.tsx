@@ -23,13 +23,14 @@ const item = (changes: Partial<ReadableFixedItem> = {}): ReadableFixedItem => ({
   ...changes,
 });
 
-const section = (items: readonly ReadableFixedItem[]) => (
+const section = (items: readonly ReadableFixedItem[], closed = false) => (
   <FixedItems
     spaceId="space-casa"
     month="2026-09"
     items={items}
     spaceName="Compartido con Ana"
     memberName="Gian"
+    closed={closed}
   />
 );
 
@@ -223,6 +224,58 @@ describe("the Fijos section", () => {
       expect(
         screen.getByRole("button", { name: "Marcar Arriendo como pagado" }),
       ).toBeInTheDocument();
+    });
+  });
+
+  /*
+   * #119. A closed month is shown and not offered, which on this section is
+   * the same shape a paid row already has: the link stays, the control goes.
+   */
+  describe("in a closed month", () => {
+    it("leaves every row with nothing to tap", () => {
+      render(section([item(), item({ id: "fixed-2", name: "Netflix" })], true));
+
+      expect(
+        screen.queryByRole("button", { name: /Marcar/ }),
+      ).toBeNull();
+    });
+
+    it("still opens the item behind every row", () => {
+      render(section([item()], true));
+
+      expect(screen.getByRole("link", { name: /Arriendo/ })).toHaveAttribute(
+        "href",
+        "/espacios/space-casa/presupuesto/fixed-1",
+      );
+    });
+
+    /*
+     * Decision 18. "Pendiente" means *not yet*, and after the close there is
+     * no yet: an item that was never paid in September is never going to be.
+     */
+    it("says an unpaid item was never paid, and not that it is pending", () => {
+      render(section([item()], true));
+
+      expect(screen.getByText("Nunca se pagó")).toBeInTheDocument();
+      expect(screen.queryByText("Pendiente")).toBeNull();
+    });
+
+    // A payment that stands is a payment that stands, closed or not.
+    it("still says a paid item was paid", () => {
+      render(section([item({ paid: true })], true));
+
+      expect(screen.getByText("Pagado")).toBeInTheDocument();
+    });
+
+    /*
+     * The deadline goes quiet. Beside "Nunca se pagó", a line saying the day
+     * is overdue is a second answer claiming a clock is still running.
+     */
+    it("says nothing about a day that has stopped mattering", () => {
+      render(section([item({ due: "Vencido" })], true));
+
+      expect(screen.queryByText(/Vencido/)).toBeNull();
+      expect(screen.getByText("Vivienda · 1 sept")).toBeInTheDocument();
     });
   });
 });

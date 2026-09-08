@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { t } from "@/i18n";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
+import { Notice } from "@/ui/notice";
 import { readerOf } from "@/app/reader";
 import { MonthPill } from "../month-pill";
 import { SpaceScreen } from "../screen";
@@ -70,6 +71,18 @@ export default async function SpaceMovementsPage({
       <MonthTotals earned={inView.earned} spent={inView.spent} />
 
       {/*
+        The month is closed, said on the list as well as on the plan (#119).
+        Nothing here is a control -- every row is a link, and the raised button
+        records a Movement dated today, which is never inside a closed month --
+        so this screen loses nothing to the close and says so anyway: without
+        it, somebody who came in through the pill learns what a closed month is
+        only when they open a Movement and its two controls are gone.
+      */}
+      {inView.closed ? (
+        <Notice>{t("movements.closed", { month: inView.label })}</Notice>
+      ) : null}
+
+      {/*
         One region holding the days, so "the month's Movements" is still one
         thing a screen reader can be sent to and a test can point at, while
         each day inside it is its own group with its own heading.
@@ -77,7 +90,16 @@ export default async function SpaceMovementsPage({
       <section aria-label={t("nav.movements")}>
         {inView.days.length === 0 ? (
           <GroupedList label={t("nav.movements")} labelHidden>
-            <GroupedListItem>{t("space.movements.empty")}</GroupedListItem>
+            {/*
+              And in a closed month, the same fact in the tense a closed month
+              has (#119, decision 18): "Todavía no anotaste" is a *not yet*,
+              and a September that can never change again has no yet left.
+            */}
+            <GroupedListItem>
+              {inView.closed
+                ? t("space.movements.empty.closed")
+                : t("space.movements.empty")}
+            </GroupedListItem>
           </GroupedList>
         ) : (
           inView.days.map((day) => (

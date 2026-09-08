@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
+import { Notice } from "@/ui/notice";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
 import { CloseNotice } from "./close-notice";
@@ -118,9 +119,14 @@ export default async function SpacePage({
   // offered (#121). A month that already has a plan has nothing to be offered,
   // and asking anyway would be a query paid for on every opening of this
   // screen for an answer no card would draw.
-  const copy = nothingPlanned
-    ? await planToCopyForward(space, month, reader)
-    : null;
+  //
+  // A closed month is that same case arrived at from the other side (#119):
+  // the card it would be offered on is not rendered at all, so the query is
+  // one whose answer nothing on the screen can use.
+  const copy =
+    nothingPlanned && !plan.closed
+      ? await planToCopyForward(space, month, reader)
+      : null;
 
   return (
     <SpaceScreen
@@ -161,6 +167,27 @@ export default async function SpacePage({
       {waiting ? <CloseNotice spaceId={space.id} waiting={waiting} /> : null}
 
       {/*
+        And what is true of the month being read, when it is one that has been
+        closed (#119). Under the row above and not over it, by that row's own
+        argument: the announcement about a month somebody is *not* looking at
+        has to come before they start reading, and this one is about the screen
+        underneath it -- it says why there is nothing on it to touch.
+
+        A statement and never a warning. `Notice`'s stronger half is for a
+        consequence that cannot be taken back and has not happened yet; this
+        one has happened, and what is left is a fact about the screen.
+
+        No way out beside it, which is where this departs from the paid item it
+        is modelled on (ADR-0034). That refusal has an undo -- strike the
+        Movement -- and a sentence with no exit would have been a dead end with
+        good manners. This one has no undo by design (ADR-0002), and offering
+        one would be the unlock that has never existed.
+      */}
+      {plan.closed ? (
+        <Notice>{t("budget.closed", { month: plan.label })}</Notice>
+      ) : null}
+
+      {/*
         The two figures the month is about, and the meter between them: what it
         cost, what it was planned to cost, and how far through the plan that
         is. The pace rides inside the card, directly under the figures it is
@@ -195,12 +222,25 @@ export default async function SpacePage({
         The whole-plan empty state travels with it, inside the same card and
         for reasons that belong to the card (`way-in.tsx`, ADR-0045).
       */}
-      <WayIntoThePlan
-        spaceId={space.id}
-        month={month}
-        nothingPlanned={nothingPlanned}
-        copy={copy}
-      />
+      {/*
+        And gone entirely once the month is closed (#119). Every row in that
+        card writes something -- a new item, or a whole plan copied in -- so
+        omission is the whole of it, the way a paid row loses its control.
+
+        Its empty state goes with it, and that is not collateral. "Todavía no
+        planeaste este mes" is a *not yet*, the same tense "Pendiente" is
+        refused for one card below: a September nobody planned is not a
+        September anybody is going to plan. What is left is the Notice above,
+        which says why.
+      */}
+      {plan.closed ? null : (
+        <WayIntoThePlan
+          spaceId={space.id}
+          month={month}
+          nothingPlanned={nothingPlanned}
+          copy={copy}
+        />
+      )}
 
       {/*
         What the month already owes on days it knows about, and what has been
@@ -213,6 +253,7 @@ export default async function SpacePage({
         items={plan.fixed}
         spaceName={space.name}
         memberName={reading.name}
+        closed={plan.closed}
       />
 
       {/*

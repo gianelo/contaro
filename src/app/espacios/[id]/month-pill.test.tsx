@@ -7,10 +7,19 @@ const choice = (
   month: string,
   label: string,
   inView = false,
-): MonthChoice => ({ month, label, href: `?mes=${month}`, inView });
+  closed = false,
+): MonthChoice => ({ month, label, href: `?mes=${month}`, inView, closed });
 
 const CHOICES: readonly MonthChoice[] = [
   choice("2026-08", "Agosto"),
+  choice("2026-09", "Septiembre", true),
+  choice("2026-10", "Octubre"),
+  choice("2026-11", "Noviembre"),
+];
+
+/** The same fourteen, with the two months before the one being read closed. */
+const WITH_CLOSED: readonly MonthChoice[] = [
+  choice("2026-08", "Agosto", false, true),
   choice("2026-09", "Septiembre", true),
   choice("2026-10", "Octubre"),
   choice("2026-11", "Noviembre"),
@@ -108,6 +117,55 @@ describe("the month at the top of a Space's screen", () => {
       // Loose about the space between the two, which the accessible-name
       // computation in jsdom does not insert and a screen reader does.
       screen.getByRole("link", { name: /^Septiembre\s*Mes que estás viendo$/ }),
+    ).toBeInTheDocument();
+  });
+  /*
+   * #119, decision 19. A closed month behaves differently once it is opened,
+   * and the list is the last place somebody can be told before they get there.
+   * A mark and words, never a colour on its own -- the same rule the badge at
+   * the end of a Fixed row is held to.
+   */
+  it("says which months are closed", async () => {
+    render(<MonthPill label="Septiembre" choices={WITH_CLOSED} />);
+
+    await userEvent.click(screen.getByRole("button"));
+
+    expect(
+      screen.getByRole("link", { name: /^Agosto\s*Mes cerrado$/ }),
+    ).toBeInTheDocument();
+  });
+
+  // An open month says nothing, which is what makes the mark on the others
+  // mean something.
+  it("says nothing about a month that is open", async () => {
+    render(<MonthPill label="Septiembre" choices={WITH_CLOSED} />);
+
+    await userEvent.click(screen.getByRole("button"));
+
+    expect(
+      screen.getByRole("link", { name: /^Octubre$/ }),
+    ).toBeInTheDocument();
+  });
+
+  /*
+   * Both at once, because they are two independent facts about one row: a
+   * person can be standing in a closed month, and that is exactly the row that
+   * has to say both things.
+   */
+  it("says both where the month being read is itself closed", async () => {
+    render(
+      <MonthPill
+        label="Agosto"
+        choices={[choice("2026-08", "Agosto", true, true)]}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button"));
+
+    expect(
+      screen.getByRole("link", {
+        name: /^Agosto\s*Mes cerrado\s*Mes que estás viendo$/,
+      }),
     ).toBeInTheDocument();
   });
 });
