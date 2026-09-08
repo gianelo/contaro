@@ -97,7 +97,7 @@ test("the month's list names itself and chooses its month through the pill", asy
     page.getByRole("heading", { name: "Movimientos", level: 1 }),
   ).toBeVisible();
   await expect(
-    page.getByText("Casa de Marta Lista · Peso argentino (ARS)"),
+    page.getByText("Casa de Marta Lista · ARS"),
   ).toBeVisible();
 
   // The `‹ Septiembre ›` walker is gone: there is one way to change the month

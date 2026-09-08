@@ -45,9 +45,9 @@ test("two Members of one Space each read its money their own way", async ({
   await expect(month(memoSees)).toContainText("$0.00");
 
   // And it is the Space's money for both of them, never the reader's.
-  await expect(ritaSees.getByText("Peso mexicano (MXN)")).toBeVisible();
-  await expect(memoSees.getByText("Peso mexicano (MXN)")).toBeVisible();
-  await expect(ritaSees.getByText("Peso argentino")).toHaveCount(0);
+  await expect(ritaSees.getByText("Casa compartida · MXN")).toBeVisible();
+  await expect(memoSees.getByText("Casa compartida · MXN")).toBeVisible();
+  await expect(ritaSees.getByText("ARS")).toHaveCount(0);
 
   await argentine.close();
   await mexican.close();

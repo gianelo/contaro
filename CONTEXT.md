@@ -5,7 +5,7 @@ A personal finance tool for tracking expenses and budgets, used by one person al
 ## Language
 
 **Space**:
-A container holding members, a single currency, its movements and its budgets. A personal Space has one member; a couple's Space has two, and two is the most it can ever hold. The second member arrives by Invitation and no other way.
+A container holding members, a single currency, its movements and its budgets. A personal Space has one member; a couple's Space has two, and two is the most it can ever hold. The second member arrives by Invitation and no other way. It is identified by its **name**, which somebody chose, and described by **who is in it** — two jobs and not one. Both are said on the list a person chooses from: the name is the heading, and under it the Space says who it is shared with, by name — "Compartido con Ana" — rather than counting its Members, since two is the most it can hold and a count could only ever have said one thing. The one named is always the *other* one, never whoever is reading, because that is the only half they do not already know. A Space whose free seat is held by a pending Invitation still reads "Solo vos": the seat is held and not filled. Inside a Space the description falls away and only the name is written, on the head's quiet line and wherever an act confirms which Space money is landing in — whoever reads those has already chosen, and choosing is the only question a description answers (ADR-0056). Nothing makes a name unique, so two Spaces may carry the same one; what tells them apart is the pair, which is why neither line can be spent on arithmetic.
 _Avoid_: Wallet, Group, Account, Cartera, Grupo, Cuenta
 
 **Member**:
@@ -53,7 +53,7 @@ Where a Movement came from: a Member, or the Carry-over of a named month. A repo
 _Avoid_: Source, Kind, Type
 
 **Space currency**:
-The single currency a Space is denominated in, chosen when the Space is created and never changed afterwards. Every Movement and every report in that Space uses it.
+The single currency a Space is denominated in, chosen when the Space is created and never changed afterwards. Every Movement and every report in that Space uses it. It is written to a person as its code — "ARS" — everywhere except where a currency is being chosen, and the only moment that happens is a Space being created. A currency's name explains it to somebody who does not know it, which is what a picker owes them and what nobody needs again afterwards (ADR-0056).
 _Avoid_: Base currency, Default currency
 
 **Last opened**:
