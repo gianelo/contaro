@@ -123,7 +123,7 @@ test("the Budget screen names itself and holds the month's two figures", async (
     page.getByRole("heading", { name: "Presupuesto", level: 1 }),
   ).toBeVisible();
   await expect(
-    page.getByText("Casa de Elsa Encabeza · Peso argentino (ARS)"),
+    page.getByText("Casa de Elsa Encabeza · ARS"),
   ).toBeVisible();
 
   // The month is a pill on the title's row, and picking one is a single act

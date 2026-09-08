@@ -91,7 +91,9 @@ test("a shared Space names both Members, so it reads apart from a personal one",
   // Nadia is on both cards; Omar is only on the one they share.
   await expect(list.getByRole("img", { name: "Nadia Junta" })).toHaveCount(2);
   await expect(list.getByRole("img", { name: "Omar Junta" })).toHaveCount(1);
-  await expect(list.getByText("2 miembros · ARS")).toBeVisible();
+  // Named rather than counted, and the one named is Omar: Nadia is reading,
+  // and a line telling her she is in it answers nothing (ADR-0056).
+  await expect(list.getByText("Compartido con Omar Junta · ARS")).toBeVisible();
   await expect(list.getByText("Solo vos · ARS")).toBeVisible();
 });
 
@@ -145,13 +147,13 @@ test("a Member switches between Spaces without signing out", async ({
 
   await page.goto("/espacios");
   await page.getByRole("link", { name: "Casa" }).click();
-  await expect(page.getByText("Peso argentino (ARS)")).toBeVisible();
+  await expect(page.getByText("Casa · ARS")).toBeVisible();
 
   await page.getByRole("link", { name: "Espacios" }).click();
   await expect(page).toHaveURL(/\/espacios$/);
   await page.getByRole("link", { name: "Viaje" }).click();
 
-  await expect(page.getByText("Dólar estadounidense (USD)")).toBeVisible();
+  await expect(page.getByText("Viaje · USD")).toBeVisible();
   // Still the same session throughout: switching is navigation, not a new
   // sign-in.
   await expect(page.getByRole("region", { name: "Tu sesión" })).toContainText(
@@ -291,13 +293,13 @@ test.describe("a Member who reads numbers the Argentine way", () => {
     await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "$ 0,00",
     );
-    await expect(page.getByText("Dólar estadounidense")).toHaveCount(0);
+    await expect(page.getByText("USD")).toHaveCount(0);
 
     await page.goto(`/espacios/${dolares.id}`);
     await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "US$ 0,00",
     );
-    await expect(page.getByText("Peso argentino")).toHaveCount(0);
+    await expect(page.getByText("ARS")).toHaveCount(0);
   });
 });
 
@@ -340,6 +342,6 @@ test("the tab bar inside a Space stays inside that Space", async ({
     page.getByRole("heading", { name: "Movimientos", level: 1 }),
   ).toBeVisible();
   await expect(
-    page.getByText("Casa · Peso argentino (ARS)"),
+    page.getByText("Casa · ARS"),
   ).toBeVisible();
 });

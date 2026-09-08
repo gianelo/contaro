@@ -1,4 +1,5 @@
 import type { Reader } from "@/app/reader";
+import type { CurrencyCode } from "@/domain/money/currency";
 import { database } from "@/db/client";
 import { budgetItemsInMonthForSpaces } from "@/db/budget-items";
 import { movementsInMonthForSpaces } from "@/db/movements";
@@ -24,7 +25,7 @@ export type ReadableSpace = {
   name: string;
   /** Everyone in it, in the order the Space's rows name them. */
   members: readonly SpaceMember[];
-  /** How many are in it and what money it holds: "2 miembros · COP". */
+  /** Who it is shared with and what money it holds: "Compartido con Ana · COP". */
   who: string;
   /** Whether this is the Space last opened -- the one being used. */
   lastOpened: boolean;
@@ -49,6 +50,7 @@ export type ReadableSpace = {
  * on when a Member joined rather than on a name that can change.
  */
 export function readableSpaces(
+  memberId: string,
   listed: readonly SpaceWithMembers[],
   movements: ReadonlyMap<string, readonly Movement[]>,
   planned: ReadonlyMap<string, readonly BudgetItem[]>,
@@ -59,7 +61,7 @@ export function readableSpaces(
     id: space.id,
     name: space.name,
     members,
-    who: whoIsIn(members, space.currency),
+    who: whoIsIn(memberId, members, space.currency),
     // Compared against the Spaces really on the list rather than trusted: an
     // id outliving the membership that produced it must mark nothing, and
     // never the card that happens to sit where that Space used to.
@@ -82,22 +84,34 @@ export function readableSpaces(
 }
 
 /**
- * Who is in a Space and what money it holds, in the one line under its name.
+ * Who a Space is shared with and what money it holds, in the one line under
+ * its name.
  *
- * A count and not the names, which is what the card has room for once the
- * avatars are drawing them: the names are still on the screen, carried by the
- * circles for anybody not reading the colours (see `MemberAvatars`).
+ * The other Member by name, because this is the list a person chooses from and
+ * "whose money am I about to look at" is the question they arrive with. A
+ * count could never answer it: two is the most a Space can ever hold, so
+ * "{count} miembros" had exactly one thing it could ever say, and it spent the
+ * only line that could have answered saying it (ADR-0056).
  *
- * "Solo vos" and not "1 miembro", because a Space of one is a Member's own
- * money and saying so in a count is a strange way to tell somebody that.
+ * The *other* one, and never the reader: the avatars beside this line already
+ * carry both names for anybody not reading the colours (see `MemberAvatars`),
+ * and what they cannot say is which of the two is the one you share with.
+ *
+ * "Solo vos" is nobody else being in it rather than a count of one, which is
+ * the same question asked the way the answer is found. A Space whose free seat
+ * is held by an Invitation still reads "Solo vos": the seat is held and not
+ * filled, and the line names who is in it.
  */
 function whoIsIn(
+  memberId: string,
   members: readonly SpaceMember[],
-  currency: string,
+  currency: CurrencyCode,
 ): string {
-  return members.length === 1
+  const other = members.find((member) => member.id !== memberId);
+
+  return other === undefined
     ? t("spaces.who.alone", { currency })
-    : t("spaces.who.several", { count: members.length, currency });
+    : t("spaces.who.shared", { member: other.name, currency });
 }
 
 /**
@@ -135,5 +149,5 @@ export async function spacesToChooseFrom(
     budgetItemsInMonthForSpaces(db, spaces, asOf),
   ]);
 
-  return readableSpaces(listed, movements, planned, lastOpened, reader);
+  return readableSpaces(memberId, listed, movements, planned, lastOpened, reader);
 }

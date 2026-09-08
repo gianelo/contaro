@@ -25,7 +25,7 @@ export const es = {
   // Two whole sentences rather than a count glued to a word, so a second
   // language can put them in whatever order it puts them in.
   "spaces.who.alone": "Solo vos · {currency}",
-  "spaces.who.several": "{count} miembros · {currency}",
+  "spaces.who.shared": "Compartido con {member} · {currency}",
   "spaces.active": "Activo",
   // What the month has cost, and what it was planned to (story 5 of #1).
   "spaces.card.spent": "Gastado",

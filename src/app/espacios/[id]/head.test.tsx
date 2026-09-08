@@ -19,7 +19,7 @@ describe("the head of a screen inside a Space", () => {
     render(<SpaceHead space={CASA} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Casa");
-    expect(screen.getByText("Peso argentino (ARS)")).toBeInTheDocument();
+    expect(screen.getByText("ARS")).toBeInTheDocument();
   });
 
   /*
@@ -35,9 +35,7 @@ describe("the head of a screen inside a Space", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "Presupuesto",
     );
-    expect(
-      screen.getByText("Casa · Peso argentino (ARS)"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Casa · ARS")).toBeInTheDocument();
   });
 
   // The month pill shares the title's row on the canvas, so it is a slot on
