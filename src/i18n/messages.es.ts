@@ -360,6 +360,52 @@ export const es = {
   "close.error.alreadyClosed": "Ese mes ya estaba cerrado.",
   "close.error.failed": "No pudimos cerrar el mes. Probá de nuevo.",
 
+  /*
+   * The month that ended, said on the Budget screen until it is closed (#118).
+   *
+   * Two sentences for one fact, and the difference between them is the whole
+   * asymmetry ADR-0051 admits: the creator is told the month ended and invited
+   * to finish it, and the invited Member is told the same thing and who it is
+   * waiting on. Neither is shown a button the other one owns.
+   *
+   * "Cuando no le falte nada" and not "cuando quieras". The close is not a
+   * preference -- it is a claim that the month is fully loaded -- and the only
+   * honest instruction is the one that names the condition.
+   */
+  "close.waiting.title": "Cierre del mes",
+  "close.waiting.mine": "{month} terminó. Cuando no le falte nada, cerralo.",
+  "close.waiting.theirs": "{month} terminó y espera que {member} lo cierre.",
+  "close.waiting.act": "Cerrar {month}",
+
+  // The sheet the artboard draws (`design/SheetCerrar.dc.html`), grouped the
+  // way it groups them: the plain paragraph carries the whole of what closing
+  // does, and the block set apart from it carries the one rule a person will
+  // meet later without being told -- what happens to a September ticket found
+  // in October.
+  "close.sheet.body":
+    "Esto no tiene vuelta atrás. Después de cerrar no vas a poder editar ni agregar nada a {month} — nunca.",
+  "close.sheet.late":
+    "Si aparece un ticket de {month} después, se va a cargar con la fecha del día en que lo cargues y va a descontar del presupuesto de {next}.",
+  // What the month holds, so nobody freezes it blind. The pending line is the
+  // only one worth acting on, so it is the only one that has a "nothing" to
+  // say: "0 fijos pendientes" is a worry printed where there is none.
+  //
+  // The artboard labels that line "Sin cargar hoy" and this is the one word on
+  // the sheet that departs from it. The row counts Fixed items of the whole
+  // month that were never marked paid; "hoy" is a different question and the
+  // label would misdescribe its own figure. Said as what it counts instead.
+  "close.sheet.movements": "Movimientos",
+  "close.sheet.pending": "Sin pagar",
+  "close.sheet.pending.none": "Nada pendiente",
+  "close.sheet.pending.one": "1 fijo pendiente",
+  "close.sheet.pending.many": "{count} fijos pendientes",
+  "close.sheet.confirm": "Cerrar {month}",
+  "close.sheet.working": "Cerrando\u2026",
+  // "Todavía no" and not "Cancelar" (the artboard). Cancelling says the tap
+  // was a mistake; this says the month is not finished yet, which is the true
+  // reason somebody backs out of this sheet.
+  "close.sheet.notYet": "Todavía no",
+
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",
   "movements.shared": "Compartido con {member}",

@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { database } from "@/db/client";
-import { findSpaceForMember, markSpaceOpened } from "@/db/spaces";
+import {
+  findSpaceForMember,
+  markSpaceOpened,
+  type SpaceOpening,
+} from "@/db/spaces";
 import type { Space } from "@/domain/space/space";
 
 /**
@@ -14,6 +18,22 @@ import type { Space } from "@/domain/space/space";
  * identifier passed between people buys nothing.
  */
 export async function currentSpace(id: string): Promise<Space> {
+  return (await openSpace(id)).space;
+}
+
+/**
+ * The same Space, with what this Member's membership row said the instant
+ * before this request touched it.
+ *
+ * The Budget screen asks for this one and every other route asks for the Space
+ * alone, because only the Budget screen has anything to say about a month that
+ * ended (#118). They are the same act either way: opening a Space is what makes
+ * it the one being used, and the history it replaces is only readable here,
+ * from inside the act that replaces it.
+ */
+export async function openSpace(
+  id: string,
+): Promise<{ space: Space; opening: SpaceOpening | null }> {
   // The proxy keeps a signed-out request off every page but /ingresar. This is
   // what happens if that ever stops being true.
   const session = await auth();
@@ -34,14 +54,14 @@ export async function currentSpace(id: string): Promise<Space> {
    * in it would update nothing anyway -- but a write that runs before the
    * refusal is a write nobody meant to authorise.
    *
-   * Awaited rather than left running, even though nothing on this screen reads
-   * it back: a write let go of in a server component is a write the request
-   * can outlive, and the badge would then be right or wrong depending on how
-   * fast the page finished.
+   * Awaited rather than left running, and now for a second reason on top of
+   * the first: a write let go of in a server component is a write the request
+   * can outlive, so the badge would be right or wrong depending on how fast the
+   * page finished -- and what it answers is what the screen above it draws.
    */
-  await markSpaceOpened(db, space.id, session.user.id);
+  const opening = await markSpaceOpened(db, space.id, session.user.id);
 
-  return space;
+  return { space, opening };
 }
 
 /**

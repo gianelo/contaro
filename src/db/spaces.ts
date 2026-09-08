@@ -154,36 +154,89 @@ export async function listSpacesForMember(
 }
 
 /**
- * Writes down that this Member has just opened this Space (#38).
+ * Writes down that this Member has just opened this Space (#38), and answers
+ * with the moment it had before this one.
  *
  * What the Space list reads back as "Activo". A moment and not a flag: a
  * boolean would have to be unset somewhere else, and the two writes would
  * eventually disagree about which Space is the one being used. A timestamp has
  * only ever to be written.
  *
+ * **The moment it is replacing is the answer, not the one being written.** That
+ * is the whole of what #118 needed and the reason it needed no new column: a
+ * `last_opened_at` from while a month was still running, read on a request made
+ * after that month ended, is the first opening since the month turned
+ * (`firstOpeningSince`). Read here rather than by a caller, because a caller
+ * reading it would be reading it after this had already overwritten it -- the
+ * two statements are one act, and the act is "opened, and here is what that
+ * replaced".
+ *
+ * Its `joined_at` comes back beside it, off the same row and for the same
+ * screen: a month that ended before this Member was in the Space is not one to
+ * tell them about (`wasAMemberDuring`). One column more on a read that had to
+ * happen anyway, rather than a second question asked somewhere else.
+ *
+ * Read and then written rather than in one statement over a self-join, and
+ * without a transaction around the pair. What a transaction would buy is
+ * ordering against another request from the same Member into the same Space in
+ * the same instant, and the worst that costs is an announcement shown on two
+ * tabs at once. Every screen inside a Space comes through here, so this is the
+ * hottest path in the product, and BEGIN and COMMIT are two round trips to buy
+ * that.
+ *
  * The membership rule is not asked here, and does not need to be: the pair is
- * the primary key, so a Member who is not in this Space updates no rows at all
- * and the call is a no-op rather than a leak.
+ * the primary key, so a Member who is not in this Space reads and updates no
+ * rows at all, and the call is a no-op rather than a leak.
  */
 export async function markSpaceOpened(
   db: Database,
   spaceId: string,
   memberId: string,
-): Promise<void> {
+): Promise<SpaceOpening | null> {
   // An id from a URL is any string at all, and Postgres refuses a malformed
   // uuid with an error rather than an empty update.
-  if (!UUID.test(spaceId)) return;
+  if (!UUID.test(spaceId)) return null;
+
+  const membership = and(
+    eq(spaceMembers.spaceId, spaceId),
+    eq(spaceMembers.memberId, memberId),
+  );
+
+  const [before] = await db
+    .select({
+      lastOpenedAt: spaceMembers.lastOpenedAt,
+      joinedAt: spaceMembers.joinedAt,
+    })
+    .from(spaceMembers)
+    .where(membership)
+    .limit(1);
 
   await db
     .update(spaceMembers)
     .set({ lastOpenedAt: sql`now()` })
-    .where(
-      and(
-        eq(spaceMembers.spaceId, spaceId),
-        eq(spaceMembers.memberId, memberId),
-      ),
-    );
+    .where(membership);
+
+  // No row at all, which is a Member who is not in this Space: nothing was
+  // written and there is nothing to say about a history they do not have.
+  return before ?? null;
 }
+
+/**
+ * What this Member's membership row said the instant before it was opened.
+ *
+ * Two moments and not one, because the announcement of a waiting close turns
+ * on both: whether they have been here since the month ended, and whether they
+ * were here while it was running (#118).
+ */
+export type SpaceOpening = {
+  /**
+   * When they last opened it, before this opening replaced it, or nothing at
+   * all if this is the first time.
+   */
+  lastOpenedAt: Date | null;
+  /** When the Space became theirs. */
+  joinedAt: Date;
+};
 
 /**
  * The Space this Member opened last, or none if they never have.

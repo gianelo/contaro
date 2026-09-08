@@ -1,4 +1,12 @@
-import { hasEnded, type CalendarDate, type Month } from "../calendar/month";
+import {
+  hasEnded,
+  lastDayOf,
+  monthOf,
+  nextMonth,
+  previousMonth,
+  type CalendarDate,
+  type Month,
+} from "../calendar/month";
 import { mayCloseTheMonth } from "./creator";
 import type { Space } from "./space";
 
@@ -102,4 +110,79 @@ export function closeMonth(of: Month, closing: Closing): ClosedMonth {
     closedBy: closing.closedBy,
     closedOn: closing.today,
   };
+}
+
+/**
+ * Whether this opening of a Space is the first one since a month ended.
+ *
+ * What decides that the close announces itself, and it needs no new state at
+ * all -- which is not a lucky accident but the reason this shape was chosen
+ * (decision 13 of #109). `space_members.last_opened_at` is written on the way
+ * into every screen inside a Space (`currentSpace`) and read here *before* this
+ * request overwrites it: a moment from while the month was still running,
+ * arriving on a request made after it ended, **is** the first visit since the
+ * month turned. The next request carries a moment from after the end, and the
+ * answer is false forever after.
+ *
+ * ADR-0029 refused a flag for the Space being used because "a flag has to be
+ * unset somewhere else", and a `dismissedAt` here would have been the same
+ * refusal with a worse ending: somewhere would have had to unset it every
+ * month, for every Space, for as long as the product exists.
+ *
+ * A Space nobody has ever opened answers true. It has not been opened since the
+ * month ended either -- that is the question -- and the tempting reading of a
+ * `null` is "say nothing", which would silence the announcement on exactly the
+ * Space whose owner has been away longest.
+ *
+ * The cost of this shape, accepted on purpose (#118): a hard refresh on that
+ * first load spends the announcement. That is what the standing row is for.
+ */
+export function firstOpeningSince(
+  of: Month,
+  lastOpened: CalendarDate | null,
+): boolean {
+  // Compared as text for the reason `hasEnded` is, and against the same bound:
+  // the last day of a month is still inside it.
+  return lastOpened === null || lastOpened <= lastDayOf(of);
+}
+
+/**
+ * The month a Space is waiting to have closed: the oldest one that has ended
+ * and has no row saying it is closed, or nothing where there is none.
+ *
+ * **The oldest and not the newest**, which is what #118 asks for in one line --
+ * the row "leaves only when it is closed". Announcing the month that just ended
+ * would take September's row off the screen the day October ended, and the row
+ * would then have left without anybody closing anything. A person who ignored
+ * it for a year is asked about the month they stopped at, which is the honest
+ * answer to "what is still open": January really is what is still open in
+ * December, and the row saying so is the row doing its job.
+ *
+ * **It starts at the month they joined in**, not at the month the Space was
+ * made and not at the beginning of the calendar. A month that ended before this
+ * Member arrived is not one they have anything to say about, and without that
+ * bound the sheet would open by itself on the first screen somebody ever sees,
+ * about a month their Space did not exist in. Measured off the membership
+ * because the invited Member joined later than the creator did (#9).
+ *
+ * The last month it will look at is the one before the month being lived in --
+ * a month still running has not ended, and `closeMonth` refuses it.
+ */
+export function theMonthWaitingToBeClosed(
+  history: { joined: CalendarDate; today: CalendarDate },
+  closed: ReadonlySet<string>,
+): Month | null {
+  // The month they joined in, however little of it was left: the last day of a
+  // month is still inside it, so somebody who joined on the 30th was here.
+  let month = monthOf(history.joined);
+  const last = previousMonth(monthOf(history.today));
+
+  // Text comparison, which is what `WRITTEN` buys and what `hasEnded` relies
+  // on: months written `YYYY-MM` sort the way the calendar orders them.
+  while (month <= last) {
+    if (!closed.has(month)) return month;
+    month = nextMonth(month);
+  }
+
+  return null;
 }

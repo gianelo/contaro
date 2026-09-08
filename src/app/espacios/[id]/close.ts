@@ -83,14 +83,17 @@ export type CloseRefusal =
   | { kind: "no-such-month" }
   | { kind: "failed"; cause: unknown };
 
-/**
- * What the screen knows after a close was asked for: nothing, or why not.
- *
- * The type alone. The `nothingWrongYet` constant its neighbours carry is what a
- * form hands `useActionState` on first render, and the form is #118's -- one
- * shipped here would be a constant with nothing to initialise.
- */
+/** What the screen knows after a close was asked for: nothing, or why not. */
 export type CloseFormState = { error: string | null };
+
+/**
+ * What the sheet hands `useActionState` before anything has been submitted.
+ *
+ * Shipped now that there is a form to initialise (#118). #117 deliberately left
+ * this out and said so: a constant with no caller is a constant nothing keeps
+ * honest.
+ */
+export const nothingWrongYet: CloseFormState = { error: null };
 
 /**
  * A month closed by the Space's creator, on the Reader's day.

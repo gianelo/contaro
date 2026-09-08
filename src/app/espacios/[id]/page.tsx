@@ -2,9 +2,11 @@ import { headers } from "next/headers";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
+import { CloseNotice } from "./close-notice";
 import { MonthPill } from "./month-pill";
 import { SpaceScreen } from "./screen";
-import { currentSpace, viewingMember } from "./space";
+import { openSpace, viewingMember } from "./space";
+import { theCloseWaiting } from "./waiting";
 import { monthInView, spaceMembers } from "./movimientos/month";
 import { planToCopyForward, readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
@@ -28,7 +30,11 @@ export default async function SpacePage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const [{ id }, { mes }] = await Promise.all([params, searchParams]);
-  const space = await currentSpace(id);
+  // The Space, and what this Member's membership row said the instant before
+  // this request touched it: whether a month has ended since they last looked
+  // is a question only readable from inside the act that overwrites the answer
+  // (#118, `openSpace`).
+  const { space, opening } = await openSpace(id);
   // The Space's money, written the way whoever opened this reads numbers
   // (ADR-0014). Two Members of one Space read one amount two ways; it is the
   // same amount, and it is in the Space's currency for both of them.
@@ -36,7 +42,8 @@ export default async function SpacePage({
   // figure is written (ADR-0018): at nine at night on the 30th the server is
   // already in the next one, and this would be the cost of a month nobody has
   // started spending in.
-  const reader = readerOf(await headers());
+  const asked = await headers();
+  const reader = readerOf(asked);
   const month = monthInView(mes, reader.today);
   // What the month has actually cost and what it was planned to, side by side
   // at last: #10 kept them in separate lists so that neither read as a
@@ -67,7 +74,33 @@ export default async function SpacePage({
     );
   }
 
-  const at = (asked: string) => `/espacios/${space.id}?mes=${asked}`;
+  const at = (chosen: string) => `/espacios/${space.id}?mes=${chosen}`;
+
+  /*
+   * The month that ended and has not been closed, if there is one (#118).
+   *
+   * Asked after the Members are in hand, because the invited Member's row names
+   * the creator and the creator is a row of this Space rather than a session --
+   * the same reason the paid-item recap is named from `members` above.
+   *
+   * Not tied to the month in view. A month ending is news, and which month
+   * somebody happened to navigate to is not what decides whether they are told
+   * (`waiting.ts`).
+   */
+  const waiting = await theCloseWaiting({
+    space,
+    memberId,
+    // `currentSpace` has already refused a Member who is not in this Space, and
+    // `createdBy` is a Member of it -- so a missing name here means the Space
+    // and its own membership rows disagree, which is what the throw above is
+    // about. The empty string is unreachable and is not a fallback anybody is
+    // meant to read.
+    creatorName:
+      members.find((member) => member.id === space.createdBy)?.name ?? "",
+    reader,
+    headers: asked,
+    opening,
+  });
 
   // A Budget is its items, of either kind (CONTEXT.md). A month with the rent
   // on it and nothing else has been planned, so the empty state is about the
@@ -118,6 +151,15 @@ export default async function SpacePage({
         />
       }
     >
+      {/*
+        The month that ended, said until it is closed -- and, exactly once, said
+        by a sheet that opens on its own (#118). Above everything, because it is
+        the only thing on this screen that is not about the month being read:
+        under the summary it would be an announcement a person reaches after
+        they have already started reading the figures it interrupts.
+      */}
+      {waiting ? <CloseNotice spaceId={space.id} waiting={waiting} /> : null}
+
       {/*
         The two figures the month is about, and the meter between them: what it
         cost, what it was planned to cost, and how far through the plan that

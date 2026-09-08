@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import {
   calendarDate,
   month as asMonth,
@@ -77,6 +77,41 @@ export async function refuseAClosedMonth(
     .limit(1);
 
   if (closed) throw new ClosedMonthError(of);
+}
+
+/**
+ * Which of a Space's months are closed, from a month onwards.
+ *
+ * The same fact the refusal is built on, asked by a screen rather than by a
+ * write -- and asked about a stretch of months rather than about one, because
+ * that is the shape of the screen's question. #118 draws a row about the oldest
+ * month still waiting to be closed, and finding the oldest of anything means
+ * knowing about all of them: asked one month at a time it would be a query per
+ * month lived through, on every load of the Budget screen.
+ *
+ * A set of strings and not of `Month`s, because a `Set<Month>` is a set nothing
+ * can look a plain month up in without a cast. What comes back is exactly what
+ * the column holds; the domain walking it brands its own (`month`).
+ *
+ * It answers about rows and never about permission. Whether the Member reading
+ * it may close a month is the domain's question (`closeMonth`), asked somewhere
+ * else and answered differently for each of the two Members.
+ *
+ * The refusal above is left asking for itself. It is the hot path -- ten writes
+ * go through it before writing -- and it wants one row and not a month's worth
+ * of them.
+ */
+export async function closedMonthsFrom(
+  db: Database,
+  spaceId: string,
+  from: Month,
+): Promise<ReadonlySet<string>> {
+  const rows = await db
+    .select({ month: closedMonths.month })
+    .from(closedMonths)
+    .where(and(eq(closedMonths.spaceId, spaceId), gte(closedMonths.month, from)));
+
+  return new Set(rows.map((row) => row.month));
 }
 
 /**
