@@ -23,6 +23,7 @@ import type { Movement, Recorder } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { bySpace } from "./by-space";
 import { categoriesTheSpaceCanSee } from "./categories";
+import { refuseAClosedMonth } from "./closed-months";
 import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
 import { recordMovementInSpace } from "./movements";
@@ -117,6 +118,11 @@ export async function planBudgetItemInSpace(
 ): Promise<BudgetItem> {
   const checked = planItem(draft, await asPlanning(db, space));
 
+  // The one refusal a closed month makes (`refuseAClosedMonth`). After it, the
+  // month's plan is as frozen as its Movements -- there is no line to add to a
+  // month somebody has finished with.
+  await refuseAClosedMonth(db, space.id, checked.month);
+
   const [created] = await db
     .insert(budgetItems)
     .values({
@@ -154,6 +160,8 @@ export async function planFixedItemInSpace(
   draft: FixedItemDraft,
 ): Promise<FixedItem> {
   const checked = planFixedItem(draft, await asPlanning(db, space));
+
+  await refuseAClosedMonth(db, space.id, checked.month);
 
   const [created] = await db
     .insert(budgetItems)
@@ -215,6 +223,14 @@ export async function payFixedItemInSpace(
     const item = await findBudgetItemInSpace(tx, context.space, itemId);
     if (!item || item.kind !== "fixed") return null;
 
+    // The item's own month, which is not the month the Movement below lands
+    // in. Marking a Fixed item paid writes a pointer onto the plan, so a
+    // closed September refuses it even in October -- and decision 1 of the
+    // #109 map is exactly that refusal read from the other side: an unpaid
+    // Fixed item stays unpaid, in its own month, forever. The Movement's own
+    // month is asked again by `recordMovementInSpace`.
+    await refuseAClosedMonth(tx, context.space.id, item.month);
+
     // Throws if the item is already paid, which this then never gets to
     // write. The WHERE below is what covers the tap that arrives between
     // this read and that write.
@@ -269,6 +285,8 @@ export async function amendBudgetItemInSpace(
   const existing = await findBudgetItemInSpace(db, space, itemId);
   if (!existing) return null;
 
+  await refuseAClosedMonth(db, space.id, existing.month);
+
   const corrected = amendItem(existing, changes, await asPlanning(db, space));
 
   const [updated] = await db
@@ -309,6 +327,8 @@ export async function amendFixedItemInSpace(
 ): Promise<FixedItem | null> {
   const existing = await findBudgetItemInSpace(db, space, itemId);
   if (!existing || existing.kind !== "fixed") return null;
+
+  await refuseAClosedMonth(db, space.id, existing.month);
 
   const corrected = amendFixedItem(existing, changes, await asPlanning(db, space));
 
@@ -387,6 +407,8 @@ export async function removeBudgetItemFromSpace(
 ): Promise<boolean> {
   const existing = await findBudgetItemInSpace(db, space, itemId);
   if (!existing) return false;
+
+  await refuseAClosedMonth(db, space.id, existing.month);
 
   unplan(existing);
 
@@ -547,6 +569,12 @@ export async function copyPlanIntoMonth(
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext(${space.id}), hashtext(${into}))`,
     );
+
+    // The month it lands on, and never the month it comes from. A closed month
+    // is a month a plan may still be *read* out of -- that is decision 24 of
+    // the #109 map and ADR-0050's own "the copy is a snapshot and not a link"
+    // -- and it is only a month nothing may be written into.
+    await refuseAClosedMonth(tx, space.id, into);
 
     const source = await budgetItemsInMonth(tx, space, from);
     if (source.length === 0) return { kind: "nothing-to-copy" };

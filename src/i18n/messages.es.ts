@@ -326,8 +326,39 @@ export const es = {
   // there and a second copy would double it.
   "budget.error.alreadyPlanned":
     "Este mes ya tiene un plan. Volv\u00e9 a cargar la pantalla para verlo.",
+  // The month is closed, and there is no way back into it (ADR-0002). Said as
+  // a fact and never as an apology, and with no "probá de nuevo": trying again
+  // is the one thing that will never work, and the person did nothing wrong.
+  // It says what to do instead, because there is something -- the money still
+  // goes somewhere, and it goes on this month.
+  "budget.error.monthClosed":
+    "Ese mes está cerrado y no se puede cambiar. Anotalo en el mes en curso.",
   "budget.error.signedOut": "Se cerr\u00f3 tu sesi\u00f3n. Entr\u00e1 de nuevo.",
   "budget.error.failed": "No pudimos guardar el gasto previsto. Prob\u00e1 de nuevo.",
+
+  // The monthly close (#117). The act itself, and every way it can be refused.
+  //
+  // ADR-0002 is the whole voice of this section: the close has no undo, so
+  // nothing here softens it or hedges it, and nothing invites a person to try
+  // again at something that already happened. The last one does invite a
+  // retry, and that is the difference it turns on: a dropped connection is the
+  // one refusal here where nothing was closed and trying again is the fix.
+  "close.error.notTheCreator":
+    "Solo quien creó el espacio puede cerrar un mes.",
+  // The month is still running for the person tapping, whatever the server
+  // thinks (ADR-0018). It says when they can come back rather than only that
+  // they cannot yet, because the answer is a day away and nothing they do
+  // brings it closer.
+  "close.error.notOverYet":
+    "Todavía no terminó el mes. Vas a poder cerrarlo cuando termine.",
+  // A month no calendar has, off a form nobody types into: the screen is
+  // broken rather than the answer wrong. Named anyway, the way the plan names
+  // its own, so a person who somehow sees it knows it was not them.
+  "close.error.month": "No pudimos ver de qué mes se trata.",
+  // The other thumb won, and nothing went wrong. No "probá de nuevo": the
+  // month is exactly as they wanted it, and there is no second close.
+  "close.error.alreadyClosed": "Ese mes ya estaba cerrado.",
+  "close.error.failed": "No pudimos cerrar el mes. Probá de nuevo.",
 
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",
@@ -378,6 +409,11 @@ export const es = {
   "movements.error.direction": "Elegí si es un gasto o un ingreso.",
   "movements.error.space": "No pudimos ver de qué espacio se trata.",
   "movements.error.gone": "Ese movimiento ya no está.",
+  // The same fact the plan states, said about a Movement. ADR-0002 decided
+  // where a late ticket goes, so this points at the answer rather than leaving
+  // a person holding a receipt with nowhere to put it.
+  "movements.error.monthClosed":
+    "Ese mes está cerrado y no se puede cambiar. Cargalo con la fecha de hoy y va a descontar del mes en curso.",
   "movements.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
   "movements.error.failed": "No pudimos guardar el movimiento. Probá de nuevo.",
 

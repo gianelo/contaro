@@ -20,6 +20,7 @@ import {
   recordMovementInSpace,
   strikeMovementInSpace,
 } from "./movements";
+import { ClosedMonthError, closeMonthInSpace } from "./closed-months";
 
 // Run with `pnpm test:db`, which starts Postgres first.
 const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
@@ -653,4 +654,167 @@ it("asks nothing at all when there are no Spaces to ask about", async () => {
   await expect(
     movementsInMonthForSpaces(db, [], month("2026-09")),
   ).resolves.toEqual(new Map());
+});
+
+/*
+ * The close, from the side the ledger feels it (#117).
+ *
+ * The close freezes a month's Movements as much as its plan (ADR-0002), and it
+ * does it through the same one refusal the plan meets. What it does *not*
+ * refuse is a late ticket: a September receipt found in October is an October
+ * expense, which ADR-0002 decided and the close's own sheet promises out loud.
+ */
+
+const IN_OCTOBER = calendarDate("2026-10-03");
+const SEPTEMBER = month("2026-09");
+
+async function aClosedSeptember(name: string) {
+  const made = await aSpaceWithACategory(name);
+  const recorded = await recordMovementInSpace(
+    db,
+    { space: made.space, recordedBy: made.member.id, today: TODAY },
+    {
+      spaceId: made.space.id,
+      direction: "expense",
+      categoryId: made.categoryId,
+      amount: 12_000_00,
+      occurredOn: calendarDate("2026-09-02"),
+      attributedTo: null,
+      name: "Súper",
+    },
+  );
+
+  await closeMonthInSpace(
+    db,
+    { space: made.space, closedBy: made.member.id, today: IN_OCTOBER },
+    SEPTEMBER,
+  );
+
+  return { ...made, recorded };
+}
+
+it("refuses a Movement recorded into a closed month", async () => {
+  const { space, member, categoryId } = await aClosedSeptember("Cerrado anotar");
+
+  await expect(
+    recordMovementInSpace(
+      db,
+      { space, recordedBy: member.id, today: IN_OCTOBER },
+      {
+        spaceId: space.id,
+        direction: "expense",
+        categoryId,
+        amount: 5_000_00,
+        occurredOn: calendarDate("2026-09-28"),
+        attributedTo: null,
+        name: "Tarde",
+      },
+    ),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+/*
+ * The late ticket, which is the one thing the close is careful *not* to refuse.
+ * ADR-0002: "a late September expense lands in October, where it consumes
+ * October's Budget", and that is deliberate rather than a gap.
+ */
+it("records a September receipt found in October, in October", async () => {
+  const { space, member, categoryId } = await aClosedSeptember("Cerrado tarde");
+
+  await expect(
+    recordMovementInSpace(
+      db,
+      { space, recordedBy: member.id, today: IN_OCTOBER },
+      {
+        spaceId: space.id,
+        direction: "expense",
+        categoryId,
+        amount: 5_000_00,
+        occurredOn: IN_OCTOBER,
+        attributedTo: null,
+        name: "Ticket de septiembre",
+      },
+    ),
+  ).resolves.toMatchObject({ occurredOn: "2026-10-03" });
+});
+
+it("refuses a correction to a Movement of a closed month", async () => {
+  const { space, member, recorded } = await aClosedSeptember("Cerrado corregir");
+
+  await expect(
+    amendMovementInSpace(
+      db,
+      { space, recordedBy: member.id, today: IN_OCTOBER },
+      recorded.id,
+      { amount: 1_00 },
+    ),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+/*
+ * Both ends of a correction, because a correction can move the day it happened
+ * on -- and a Movement lifted out of an open month and dropped into a closed
+ * one is a closed month changing just as much.
+ */
+it("refuses a correction that would move a Movement into a closed month", async () => {
+  const { space, member, categoryId } = await aClosedSeptember("Cerrado mover");
+
+  const inOctober = await recordMovementInSpace(
+    db,
+    { space, recordedBy: member.id, today: IN_OCTOBER },
+    {
+      spaceId: space.id,
+      direction: "expense",
+      categoryId,
+      amount: 3_000_00,
+      occurredOn: IN_OCTOBER,
+      attributedTo: null,
+      name: "Octubre",
+    },
+  );
+
+  await expect(
+    amendMovementInSpace(
+      db,
+      { space, recordedBy: member.id, today: IN_OCTOBER },
+      inOctober.id,
+      { occurredOn: "2026-09-15" },
+    ),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+/*
+ * Striking a Movement out moves every figure the month is read by, which is
+ * exactly what a closed month promises will never happen again.
+ */
+it("refuses striking out a Movement of a closed month, and leaves it standing", async () => {
+  const { space, recorded, member } = await aClosedSeptember("Cerrado tachar");
+
+  await expect(
+    strikeMovementInSpace(db, space.id, recorded.id, member.id),
+  ).rejects.toThrow(ClosedMonthError);
+
+  await expect(
+    findMovementInSpace(db, space, recorded.id),
+  ).resolves.toMatchObject({ id: recorded.id });
+});
+
+it("leaves every other month of the Space writable", async () => {
+  const { space, member, categoryId } = await aClosedSeptember("Cerrado y el resto");
+
+  await expect(
+    recordMovementInSpace(
+      db,
+      { space, recordedBy: member.id, today: IN_OCTOBER },
+      {
+        spaceId: space.id,
+        direction: "expense",
+        categoryId,
+        amount: 2_000_00,
+        occurredOn: calendarDate("2026-10-02"),
+        attributedTo: null,
+        name: "Octubre",
+      },
+    ),
+  ).resolves.toMatchObject({ occurredOn: "2026-10-02" });
 });

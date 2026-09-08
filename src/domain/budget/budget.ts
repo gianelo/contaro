@@ -496,10 +496,16 @@ export function dueNotice(
  * to.
  *
  * A Budget stays editable throughout its month (CONTEXT.md), and nothing here
- * asks whether the month is still open. The close is what shuts editing down,
- * it freezes a month's Movements as much as its plan, and it has not been
- * built yet -- so it will refuse this in one place, above the domain, rather
- * than growing a second half-answer here that would then have to agree with it.
+ * asks whether the month is still open. That promise is now paid: the close
+ * exists (#117), and it refuses this in one place above the domain --
+ * `refuseAClosedMonth` in `src/db/closed-months.ts`, which every write into a
+ * month asks before it writes.
+ *
+ * It stays out of here on purpose, and not because it was easier. The question
+ * is about rows: whether a month is closed cannot be answered from an item and
+ * a set of changes, and a `closed: boolean` threaded into this signature would
+ * be a second half-answer that had to agree with the first. The day the two
+ * disagreed is the day a closed month quietly accepted an edit.
  *
  * Neither the month nor the Space is a change: an item on another month is not
  * a correction of this plan, it is an item on another one. They are absent

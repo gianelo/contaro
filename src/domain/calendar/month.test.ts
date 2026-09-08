@@ -4,6 +4,7 @@ import {
   dayOf,
   daysBetween,
   firstDayOf,
+  hasEnded,
   isCalendarDate,
   isMonth,
   daysIn,
@@ -316,5 +317,34 @@ describe("the same day of the month, carried into another month", () => {
     expect(sameDayIn(month("2026-09"), calendarDate("2026-09-05"))).toBe(
       "2026-09-05",
     );
+  });
+});
+
+describe("whether a month is over", () => {
+  it("is not over on any of its own days, including the last one", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-09-01"))).toBe(false);
+    expect(hasEnded(month("2026-09"), calendarDate("2026-09-30"))).toBe(false);
+  });
+
+  it("is over from the first day of the month after it", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-10-01"))).toBe(true);
+  });
+
+  it("is not over while the day standing in it is still to come", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-08-31"))).toBe(false);
+  });
+
+  /*
+   * The reason this takes a day rather than reading a clock (ADR-0018). At
+   * nine at night on the 30th in Bogota the server is already in October and
+   * the Member is not, and the one act this answers for cannot be undone.
+   */
+  it("answers differently for two people standing in different days", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-10-01"))).toBe(true);
+    expect(hasEnded(month("2026-09"), calendarDate("2026-09-30"))).toBe(false);
+  });
+
+  it("is over for every month behind the one being lived in", () => {
+    expect(hasEnded(month("2025-12"), calendarDate("2026-09-15"))).toBe(true);
   });
 });
