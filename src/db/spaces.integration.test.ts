@@ -313,10 +313,11 @@ it("refuses an identifier that is not one, rather than erroring on it", async ()
   const vera = await aMember("Vera");
 
   // A path segment is any string at all, and Postgres answers a malformed
-  // uuid with an error rather than an empty update.
+  // uuid with an error rather than an empty update. It answers with no history
+  // either, which is the same answer a Member who is not in the Space gets.
   await expect(
     markSpaceOpened(db, "not-a-uuid", vera.id),
-  ).resolves.toBeUndefined();
+  ).resolves.toBeNull();
 });
 
 /*
@@ -508,4 +509,58 @@ it("says nothing about a Space whose two signals agree", async () => {
   await expect(warningsFrom(disagreementCheck())).resolves.not.toContain(
     space.id,
   );
+});
+
+/*
+ * What #118 reads, and the reason it needed no new column: the moment being
+ * replaced is what says whether a month ended since this Member last looked
+ * (`firstOpeningSince`). Read here, inside the act that overwrites it, because
+ * a caller reading it afterwards would be reading the moment it just wrote.
+ */
+it("answers with the moment it is replacing, and not the one it writes", async () => {
+  const tito = await aMember("Tito");
+  const casa = await createSpaceForMember(db, tito.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  // Never opened, so there is nothing it is replacing.
+  const first = await markSpaceOpened(db, casa.id, tito.id);
+  expect(first?.lastOpenedAt).toBeNull();
+
+  const second = await markSpaceOpened(db, casa.id, tito.id);
+  expect(second?.lastOpenedAt).toBeInstanceOf(Date);
+
+  // The second answer is the first opening, so it is behind the third's.
+  const third = await markSpaceOpened(db, casa.id, tito.id);
+  expect(third?.lastOpenedAt?.getTime()).toBeGreaterThanOrEqual(
+    (second?.lastOpenedAt as Date).getTime(),
+  );
+});
+
+// The other half of the same row: a month that ended before this Member was in
+// the Space is not one to tell them about (`wasAMemberDuring`).
+it("answers with the day the Space became this Member's", async () => {
+  const ulla = await aMember("Ulla");
+  const casa = await createSpaceForMember(db, ulla.id, {
+    name: "Casa",
+    currency: "ARS",
+  });
+
+  const opened = await markSpaceOpened(db, casa.id, ulla.id);
+
+  expect(opened?.joinedAt).toBeInstanceOf(Date);
+});
+
+// The pair is the primary key, so a Member who is not in this Space reads and
+// updates no rows at all: a no-op rather than a leak.
+it("answers with nothing for a Member who is not in the Space", async () => {
+  const vito = await aMember("Vito");
+  const wanda = await aMember("Wanda");
+  const hers = await createSpaceForMember(db, wanda.id, {
+    name: "Casa de Wanda",
+    currency: "ARS",
+  });
+
+  await expect(markSpaceOpened(db, hers.id, vito.id)).resolves.toBeNull();
 });

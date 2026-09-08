@@ -8,6 +8,7 @@ import { createSpaceForMember } from "./spaces";
 import {
   ClosedMonthError,
   closeMonthInSpace,
+  closedMonthsFrom,
   refuseAClosedMonth,
 } from "./closed-months";
 
@@ -184,4 +185,33 @@ it("refuses a close dated inside the month it closes", async () => {
     sql`INSERT INTO closed_months (space_id, month, closed_by, closed_on)
         VALUES (${space.id}, '2026-09', ${creator.id}, '2026-09-30')`,
   ).rejects.toThrow(/closed_months_is_closed_after_it_ended/);
+});
+
+/*
+ * The same fact the refusal is built on, asked by a screen rather than by a
+ * write, and asked about a stretch of months because finding the oldest one
+ * still open means knowing about all of them (#118).
+ */
+it("answers which months are closed, from a month onwards", async () => {
+  const { creator, space } = await aSpace("Vera");
+
+  await expect(closedMonthsFrom(db, space.id, month("2026-01"))).resolves
+    .toEqual(new Set());
+
+  for (const of of [month("2026-08"), SEPTEMBER]) {
+    await closeMonthInSpace(
+      db,
+      { space, closedBy: creator.id, today: IN_OCTOBER },
+      of,
+    );
+  }
+
+  await expect(
+    closedMonthsFrom(db, space.id, month("2026-01")),
+  ).resolves.toEqual(new Set(["2026-08", "2026-09"]));
+
+  // The bound is a bound: months before it are not the screen's question.
+  await expect(closedMonthsFrom(db, space.id, SEPTEMBER)).resolves.toEqual(
+    new Set(["2026-09"]),
+  );
 });

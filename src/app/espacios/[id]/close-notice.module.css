@@ -1,0 +1,124 @@
+/*
+ * The card's own bottom spacing, because nothing on this screen gives one:
+ * `.content` in `app-shell.module.css` has no gap, so every section says how
+ * far it holds itself off the next. `--space-8` is what the summary card below
+ * says and what `way-in.module.css` matches — this sits above both, and a card
+ * at the top of a screen that held itself differently would be the one thing
+ * on it that does not belong to the stack.
+ */
+.card {
+  margin-bottom: var(--space-8);
+}
+
+/*
+ * The sentence the row is, which is a line of reading and not a control.
+ *
+ * `--text-md` is what an ordinary grouped row reads at; the colour is the
+ * secondary ink because this states a fact about the calendar rather than
+ * naming a thing on the screen. The row under it is what is tappable, and the
+ * contrast between the two inks is what says which is which.
+ */
+.sentence {
+  font-size: var(--text-md);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The row that acts, in the brand's ink — the same departure `way-in.module.css`
+ * makes and for the same reason: a row written in the ordinary ink is a line of
+ * reading that happens to be tappable, and this one is somewhere to go.
+ *
+ * Said here rather than as a modifier on `GroupedList`, exactly as the way in
+ * says it. Two screens now draw an accent row and they still draw it from their
+ * own files; the day a third does is the day it becomes the list's.
+ */
+.mark,
+.word {
+  color: var(--color-accent);
+}
+
+/* Shrink-wraps the drawing and offers no second opinion about how wide the
+   start of a row is: see `GroupedListItem` on why `leading` is rendered bare. */
+.mark {
+  display: flex;
+}
+
+/* The row's subject and not its aside, at the weight a Fixed item's name wears
+   (`fixed.module.css`). */
+.word {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+
+/*
+ * The refusal, on the screen the sheet closed over. The same shape a refused
+ * copy takes one card below (`way-in.module.css`): a sentence in destructive
+ * ink on a plain ground is a sentence a thumb scrolls past.
+ */
+.error {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive-text);
+  font-size: var(--text-md);
+}
+
+/* What closing does, under the title that named the month. */
+.body {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The tray counting what the month holds, drawn as the copy offer's tray and
+ * the payment recap's are drawn — see `way-in.module.css` on why these thirty
+ * lines are written a third time rather than shared. The same note applies:
+ * `--color-fill` and `--color-surface` are the same #1c1c1e in dark, so on a
+ * sheet this reads as plain text there rather than as a tray. Matched anyway,
+ * because three sheets drawing one tray three colours is worse.
+ */
+.recap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: var(--space-6) 0 0;
+  padding: var(--space-6) var(--space-7);
+  background: var(--color-fill);
+  border-radius: var(--radius-lg);
+}
+
+.recapRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  font-size: var(--text-base);
+}
+
+.recapRow dt {
+  color: var(--color-text-secondary);
+}
+
+.recapRow dd {
+  margin: 0;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/*
+ * The one figure on the sheet somebody can still act on. The warning ink and
+ * not the destructive one, which the canvas draws too (#C2620A): an unpaid
+ * Fixed item is something to look at before closing, not something wrong.
+ */
+.pending {
+  color: var(--color-warning-text);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
