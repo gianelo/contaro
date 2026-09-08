@@ -120,6 +120,13 @@
       "when": 1788824360089,
       "tag": "0016_a_month_can_be_closed",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788833066745,
+      "tag": "0017_a_surplus_comes_back_as_income",
+      "breakpoints": true
     }
   ]
 }

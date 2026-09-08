@@ -1,0 +1,97 @@
+/*
+ * The card's own bottom spacing, because nothing on this screen gives one:
+ * `.content` in `app-shell.module.css` has no gap, so every section says how
+ * far it holds itself off the next. The same `--space-8` the close's row, the
+ * summary card and the way into the plan all say — this sits between two of
+ * them, and a card in the middle of the stack that held itself differently
+ * would be the one thing on the screen that does not belong to it.
+ */
+.card {
+  margin-bottom: var(--space-8);
+}
+
+/*
+ * The sentence the row is: a line of reading and not a control.
+ *
+ * `--text-md` is what an ordinary grouped row reads at; the colour is the
+ * secondary ink because this states a fact about a month that is over rather
+ * than naming a thing on the screen. Where there is a row that acts, the
+ * contrast between the two inks is what says which is which.
+ */
+.sentence {
+  font-size: var(--text-md);
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The deficit's second line: why it is not coming off this month.
+ *
+ * Quieter than the sentence above it and never hidden behind a tap. It is the
+ * one explanation in the product that answers something a person would
+ * otherwise read as broken arithmetic, and an explanation somebody has to go
+ * looking for is one they never see. `--text-base` is what a Fixed item's
+ * second line reads at, which is what this is: the line under the fact.
+ */
+.why {
+  font-size: var(--text-base);
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The row that acts, in the brand's ink — the same departure the close's row
+ * and `way-in.module.css` both make, and for their reason: a row in the
+ * ordinary ink is a line of reading that happens to be tappable, and this one
+ * is something to do.
+ *
+ * Said here rather than as a modifier on `GroupedList`, exactly as those two
+ * say it. Three screens now draw an accent row from their own files; the day
+ * the shape needs to change in all three at once is the day it becomes the
+ * list's.
+ */
+.mark,
+.word {
+  color: var(--color-accent);
+}
+
+/* Shrink-wraps the drawing and offers no second opinion about how wide the
+   start of a row is: see `GroupedListItem` on why `leading` is rendered bare. */
+.mark {
+  display: flex;
+}
+
+/* The row's subject and not its aside, at the weight a Fixed item's name wears
+   (`fixed.module.css`). */
+.word {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+
+/*
+ * The refusal, on the screen the sheet closed over. The same shape the close's
+ * row and a refused copy both take: a sentence in destructive ink on a plain
+ * ground is a sentence a thumb scrolls past.
+ */
+.error {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive-text);
+  font-size: var(--text-md);
+}
+
+/* Where the money goes and whose it is, under the title that named the figure. */
+.body {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

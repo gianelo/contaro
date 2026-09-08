@@ -316,9 +316,32 @@ export const movements = pgTable(
     recordedBy: uuid("recorded_by")
       .notNull()
       .references(() => members.id),
-    attributedTo: uuid("attributed_to")
-      .notNull()
-      .references(() => members.id),
+    /**
+     * Whose money it was, and the half of **Origin** that is a person.
+     *
+     * Nullable since #120, and null in exactly one place: the Carry-over.
+     * ADR-0003 decided in the product's first week that a month's leftover
+     * enters the next one "attributed to no Member... because no Member earned
+     * it", and ADR-0016 named the two columns it would take -- "a nullable
+     * `attributed_to` and an `origin`". These are those columns.
+     *
+     * What keeps the null from being a hole is the check below: a Movement came
+     * from a Member or it came from a month, never from both and never from
+     * neither.
+     */
+    attributedTo: uuid("attributed_to").references(() => members.id),
+    /**
+     * The month a Carry-over came out of, and null on every other Movement.
+     *
+     * **Origin** (CONTEXT.md) as one column rather than as a tag beside a
+     * payload. A `origin_kind` next to this would say what this already says,
+     * and two columns that have to agree are two columns that one day will not.
+     *
+     * Text with a shape check, the way `closed_months.month` is: months are
+     * written `YYYY-MM` so that the text order and the calendar order are one
+     * order, which is what every walk over them relies on.
+     */
+    carriedFrom: text("carried_from"),
     /**
      * What it was: "Éxito", "Uber" (#66). The name a row on the month's list
      * is read by, with its Category as the quieter second line.
@@ -378,6 +401,50 @@ export const movements = pgTable(
       sql`(${table.struckBy} IS NULL AND ${table.struckAt} IS NULL)
         OR (${table.struckBy} IS NOT NULL AND ${table.struckAt} IS NOT NULL)`,
     ),
+    // Months are written the one way the whole product writes them, so that
+    // text order and calendar order are one order (`closed_months_month_is_a_month`).
+    check(
+      "movements_carried_from_is_a_month",
+      sql`${table.carriedFrom} IS NULL
+        OR ${table.carriedFrom} ~ '^\\d{4}-(0[1-9]|1[0-2])$'`,
+    ),
+    // **Origin**, as the one rule that makes the null above a shape instead of
+    // a hole: a Movement came from a Member, or it came from the Carry-over of
+    // a month, and never from both or from neither (ADR-0003, CONTEXT.md). A
+    // report about what each Member contributed reads the rows where
+    // `attributed_to` is a name, and this is what guarantees the rest are
+    // exactly the carried ones.
+    check(
+      "movements_comes_from_a_member_or_from_a_month",
+      sql`(${table.carriedFrom} IS NULL AND ${table.attributedTo} IS NOT NULL)
+        OR (${table.carriedFrom} IS NOT NULL AND ${table.attributedTo} IS NULL)`,
+    ),
+    // A surplus is money that still exists and can be spent again, so it comes
+    // back as income (ADR-0003). Taken with the filing check above, this is
+    // also what says a carry-over carries no Category.
+    check(
+      "movements_a_carry_over_is_income",
+      sql`${table.carriedFrom} IS NULL OR ${table.direction} = 'income'`,
+    ),
+    // It lands in the month *after* the one it came out of, which is the whole
+    // direction of the act. Written the way `closed_months_is_closed_after_it_ended`
+    // is, and for the same reason: the month a date falls in is a fact this
+    // column can be compared against without a second column to hold it.
+    check(
+      "movements_a_carry_over_lands_after_its_month",
+      sql`${table.carriedFrom} IS NULL
+        OR to_char(${table.occurredOn}, 'YYYY-MM') > ${table.carriedFrom}`,
+    ),
+    // A month is carried over once, and "once" is counted in standing rows.
+    //
+    // Partial on `struck_at` deliberately, which is ADR-0031's shape for the
+    // other thing a plan brings into existence: a Fixed item is paid only while
+    // the Movement that paid it stands, and a carry-over is approved only while
+    // the Movement it created stands. Striking it out is the undo, and an
+    // unconditional index would make it an undo that leads nowhere.
+    uniqueIndex("movements_one_carry_over_per_month")
+      .on(table.spaceId, table.carriedFrom)
+      .where(sql`${table.carriedFrom} IS NOT NULL AND ${table.struckAt} IS NULL`),
     // Every read is "this Space's Movements, in this month", which is exactly
     // this pair. Struck rows are left in the index: they are a small minority
     // and a partial index would have to be dropped the day #8 shows them.

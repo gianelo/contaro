@@ -44,6 +44,7 @@ const READS: Record<(typeof STORES)[number], readonly string[]> = {
     "budgetItemsInMonthForSpaces",
   ],
   "movements.ts": [
+    "carriedOverFrom",
     "findMovementInSpace",
     "movementsInMonth",
     "movementsInMonthForSpaces",
@@ -64,6 +65,7 @@ const WRITES: Record<(typeof STORES)[number], readonly string[]> = {
     "recordMovementInSpace",
     "amendMovementInSpace",
     "strikeMovementInSpace",
+    "approveCarryOverInSpace",
   ],
 };
 

@@ -8,6 +8,17 @@ import styles from "./record.module.css";
 
 export type MovementRecordProps = {
   movement: ReadableMovement;
+  /**
+   * What the card under the record says. Passed in rather than read off the
+   * Movement, because two different things now leave this screen with nothing
+   * to offer and they are not the same sentence: a closed month (#119), and a
+   * carry-over, which has no field a correction could be about (#120).
+   *
+   * The record above it is identical in both, which is the reason this is one
+   * component with two sentences rather than two components: what a person
+   * reads first is what the Movement was, and only then why it is only that.
+   */
+  refusal: { title: string; body: string };
 };
 
 /**
@@ -27,11 +38,18 @@ export type MovementRecordProps = {
  *
  * The card under it is the one a paid item wears (`Refusal`), with nothing
  * passed to the slot that holds a way out. That refusal has an undo and is
- * owed the link to it; this one is the single act in contaro with none
+ * owed the link to it; the close is the single act in contaro with none
  * (ADR-0002), and a control offering to try would be the unlock that has never
  * existed.
+ *
+ * Since #120 it wears one of two sentences. A carry-over is not corrected
+ * either -- there is no field on it a correction could be about, and the one a
+ * form would post is the attribution that has to stay empty -- but that
+ * refusal *does* have an undo, and the way out is left on the screen under this
+ * card rather than inside it: strike it out, and the month it came from is
+ * offered again (ADR-0031).
  */
-export function MovementRecord({ movement }: MovementRecordProps) {
+export function MovementRecord({ movement, refusal }: MovementRecordProps) {
   return (
     <div className={styles.record}>
       <div className={styles.what}>
@@ -67,10 +85,7 @@ export function MovementRecord({ movement }: MovementRecordProps) {
         </p>
       </div>
 
-      <Refusal
-        title={t("movements.closed.title")}
-        body={t("movements.closed.body")}
-      />
+      <Refusal title={refusal.title} body={refusal.body} />
     </div>
   );
 }

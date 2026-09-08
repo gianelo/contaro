@@ -41,7 +41,7 @@ The Member who created a Movement. Set automatically from the signed-in Member a
 _Avoid_: Author, Creator, Owner
 
 **Attributed to**:
-The Member whose money a Movement actually is, defaulting to the one recording it and changeable at entry time. It is what reports read to break down who spent and who earned, and it is empty on a Carry-over.
+The Member whose money a Movement actually is, defaulting to the one recording it and changeable at entry time. It is what reports read to break down who spent and who earned, and it is empty on a Carry-over and nowhere else — nobody earned that money, so no row on a screen names one and no report counts it against either Member (ADR-0003). It and **Origin** are one fact between them: a Movement came from a Member or it came from the Carry-over of a month, never from both and never from neither.
 _Avoid_: Owner, Belongs to, Payer
 
 **Struck out**:
@@ -49,7 +49,7 @@ A Movement a Member has removed from the ledger. It stops counting towards every
 _Avoid_: Deleted, Removed, Voided, Cancelled
 
 **Origin**:
-Where a Movement came from: a Member, or the Carry-over of a named month. A report about Members reads only Movements whose origin is a Member.
+Where a Movement came from: a Member, or the Carry-over of a named month. A report about Members reads only Movements whose origin is a Member. It is one nullable month and not a kind beside a payload — the month is there or it is not, and **Attributed to** is empty exactly where it is filled (ADR-0003). It is as unchangeable as **Direction**, and for the same argument: a Movement that stopped being a Carry-over would have to invent a Member, and one that became a Carry-over would have to throw its Member away.
 _Avoid_: Source, Kind, Type
 
 **Space currency**:
@@ -90,7 +90,7 @@ How much of a Budget's variable items a Space would have spent by today, were sp
 _Avoid_: Rhythm, Burn rate, Expected spend
 
 **Carry-over**:
-The unspent part of a month's Budget. At close the Space's Creator approves it, and it is recorded as income in the following month, attributed to no Member (ADR-0003, ADR-0051).
+What a month left the one after it, measured against its own Budget. It is only a figure once the month is closed, and it is **one-directional**: a surplus is a Movement and a deficit is a sentence (ADR-0003). A surplus is money that still exists, so the Space's Creator approves it and it is recorded as income in the following month, attributed to no Member — approved once, and only while the Movement it created stands, because striking that out offers the month again (ADR-0051, ADR-0031). A deficit is money already spent, almost always on a card that is paid the following month where the payment is a real expense of it; writing the deficit in as well would charge one overspend twice, so it is stated on the following month and never enters its arithmetic. It is never corrected either way: every field on one is decided by the act rather than typed, so the way to undo it is to strike it out and approve it again. Both are read on the month it lands in and never on the closed one, because a closed month keeps every link and loses every control (ADR-0054), and it is read by where it came from — "Arrastre de septiembre" — since it has no Category and nobody named it (ADR-0055). A month with no plan has none at all: a Budget is its items, so there is nothing for a leftover to be the unspent part of.
 _Avoid_: Leftover, Rollover, Surplus
 
 **Monthly close**:

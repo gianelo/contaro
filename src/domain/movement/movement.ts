@@ -13,12 +13,17 @@
  * always an honest record of who put a figure there. `attributedTo` is whose
  * money it actually was, defaulting to the recorder and changeable at entry,
  * and it is what every per-Member report reads.
+ *
+ * One Movement in the product has no Member at all, and it is the one nobody
+ * earned: the Carry-over (ADR-0003, #120). `carriedFrom` names the month it
+ * came out of, and `attributedTo` is empty exactly there.
  */
 
 import {
   calendarDate,
   isCalendarDate,
   type CalendarDate,
+  type Month,
 } from "../calendar/month";
 import { categoriesVisibleTo, type Category } from "../category/category";
 import { money, zero, type Money } from "../money/money";
@@ -73,8 +78,33 @@ export type Movement = {
   occurredOn: CalendarDate;
   /** Who typed it in. Set from the session and never changed. */
   recordedBy: string;
-  /** Whose money it was. What a per-Member report reads. */
-  attributedTo: string;
+  /**
+   * Whose money it was. What a per-Member report reads.
+   *
+   * Null on a Carry-over and nowhere else. ADR-0003 decided in the product's
+   * first week that the leftover of a month enters the next one "attributed to
+   * no Member", because no Member earned it -- and a report about what each
+   * Member contributed reads exactly the rows where this is a name. The two
+   * fields are one fact between them: a Movement came from a Member or it came
+   * from the Carry-over of a month, and never from both or from neither
+   * (**Origin** in CONTEXT.md).
+   */
+  attributedTo: string | null;
+  /**
+   * The month this was carried out of, and null on every other Movement.
+   *
+   * This is **Origin** as it is stored: one nullable month rather than a tag
+   * beside a payload. A `kind: "member" | "carry-over"` next to this would be a
+   * second field saying what this one already says, and two fields that have to
+   * agree are two fields that one day will not -- the same argument ADR-0052
+   * makes about the close, which is a row's presence and never a boolean.
+   *
+   * It cannot be corrected, for the reason `direction` cannot: a Movement that
+   * stopped being a carry-over would have to invent a Member to be attributed
+   * to, and one that became a carry-over would have to throw its Member away.
+   * That is not a correction, it is a different entry (ADR-0016).
+   */
+  carriedFrom: Month | null;
   /**
    * What it was: "Éxito", "Uber". The name a row on the month's list is read
    * by (#66).
@@ -285,6 +315,31 @@ export class DirectionIsImmutableError extends Error {
 }
 
 /**
+ * Thrown by any attempt to correct the one Movement nobody typed.
+ *
+ * A carry-over is not entered, it is approved (ADR-0003, #120): its amount is
+ * what a closed month came to, its day is the first of the month it landed in,
+ * it carries no Category because income carries none, and whose money it is, is
+ * nobody's. There is no field on it a correction could be about, and the one a
+ * correction screen would post -- attribution -- is the exact field that has to
+ * stay empty.
+ *
+ * The way to undo one is the way to undo a payment (ADR-0031): strike it out,
+ * and the month it came from is offered again.
+ */
+export class CarryOverIsNotCorrectedError extends Error {
+  readonly carriedFrom: Month;
+
+  constructor(carriedFrom: Month) {
+    super(
+      `A carry-over is never corrected, and this one came out of ${carriedFrom}. Strike it out and approve it again instead.`,
+    );
+    this.name = "CarryOverIsNotCorrectedError";
+    this.carriedFrom = carriedFrom;
+  }
+}
+
+/**
  * What a Member's answers become, checked against the Space they are being
  * recorded in.
  *
@@ -309,6 +364,11 @@ export function recordMovement(
     // From the session, never from the draft, which has nowhere to say it.
     recordedBy: recording.recordedBy,
     attributedTo: attribution(draft.attributedTo, recording),
+    // Never a carry-over, and there is nowhere on a draft to claim otherwise.
+    // The one Movement with no Member is brought into existence by
+    // `approveCarryOver` out of a month that is closed, and a draft that could
+    // say "carried from September" would be a field the entry form could post.
+    carriedFrom: null,
     name: called(draft.name),
   };
 }
@@ -345,6 +405,17 @@ export function amendMovement(
     changes.direction !== movement.direction
   ) {
     throw new DirectionIsImmutableError(movement.direction, changes.direction);
+  }
+
+  // A carry-over is undone and approved again, never corrected in place. Its
+  // amount is what a closed month came to, so a corrected one would be a figure
+  // claiming to be that and not being it -- and every other field it carries is
+  // decided by the act rather than typed: the day is the first of its month,
+  // the Category is none, and whose money it is, is nobody's. Striking it out
+  // is what puts the offer back, which is ADR-0031's shape for the other thing
+  // a plan brings into existence.
+  if (movement.carriedFrom !== null) {
+    throw new CarryOverIsNotCorrectedError(movement.carriedFrom);
   }
 
   inTheSameSpace(movement.spaceId, recording.space.id);

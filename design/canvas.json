@@ -75,6 +75,14 @@
       "title": "Sheet · Aprobar arrastre"
     },
     {
+      "file": "ArrastreDeficit.dc.html",
+      "x": 2350,
+      "y": 1200,
+      "w": 390,
+      "h": 560,
+      "title": "Arrastre · déficit"
+    },
+    {
       "file": "SheetCerrar.dc.html",
       "x": 1880,
       "y": 1200,

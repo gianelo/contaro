@@ -14,13 +14,20 @@ import { createSpaceForMember } from "./spaces";
 import { addCategoryToSpace, catalogueForSpace } from "./categories";
 import {
   amendMovementInSpace,
+  approveCarryOverInSpace,
+  carriedOverFrom,
   findMovementInSpace,
   movementsInMonth,
   movementsInMonthForSpaces,
   recordMovementInSpace,
   strikeMovementInSpace,
 } from "./movements";
-import { ClosedMonthError, closeMonthInSpace } from "./closed-months";
+import {
+  ClosedMonthError,
+  closeMonthInSpace,
+  OpenMonthError,
+} from "./closed-months";
+import { approveCarryOver } from "@/domain/space/carry-over";
 
 // Run with `pnpm test:db`, which starts Postgres first.
 const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
@@ -90,6 +97,7 @@ it("writes a Movement down and reads back what was recorded", async () => {
     occurredOn: "2026-09-03",
     recordedBy: member.id,
     attributedTo: member.id,
+    carriedFrom: null,
     name: null,
   });
 });
@@ -817,4 +825,134 @@ it("leaves every other month of the Space writable", async () => {
       },
     ),
   ).resolves.toMatchObject({ occurredOn: "2026-10-02" });
+});
+
+/*
+ * The Carry-over (#120). The one Movement with no Member on it, and the three
+ * rules that can only be true in the rows: it comes out of a month that is
+ * closed, it lands in one that is open, and it happens once.
+ */
+const surplus = (space: Space, approvedBy: string, of = month("2026-09")) =>
+  approveCarryOver(
+    { from: of, kind: "surplus", amount: money(609_000_00, "ARS") },
+    { space, approvedBy, today: calendarDate("2026-10-03") },
+  );
+
+it("writes a carry-over with no Member on it and reads it back", async () => {
+  const { member, space } = await aSpaceWithACategory("Arrastra");
+
+  await closeMonthInSpace(
+    db,
+    { space, closedBy: member.id, today: calendarDate("2026-10-03") },
+    month("2026-09"),
+  );
+
+  const carried = await approveCarryOverInSpace(
+    db,
+    surplus(space, member.id),
+    space,
+  );
+
+  // Every column the act decides, read back off the row: `attributed_to` is
+  // null and `carried_from` is the month it came out of, which is **Origin**
+  // (ADR-0003) with nothing between the two halves to disagree.
+  expect(await findMovementInSpace(db, space, carried.id)).toEqual({
+    id: carried.id,
+    spaceId: space.id,
+    direction: "income",
+    categoryId: null,
+    amount: money(609_000_00, "ARS"),
+    occurredOn: "2026-10-01",
+    recordedBy: member.id,
+    attributedTo: null,
+    carriedFrom: "2026-09",
+    name: null,
+  });
+});
+
+it("refuses to carry a month out that has not been closed", async () => {
+  const { member, space } = await aSpaceWithACategory("Sin cerrar");
+
+  // Decision 6 of #109: what a month left behind is not a figure until nothing
+  // more can go into it. There is no second approval to correct this with.
+  await expect(
+    approveCarryOverInSpace(db, surplus(space, member.id), space),
+  ).rejects.toThrow(OpenMonthError);
+});
+
+it("refuses to carry into a month that has been closed", async () => {
+  const { member, space } = await aSpaceWithACategory("Destino cerrado");
+
+  for (const of of [month("2026-09"), month("2026-10")]) {
+    await closeMonthInSpace(
+      db,
+      { space, closedBy: member.id, today: calendarDate("2026-11-03") },
+      of,
+    );
+  }
+
+  // The ordinary refusal every write here makes, and it is not a special case:
+  // a carry-over aimed into a closed month is a Movement aimed into one.
+  await expect(
+    approveCarryOverInSpace(db, surplus(space, member.id), space),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("carries a month over once, however many thumbs ask", async () => {
+  const { member, space } = await aSpaceWithACategory("Una vez");
+
+  await closeMonthInSpace(
+    db,
+    { space, closedBy: member.id, today: calendarDate("2026-10-03") },
+    month("2026-09"),
+  );
+
+  const first = await approveCarryOverInSpace(
+    db,
+    surplus(space, member.id),
+    space,
+  );
+  const again = await approveCarryOverInSpace(
+    db,
+    surplus(space, member.id),
+    space,
+  );
+
+  // The same row back and not a refusal: the act asked for has happened, and
+  // the honest answer to "approve September" when September is already carried
+  // is the carry-over itself. The unique index is what makes this true against
+  // two requests at once rather than a read somebody could slip between.
+  expect(again.id).toBe(first.id);
+  expect(await movementsInMonth(db, space, month("2026-10"))).toHaveLength(1);
+});
+
+it("offers the month again once its carry-over is struck out", async () => {
+  const { member, space } = await aSpaceWithACategory("Anulado");
+
+  await closeMonthInSpace(
+    db,
+    { space, closedBy: member.id, today: calendarDate("2026-10-03") },
+    month("2026-09"),
+  );
+
+  const first = await approveCarryOverInSpace(
+    db,
+    surplus(space, member.id),
+    space,
+  );
+
+  await strikeMovementInSpace(db, space.id, first.id, member.id);
+
+  // ADR-0031's shape for the other thing a plan brings into existence: a Fixed
+  // item is paid only while its Movement stands. The index is partial on
+  // `struck_at` so that striking one out is an undo that leads somewhere.
+  expect(await carriedOverFrom(db, space, month("2026-09"))).toBeNull();
+
+  const second = await approveCarryOverInSpace(
+    db,
+    surplus(space, member.id),
+    space,
+  );
+
+  expect(second.id).not.toBe(first.id);
 });
