@@ -47,3 +47,91 @@
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
 }
+
+/*
+ * The refusal, on the screen the sheet closed over. The same shape a refused
+ * payment takes one card below (`fixed.module.css`) and for the same reason: a
+ * sentence in destructive ink on a plain ground is a sentence a thumb scrolls
+ * past.
+ */
+.error {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive-text);
+  font-size: var(--text-md);
+}
+
+/* What the copy is about to do, under the title that named the month. */
+.body {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/*
+ * The tray counting what is about to be copied, by kind.
+ *
+ * Written here and not shared with the payment confirmation's recap, which it
+ * is drawn identically to -- and that goes for the four rules under it and for
+ * `.confirm` at the foot of this file, which are `fixed.module.css` line for
+ * line. The two sheets are the same picture of two different things: that one
+ * is three labels that are always there, and this is two that each disappear
+ * when their kind is empty. A shared component would have to hold both shapes,
+ * which is more surface than thirty lines of the same CSS costs -- and the day
+ * a third sheet wants a tray is the day it becomes the ui's.
+ *
+ * `--color-fill` is what the twin uses and what this matches on purpose, and
+ * it is worth naming what that costs: on the sheet's `--color-surface` the two
+ * are the same #1c1c1e in dark, so the tray reads as plain text there rather
+ * than as a tray (the trap `--color-segment-thumb` exists for in
+ * `tokens.css`). Matched anyway, because two sheets in one app drawing the
+ * same tray two colours is worse than one that degrades quietly in both.
+ */
+.recap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: var(--space-6) 0 0;
+  padding: var(--space-6) var(--space-7);
+  background: var(--color-fill);
+  border-radius: var(--radius-lg);
+}
+
+.recapRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  font-size: var(--text-base);
+}
+
+.recapRow dt {
+  color: var(--color-text-secondary);
+}
+
+.recapRow dd {
+  margin: 0;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/*
+ * The answer to the only real fear a person has about accepting a whole plan
+ * at once: that they are agreeing to it rather than starting from it. Quieter
+ * than the body above, which is what the canvas draws -- it is a reassurance
+ * and not a term.
+ */
+.reassurance {
+  margin: var(--space-5) 0 0;
+  font-size: var(--text-base);
+  line-height: 1.45;
+  color: var(--color-text-tertiary);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

@@ -15,6 +15,8 @@ import {
 import { amendMovementAction } from "../actions";
 import { MovementCorrectionHead } from "./head";
 import { StrikeMovement } from "./strike";
+import { MovementRecord } from "./record";
+import { closedMonthsToRefuse } from "../../closed";
 
 /**
  * Correcting or striking out one Movement (#7, story 27 in #1).
@@ -51,12 +53,110 @@ export default async function MovementPage({
   // read the same from here.
   if (!movement) notFound();
 
-  const [categories, members] = await Promise.all([
+  // The Movement's own month, and never the Reader's: what decides whether it
+  // can still be touched is the month the money moved in.
+  const month = monthOf(movement.occurredOn);
+
+  const [categories, members, closedMonths] = await Promise.all([
     categoryChips(space.id),
     spaceMembers(space.id),
+    /*
+     * A correction can move the day, so the form needs the whole window the
+     * entry screen has -- around the Movement's own month, which is where its
+     * date field opens.
+     *
+     * And whether *this* month is closed is read back off that same window
+     * rather than asked for a second time, exactly as both month readers do
+     * (#119). The window starts at or before this month by construction, so
+     * the answer is already in hand and a second query would be one round trip
+     * spent agreeing with the first.
+     */
+    closedMonthsToRefuse(space.id, month),
   ]);
 
+  const closed = closedMonths.includes(month);
+
   const recorder = members.find((member) => member.id === movement.recordedBy);
+
+  /*
+   * A Movement in a closed month is shown and not offered (#119). Both of this
+   * screen's controls write into that month -- the form corrects it, and the
+   * strike unrecords it -- so both come off and what is left is the record and
+   * the way back, which is the same shape a paid item's screen has.
+   *
+   * The head above stays exactly as it is. Who typed a figure in is what this
+   * screen is *for* once neither control is here, and it was never editable in
+   * the first place: "never editable" has always been enforced by there being
+   * no field for it, which is the one promise the close changes nothing about.
+   */
+  if (closed) {
+    return (
+      <AppShell>
+        <MovementCorrectionHead
+          back={`/espacios/${space.id}/movimientos`}
+          recordedBy={recorder?.name ?? null}
+        />
+
+        <MovementRecord
+          movement={movement}
+          refusal={{
+            title: t("movements.closed.title"),
+            body: t("movements.closed.body"),
+          }}
+        />
+      </AppShell>
+    );
+  }
+
+  /*
+   * The one Movement in the product nobody typed (#120). A carry-over is not
+   * corrected: its amount is what a closed month came to, its day is the first
+   * of the month it landed in, it carries no Category, and whose money it is,
+   * is nobody's -- which is the exact field a correction form would post back.
+   *
+   * So the form comes off and the strike stays, which is where this parts
+   * company with the closed month above and follows the paid item instead
+   * (ADR-0034): this refusal has an undo, and a sentence with no exit beside a
+   * refusal that *does* have one would be a dead end with good manners. Striking
+   * it out offers the month it came from again (ADR-0031).
+   */
+  if (movement.carriedFrom !== null) {
+    return (
+      <AppShell>
+        <MovementCorrectionHead
+          back={`/espacios/${space.id}/movimientos`}
+          recordedBy={recorder?.name ?? null}
+        />
+
+        <MovementRecord
+          movement={movement}
+          refusal={{
+            title: t("movements.carriedOver.title"),
+            body: t("movements.carriedOver.body"),
+          }}
+        />
+
+        <StrikeMovement
+          spaceId={space.id}
+          movementId={movement.id}
+          month={month}
+        />
+      </AppShell>
+    );
+  }
+
+  /*
+   * Every Movement that reaches this line came from a Member, which is what
+   * `movements_comes_from_a_member_or_from_a_month` guarantees and what the
+   * branch above has just taken out of the way. Said out loud rather than
+   * defaulted to an empty string: an attribution field opened on nobody is the
+   * one field on this form that would silently change an answer.
+   */
+  if (movement.attributedTo === null) {
+    throw new Error(
+      `Movement ${movement.id} is attributed to nobody and is not a carry-over.`,
+    );
+  }
 
   return (
     <AppShell>
@@ -82,7 +182,8 @@ export default async function MovementPage({
         currency={space.currency}
         locales={reader.locales}
         serverDay={todayOnTheServer()}
-        month={monthOf(movement.occurredOn)}
+        closedMonths={closedMonths}
+        month={month}
         initial={{
           // Back into the minor units the keypad counts in, from the Money the
           // screen reads. The formatted amount is for eyes; this is the figure.
@@ -103,7 +204,7 @@ export default async function MovementPage({
       <StrikeMovement
         spaceId={space.id}
         movementId={movement.id}
-        month={monthOf(movement.occurredOn)}
+        month={month}
       />
     </AppShell>
   );

@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { monthOf } from "@/domain/calendar/month";
 import { t } from "@/i18n";
 import { AppShell } from "@/ui/app-shell";
 import { numberLocalesFor } from "@/app/reader";
@@ -6,6 +7,7 @@ import { currentSpace, viewingMember } from "../../space";
 import { MovementForm } from "../form";
 import { categoryChips, spaceMembers, todayOnTheServer } from "../month";
 import { recordMovementAction } from "../actions";
+import { closedMonthsToRefuse } from "../../closed";
 import { MovementEntryHead } from "./head";
 
 /**
@@ -34,7 +36,10 @@ export default async function NewMovementPage({
   const { id } = await params;
   const space = await currentSpace(id);
 
-  const [categories, members, recordedBy, locales] = await Promise.all([
+  const today = todayOnTheServer();
+
+  const [categories, members, recordedBy, locales, closedMonths] =
+    await Promise.all([
     categoryChips(space.id),
     spaceMembers(space.id),
     viewingMember(),
@@ -42,9 +47,15 @@ export default async function NewMovementPage({
     // that what they watch themselves type is what they will read back
     // afterwards (ADR-0014). The currency stays the Space's.
     Promise.resolve(numberLocalesFor(await headers())),
+    /*
+     * The months a day picked here would be refused for (#119). Asked around
+     * the server's month rather than the Reader's, which is the same month all
+     * but a few hours of every day and is the only one this component has
+     * before the browser answers -- and the window is fourteen months wide, so
+     * the disagreement cannot fall outside it.
+     */
+    closedMonthsToRefuse(space.id, monthOf(today)),
   ]);
-
-  const today = todayOnTheServer();
 
   // Whoever else is in it, for the pill that says so. A Space of one has
   // nobody to name and says nothing.
@@ -67,6 +78,7 @@ export default async function NewMovementPage({
         currency={space.currency}
         locales={locales}
         serverDay={today}
+        closedMonths={closedMonths}
         initial={{
           amount: 0,
           // What nearly every Movement is. The toggle is right above the

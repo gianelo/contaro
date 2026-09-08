@@ -13,12 +13,15 @@ import { createSpaceForMember } from "./spaces";
 import { addCategoryToSpace, catalogueForSpace } from "./categories";
 import { expected } from "@/domain/budget/budget";
 import { movementsInMonth, strikeMovementInSpace } from "./movements";
+import { ClosedMonthError, closeMonthInSpace } from "./closed-months";
 import {
   amendBudgetItemInSpace,
   amendFixedItemInSpace,
   budgetItemsInMonth,
   budgetItemsInMonthForSpaces,
+  copyPlanIntoMonth,
   findBudgetItemInSpace,
+  latestPlannedMonthBefore,
   payFixedItemInSpace,
   planBudgetItemInSpace,
   planFixedItemInSpace,
@@ -725,4 +728,366 @@ it("refuses, in the database itself, a Budget item that is called nothing", asyn
       ).rejects.toThrow(/budget_items_carries_what_its_kind_carries/);
     }
   }
+});
+
+const JULY = month("2026-07");
+const AUGUST = month("2026-08");
+
+const aVariableItem = (
+  space: Awaited<ReturnType<typeof aSpaceWithACategory>>["space"],
+  categoryId: string,
+  on = SEPTEMBER,
+  changes: { name?: string; amount?: number } = {},
+) =>
+  planBudgetItemInSpace(db, space, {
+    spaceId: space.id,
+    month: on,
+    categoryId,
+    amount: changes.amount ?? 400_000_00,
+    name: changes.name ?? "Semana 1",
+  });
+
+it("finds no month to copy in a Space that has never planned one", async () => {
+  const { space } = await aSpaceWithACategory("Primer mes");
+
+  expect(await latestPlannedMonthBefore(db, space, SEPTEMBER)).toBeNull();
+});
+
+/*
+ * Decision 22 of #109: the lookback reaches back with no bound and skips the
+ * months in between. "The previous calendar month has no plan" is not a case.
+ */
+it("reaches past empty months to the most recent one with a plan", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Salteado");
+
+  await aVariableItem(space, categoryId, JULY);
+
+  expect(await latestPlannedMonthBefore(db, space, OCTOBER)).toBe(JULY);
+});
+
+it("finds the nearest of several planned months", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Varios meses");
+
+  await aVariableItem(space, categoryId, JULY);
+  await aVariableItem(space, categoryId, AUGUST);
+
+  expect(await latestPlannedMonthBefore(db, space, SEPTEMBER)).toBe(AUGUST);
+});
+
+// Strictly before. A month with a plan is never offered its own plan back.
+it("never names the month being asked about", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Mismo mes");
+
+  await aVariableItem(space, categoryId, SEPTEMBER);
+
+  expect(await latestPlannedMonthBefore(db, space, SEPTEMBER)).toBeNull();
+});
+
+// Another Space's plan is not this Space's, however recent it is.
+it("sees only the plans of the Space it was asked about", async () => {
+  const mine = await aSpaceWithACategory("Mío");
+  const theirs = await aSpaceWithACategory("Ajeno");
+
+  await aVariableItem(theirs.space, theirs.categoryId, AUGUST);
+
+  expect(await latestPlannedMonthBefore(db, mine.space, SEPTEMBER)).toBeNull();
+});
+
+it("carries both kinds forward at their amounts and their names", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Copiado");
+
+  await aFixedItem(space, categoryId, { name: "Arriendo", dueDay: 1 });
+  await aVariableItem(space, categoryId, SEPTEMBER, { name: "Semana 1" });
+
+  const outcome = await copyPlanIntoMonth(db, space, SEPTEMBER, OCTOBER);
+
+  expect(outcome.kind).toBe("copied");
+
+  const october = await budgetItemsInMonth(db, space, OCTOBER);
+
+  expect(october).toHaveLength(2);
+  expect(october.map((item) => item.name).sort()).toEqual([
+    "Arriendo",
+    "Semana 1",
+  ]);
+  expect(expected(october, "ARS")).toEqual(money(2_200_000_00, "ARS"));
+});
+
+/*
+ * Decision 9 of #109. The payment is a Movement in September's ledger, and
+ * October has not been paid for -- so a Fixed item arrives pending whatever it
+ * was, and its day moves onto the month it lands on.
+ */
+it("brings a paid Fixed item across pending, on a day in the new month", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Pagado");
+
+  const item = await aFixedItem(space, categoryId, { dueDay: 22 });
+  await payFixedItemInSpace(
+    db,
+    { space, recordedBy: member.id, today: TODAY },
+    item.id,
+  );
+
+  await copyPlanIntoMonth(db, space, SEPTEMBER, OCTOBER);
+
+  const [copied] = await budgetItemsInMonth(db, space, OCTOBER);
+
+  expect(copied?.kind).toBe("fixed");
+  if (copied?.kind !== "fixed") throw new Error("The copy lost its kind.");
+  expect(isPaid(copied)).toBe(false);
+  expect(copied.dueOn).toBe("2026-10-22");
+});
+
+/*
+ * ADR-0050: the 31st has no answer in a 30-day month, and the line is moved
+ * rather than dropped or refused. September has thirty days.
+ */
+it("lands a due day the new month is too short for on its last day", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Fin de mes");
+
+  await planFixedItemInSpace(db, space, {
+    spaceId: space.id,
+    month: AUGUST,
+    categoryId,
+    amount: 1_800_000_00,
+    name: "Arriendo",
+    dueDay: 31,
+  });
+
+  await copyPlanIntoMonth(db, space, AUGUST, SEPTEMBER);
+
+  const [copied] = await budgetItemsInMonth(db, space, SEPTEMBER);
+
+  expect(copied?.kind === "fixed" ? copied.dueOn : null).toBe("2026-09-30");
+});
+
+it("says there was nothing to copy out of a month with no plan", async () => {
+  const { space } = await aSpaceWithACategory("Nada que copiar");
+
+  expect(await copyPlanIntoMonth(db, space, AUGUST, SEPTEMBER)).toEqual({
+    kind: "nothing-to-copy",
+  });
+});
+
+it("refuses to copy onto a month that already has a plan", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Ya planeado");
+
+  await aVariableItem(space, categoryId, AUGUST);
+  await aVariableItem(space, categoryId, SEPTEMBER, { name: "Ya estaba" });
+
+  expect(await copyPlanIntoMonth(db, space, AUGUST, SEPTEMBER)).toEqual({
+    kind: "already-planned",
+  });
+
+  // And nothing was added on top of what was there.
+  expect(await budgetItemsInMonth(db, space, SEPTEMBER)).toHaveLength(1);
+});
+
+/*
+ * The whole reason `copyPlanIntoMonth` takes an advisory lock (ADR-0050). Two
+ * thumbs answering the offer at once would otherwise both read an empty
+ * October and both write, leaving the month expecting double the rent -- and
+ * there is no row to hang a unique key on, because a Budget is its items
+ * (ADR-0019).
+ */
+it("writes one plan and not two when both are answered at once", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Dos pulgares");
+
+  await aFixedItem(space, categoryId);
+  await aVariableItem(space, categoryId, SEPTEMBER);
+
+  // Its own connection, so the two really contend rather than queueing on one.
+  const other = createDatabase(databaseUrl(), { max: 1 });
+
+  try {
+    const outcomes = await Promise.all([
+      copyPlanIntoMonth(db, space, SEPTEMBER, OCTOBER),
+      copyPlanIntoMonth(other.db, space, SEPTEMBER, OCTOBER),
+    ]);
+
+    expect(outcomes.map((outcome) => outcome.kind).sort()).toEqual([
+      "already-planned",
+      "copied",
+    ]);
+    expect(await budgetItemsInMonth(db, space, OCTOBER)).toHaveLength(2);
+  } finally {
+    await other.sql.end();
+  }
+});
+
+// The copy is a snapshot and not a link (decision 24 of #109). Correcting the
+// month it came from afterwards leaves the month it landed on alone.
+it("copies out of a month that is still being changed", async () => {
+  const { space, categoryId } = await aSpaceWithACategory("Instantánea");
+
+  const source = await aVariableItem(space, categoryId, SEPTEMBER);
+  await copyPlanIntoMonth(db, space, SEPTEMBER, OCTOBER);
+
+  await amendBudgetItemInSpace(db, space, source.id, {
+    categoryId,
+    amount: 1_00,
+    name: "Cambiado después",
+  });
+
+  const [copied] = await budgetItemsInMonth(db, space, OCTOBER);
+
+  expect(copied?.name).toBe("Semana 1");
+  expect(copied?.amount).toEqual(money(400_000_00, "ARS"));
+});
+
+/*
+ * The close, from the side the plan feels it (#117).
+ *
+ * ADR-0002 said a closed month never changes and `amendItem` promised the
+ * refusal would live in one place above the domain. These are that promise,
+ * driven against real rows: every way a plan can be written into is asked, and
+ * every one of them is turned away by the same error.
+ */
+
+const IN_OCTOBER = calendarDate("2026-10-03");
+
+async function aClosedSeptember(name: string) {
+  const made = await aSpaceWithACategory(name);
+  const planned = await planBudgetItemInSpace(db, made.space, {
+    spaceId: made.space.id,
+    month: SEPTEMBER,
+    categoryId: made.categoryId,
+    amount: 100_000_00,
+    name: "Súper",
+  });
+  const fixed = await planFixedItemInSpace(db, made.space, {
+    spaceId: made.space.id,
+    month: SEPTEMBER,
+    categoryId: made.categoryId,
+    amount: 50_000_00,
+    name: "Alquiler",
+    dueDay: 10,
+  });
+
+  await closeMonthInSpace(
+    db,
+    { space: made.space, closedBy: made.member.id, today: IN_OCTOBER },
+    SEPTEMBER,
+  );
+
+  return { ...made, planned, fixed };
+}
+
+it("refuses a new item on a closed month", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado planear");
+
+  await expect(
+    planBudgetItemInSpace(db, space, {
+      spaceId: space.id,
+      month: SEPTEMBER,
+      categoryId,
+      amount: 10_000_00,
+      name: "Tarde",
+    }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses a new Fixed item on a closed month", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado fijo");
+
+  await expect(
+    planFixedItemInSpace(db, space, {
+      spaceId: space.id,
+      month: SEPTEMBER,
+      categoryId,
+      amount: 10_000_00,
+      name: "Tarde",
+      dueDay: 5,
+    }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses a correction to an item of a closed month", async () => {
+  const { space, planned } = await aClosedSeptember("Cerrado corregir");
+
+  await expect(
+    amendBudgetItemInSpace(db, space, planned.id, { amount: 1_00 }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses a correction to a Fixed item of a closed month", async () => {
+  const { space, fixed } = await aClosedSeptember("Cerrado corregir fijo");
+
+  await expect(
+    amendFixedItemInSpace(db, space, fixed.id, { amount: 1_00 }),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+it("refuses taking an item off a closed month's plan", async () => {
+  const { space, planned } = await aClosedSeptember("Cerrado sacar");
+
+  await expect(
+    removeBudgetItemFromSpace(db, space, planned.id),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+/*
+ * Decision 1 of the #109 map, read from the side that enforces it: an unpaid
+ * Fixed item stays unpaid, in its own month, forever. Nothing is deleted --
+ * the record that it went unpaid is the point -- and it is refused in October
+ * as much as in September, because what the payment writes is a pointer onto
+ * September's plan.
+ */
+it("refuses marking a Fixed item of a closed month paid, and leaves it pending", async () => {
+  const { space, member, fixed } = await aClosedSeptember("Cerrado pagar");
+
+  await expect(
+    payFixedItemInSpace(
+      db,
+      { space, recordedBy: member.id, today: IN_OCTOBER },
+      fixed.id,
+    ),
+  ).rejects.toThrow(ClosedMonthError);
+
+  const still = await findBudgetItemInSpace(db, space, fixed.id);
+  expect(still && still.kind === "fixed" && isPaid(still)).toBe(false);
+});
+
+it("refuses copying a plan onto a closed month", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado copiar");
+
+  await planBudgetItemInSpace(db, space, {
+    spaceId: space.id,
+    month: month("2026-08"),
+    categoryId,
+    amount: 10_000_00,
+    name: "Agosto",
+  });
+
+  await expect(
+    copyPlanIntoMonth(db, space, month("2026-08"), SEPTEMBER),
+  ).rejects.toThrow(ClosedMonthError);
+});
+
+/*
+ * A closed month is a month a plan may still be *read* out of. That is decision
+ * 24 of the #109 map, and ADR-0050's "the copy is a snapshot and not a link":
+ * waiting for a close would mean nobody could plan October until September was
+ * over, which is exactly the time they would.
+ */
+it("copies a closed month's plan into an open one", async () => {
+  const { space } = await aClosedSeptember("Cerrado copiar desde");
+
+  const copied = await copyPlanIntoMonth(db, space, SEPTEMBER, OCTOBER);
+
+  expect(copied.kind).toBe("copied");
+});
+
+it("leaves every other month of the Space writable", async () => {
+  const { space, categoryId } = await aClosedSeptember("Cerrado y el resto");
+
+  await expect(
+    planBudgetItemInSpace(db, space, {
+      spaceId: space.id,
+      month: OCTOBER,
+      categoryId,
+      amount: 10_000_00,
+      name: "Octubre",
+    }),
+  ).resolves.toMatchObject({ month: "2026-10" });
 });

@@ -5,12 +5,12 @@ import type { ReadableSpace } from "./listing";
 
 const space = (changes: Partial<ReadableSpace> = {}): ReadableSpace => ({
   id: "space-1",
-  name: "Compartido con Ana",
+  name: "Casa",
   members: [
     { id: "member-1", name: "Gian Solo" },
     { id: "member-2", name: "Ana Junta" },
   ],
-  who: "2 miembros · COP",
+  who: "Compartido con Ana Junta · COP",
   lastOpened: true,
   spent: "$3.994.900",
   expected: "$4.603.900",
@@ -20,16 +20,21 @@ const space = (changes: Partial<ReadableSpace> = {}): ReadableSpace => ({
 describe("a Space, as a card", () => {
   /*
    * One link, covering the whole card and named by its heading. Somebody
-   * moving through the page by links hears "Compartido con Ana" rather than
-   * the whole card read out as one run-on sentence -- while a thumb still has
-   * the whole card to aim at.
+   * moving through the page by links hears "Casa" rather than the whole card
+   * read out as one run-on sentence -- while a thumb still has the whole card
+   * to aim at.
+   *
+   * The heading is the Space's name and never who it is shared with, which is
+   * the line under it: a link list is a list of places, and a place is what it
+   * was called (ADR-0056).
    */
   it("is named by the Space, and the way in is named by it too", () => {
     render(<SpaceCard space={space()} />);
 
-    expect(
-      screen.getByRole("link", { name: "Compartido con Ana" }),
-    ).toHaveAttribute("href", "/espacios/space-1");
+    expect(screen.getByRole("link", { name: "Casa" })).toHaveAttribute(
+      "href",
+      "/espacios/space-1",
+    );
   });
 
   it("draws everyone who is in it", () => {
@@ -39,10 +44,10 @@ describe("a Space, as a card", () => {
     expect(screen.getByRole("img", { name: "Ana Junta" })).toBeInTheDocument();
   });
 
-  it("says how many are in it and what money it holds", () => {
+  it("says who it is shared with, and what money it holds", () => {
     render(<SpaceCard space={space()} />);
 
-    expect(screen.getByText("2 miembros · COP")).toBeInTheDocument();
+    expect(screen.getByText("Compartido con Ana Junta · COP")).toBeInTheDocument();
   });
 
   /*

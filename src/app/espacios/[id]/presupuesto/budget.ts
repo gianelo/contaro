@@ -1,10 +1,16 @@
 import { database } from "@/db/client";
-import { budgetItemsInMonth, findBudgetItemInSpace } from "@/db/budget-items";
+import {
+  budgetItemsInMonth,
+  findBudgetItemInSpace,
+  latestPlannedMonthBefore,
+} from "@/db/budget-items";
 import { categoriesTheSpaceCanSee } from "@/db/categories";
+import { closedMonthsFrom } from "@/db/closed-months";
 import { movementsInMonth } from "@/db/movements";
 import {
   comparedToPlan,
   dueNotice,
+  expected,
   isPaid,
   monthAgainstPlan,
   paceOf,
@@ -15,21 +21,31 @@ import {
   type PaceStanding,
   type VariableItem,
 } from "@/domain/budget/budget";
-import { monthOf, monthSoFar, type Month } from "@/domain/calendar/month";
+import {
+  dayOfMonth,
+  monthOf,
+  monthSoFar,
+  previousMonth,
+  type Month,
+} from "@/domain/calendar/month";
 import type { Category } from "@/domain/category/category";
 import type { CurrencyCode } from "@/domain/money/currency";
 import { formatAmount, formatMoney } from "@/domain/money/money";
 import type { Movement } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
-import { monthLabel, shortDayLabel } from "@/i18n/day";
+import { monthLabel, monthName, shortDayLabel } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
 import {
   namesFrom,
   readableCatalogueFor,
   type Naming,
 } from "../categorias/catalogue";
-import { monthChoices, type ReadableMonthChoice } from "../months";
+import {
+  earliestOffered,
+  monthChoices,
+  type ReadableMonthChoice,
+} from "../months";
 
 /** What both kinds of item carry into their correction screen. */
 type ReadableItemInCommon = {
@@ -279,6 +295,29 @@ export type ReadableBudget = {
   /** Every month the pill at the top of the screen can be moved to. */
   choices: readonly ReadableMonthChoice[];
   /**
+   * Whether this month has been closed, and so is read and never written
+   * (#119).
+   *
+   * On the screen it is one thing and one thing only: every control comes off.
+   * It is not a variation of `nothingPlanned` or of anything else here -- those
+   * are facts about the plan, and this is a fact about the month the plan is
+   * on, decided over a row in another table entirely (ADR-0052).
+   */
+  closed: boolean;
+  /**
+   * Whether the month before this one has been closed (#120).
+   *
+   * Not a fact about this month's plan either, and here for the reason the two
+   * above it are: it comes off the one set of rows this screen reads about
+   * closed months, and asking for it separately would be a second query
+   * answering out of the same table over a narrower window.
+   *
+   * What it decides is whether there is a Carry-over to say anything about at
+   * all: what a month left behind is only a figure once nothing more can go
+   * into it (ADR-0003, decision 6 of #109).
+   */
+  previousClosed: boolean;
+  /**
    * The Fixed items, in the order they were planned, drawn above the rest
    * (#13). Their own list and not rows among the others, because they are read
    * for a different question: not "how much is left" but "what have I paid".
@@ -324,7 +363,7 @@ export async function readableBudget(
   month: Month,
   reader: Reader,
 ): Promise<ReadableBudget> {
-  const [planned, spending, categories, catalogue] = await Promise.all([
+  const [planned, spending, categories, catalogue, closed] = await Promise.all([
     budgetItemsInMonth(database(), space, month),
     // Read here rather than handed in by the screen, so this stays one
     // question anybody can ask: a reader that only works when another reader
@@ -335,6 +374,16 @@ export async function readableBudget(
     // which sits under which, and `comparedToPlan` needs the second.
     categoriesTheSpaceCanSee(database(), space.id),
     readableCatalogueFor(space.id),
+    /*
+     * Which of the months this screen can reach have been closed (#119).
+     *
+     * One query answering two questions, because it is one fact: the pill
+     * marks the closed months in its list, and the month in view is one of
+     * them or it is not. Asked over the pill's own window (`earliestOffered`)
+     * rather than about this month alone, so the list cannot end up marked
+     * over a shorter stretch than it offers.
+     */
+    closedMonthsFrom(database(), space.id, earliestOffered(month)),
   ]);
 
   const named = namesFrom(catalogue);
@@ -343,7 +392,18 @@ export async function readableBudget(
   return {
     month,
     label: monthLabel(month, monthOf(reader.today)),
-    choices: monthChoices(month, monthOf(reader.today)),
+    choices: monthChoices(month, monthOf(reader.today), closed),
+    closed: closed.has(month),
+    // Whether the month *before* this one has been closed, and so has a figure
+    // to have left behind (#120). Read off the same set the two answers above
+    // come out of, because it is the same fact and the window already covers it
+    // -- the pill reaches fourteen months back, and this reaches one.
+    //
+    // Here rather than in a query of its own, which is ADR-0054's "one
+    // question, asked in one place" arriving one ticket later: a second
+    // `closedMonthsFrom` on this screen would be a second round trip spent
+    // agreeing with the first.
+    previousClosed: closed.has(previousMonth(month)),
     fixed: planned
       .filter((item): item is FixedItem => item.kind === "fixed")
       .map((item) => readableFixed(item, named, reader)),
@@ -382,6 +442,120 @@ export async function readableBudget(
       month,
       reader,
     ),
+  };
+}
+
+/**
+ * The two figures a copy offer shows about one kind of item: how many rows
+ * there are and what they add up to.
+ *
+ * Both already words. The sheet draws "4 gastos previstos · $2.053.900" and
+ * decides nothing about either half.
+ */
+export type ReadableTally = {
+  count: number;
+  /** What they add up to, with the symbol on it. */
+  total: string;
+};
+
+/**
+ * The offer to carry a plan forward, as the card and its sheet draw it (#121).
+ *
+ * The month is here twice on purpose. `month` is what the confirmation sends
+ * back, and `name` is what a person reads -- "agosto", inside a sentence, with
+ * its year on it when it has one. Reading the second out of the first at the
+ * screen would put the calendar's language in a component.
+ *
+ * A kind with nothing on it is `null` rather than a tally of zero. The sheet
+ * says what is about to be copied, and "Variables · 0 gastos previstos · $0"
+ * is a line about something that is not going to happen.
+ */
+export type ReadableCopyOffer = {
+  /** The month the plan is carried from, for the form to send back. */
+  month: Month;
+  /** That month named to be read inside a sentence: "agosto". */
+  name: string;
+  /**
+   * The month it would land on, named the same way: "octubre".
+   *
+   * Named apart from `month` above rather than called `into`, which is what
+   * `planToCopyForward` calls the `Month` it takes: one word for a month and
+   * for the words a month is written in, twenty lines apart, is one of them
+   * eventually being handed to the other.
+   *
+   * Here rather than on the screen, because both months are named by the same
+   * rule and a component that named one of them would be a component holding
+   * half of the calendar's language. The row and the title say where the plan
+   * comes from, and the body and the button say where it goes.
+   */
+  intoName: string;
+  fixed: ReadableTally | null;
+  variables: ReadableTally | null;
+};
+
+/**
+ * The most recent month this Space planned anything on before the one being
+ * read, with what carrying it forward would bring -- or nothing, on a Space
+ * that has never planned a month before this one (#121).
+ *
+ * Asked only where the offer can be shown, which is a month holding no item of
+ * either kind: a month with a plan has nothing to be offered, and the query
+ * would be paid for on every opening of the screen for an answer nobody reads.
+ *
+ * It reaches back with no bound and skips over the months in between
+ * (`latestPlannedMonthBefore`, decision 22 of #109). "The previous calendar
+ * month has no plan" is not a case here -- the lookback keeps going -- and
+ * what makes that safe is `name`: the row and the sheet say which month, so a
+ * plan old enough to be wrong reads as old before the tap.
+ *
+ * A month still open is a month it will copy from (decision 24 of #109). The
+ * copy is a snapshot and not a link, so the two are independent from the
+ * moment it lands, and waiting for a close would mean nobody could plan
+ * October until September was over -- which is the one time they would.
+ */
+export async function planToCopyForward(
+  space: Space,
+  into: Month,
+  reader: Reader,
+): Promise<ReadableCopyOffer | null> {
+  const from = await latestPlannedMonthBefore(database(), space, into);
+
+  if (from === null) return null;
+
+  const planned = await budgetItemsInMonth(database(), space, from);
+
+  // A month `latestPlannedMonthBefore` named and that now holds nothing: two
+  // requests apart, somebody emptied it. Nothing to offer rather than an offer
+  // that would copy no rows.
+  if (planned.length === 0) return null;
+
+  return {
+    month: from,
+    name: monthName(from, monthOf(reader.today)),
+    intoName: monthName(into, monthOf(reader.today)),
+    fixed: tallyOf(planned.filter((item) => item.kind === "fixed"), space, reader),
+    variables: tallyOf(
+      planned.filter((item) => item.kind === "variable"),
+      space,
+      reader,
+    ),
+  };
+}
+
+/** What one kind of item on a copied month comes to, or nothing where it has none. */
+function tallyOf(
+  items: readonly BudgetItem[],
+  space: Space,
+  reader: Reader,
+): ReadableTally | null {
+  if (items.length === 0) return null;
+
+  // The domain's own sum, and not a `reduce` written here: it is the one that
+  // refuses to add two currencies together (ADR-0007), and a second way of
+  // totalling a plan would be a second place for that to stop being checked.
+  return {
+    count: items.length,
+    total: formatMoney(expected(items, space.currency), reader.locales),
   };
 }
 
@@ -608,9 +782,7 @@ function readableFixedToCorrect(
     amount: formatMoney(item.amount, reader.locales),
     minorUnits: item.amount.amount,
     categoryId: item.categoryId,
-    // The last two characters of a `CalendarDate`, which is `YYYY-MM-DD` and
-    // is checked to be one before it is ever built (`isCalendarDate`).
-    dueDay: Number(item.dueOn.slice(8)),
+    dueDay: dayOfMonth(item.dueOn),
     paidBy: isPaid(item) ? (item.payment?.movementId ?? null) : null,
   };
 }

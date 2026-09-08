@@ -74,3 +74,15 @@
   flex-direction: column;
   gap: var(--space-6);
 }
+
+/*
+ * Why the day on the line above cannot be used (#119). The same ink and the
+ * same size a refused form takes, under the thing it is about rather than at
+ * the foot of the screen: it is answering the day, not the submission.
+ */
+.refused {
+  margin: 0;
+  padding-top: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-destructive-text);
+}

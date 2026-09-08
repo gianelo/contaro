@@ -1,12 +1,17 @@
 import { headers } from "next/headers";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
+import { Notice } from "@/ui/notice";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
+import { theCarryOver } from "./carried";
+import { CarryNotice } from "./carry-notice";
+import { CloseNotice } from "./close-notice";
 import { MonthPill } from "./month-pill";
 import { SpaceScreen } from "./screen";
-import { currentSpace, viewingMember } from "./space";
+import { openSpace, viewingMember } from "./space";
+import { theCloseWaiting } from "./waiting";
 import { monthInView, spaceMembers } from "./movimientos/month";
-import { readableBudget } from "./presupuesto/budget";
+import { planToCopyForward, readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
 import { MonthSummary } from "./presupuesto/summary";
 import { Variables } from "./presupuesto/variables";
@@ -28,7 +33,11 @@ export default async function SpacePage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const [{ id }, { mes }] = await Promise.all([params, searchParams]);
-  const space = await currentSpace(id);
+  // The Space, and what this Member's membership row said the instant before
+  // this request touched it: whether a month has ended since they last looked
+  // is a question only readable from inside the act that overwrites the answer
+  // (#118, `openSpace`).
+  const { space, opening } = await openSpace(id);
   // The Space's money, written the way whoever opened this reads numbers
   // (ADR-0014). Two Members of one Space read one amount two ways; it is the
   // same amount, and it is in the Space's currency for both of them.
@@ -36,7 +45,8 @@ export default async function SpacePage({
   // figure is written (ADR-0018): at nine at night on the 30th the server is
   // already in the next one, and this would be the cost of a month nobody has
   // started spending in.
-  const reader = readerOf(await headers());
+  const asked = await headers();
+  const reader = readerOf(asked);
   const month = monthInView(mes, reader.today);
   // What the month has actually cost and what it was planned to, side by side
   // at last: #10 kept them in separate lists so that neither read as a
@@ -67,7 +77,33 @@ export default async function SpacePage({
     );
   }
 
-  const at = (asked: string) => `/espacios/${space.id}?mes=${asked}`;
+  const at = (chosen: string) => `/espacios/${space.id}?mes=${chosen}`;
+
+  /*
+   * The month that ended and has not been closed, if there is one (#118).
+   *
+   * Asked after the Members are in hand, because the invited Member's row names
+   * the creator and the creator is a row of this Space rather than a session --
+   * the same reason the paid-item recap is named from `members` above.
+   *
+   * Not tied to the month in view. A month ending is news, and which month
+   * somebody happened to navigate to is not what decides whether they are told
+   * (`waiting.ts`).
+   */
+  const waiting = await theCloseWaiting({
+    space,
+    memberId,
+    // `currentSpace` has already refused a Member who is not in this Space, and
+    // `createdBy` is a Member of it -- so a missing name here means the Space
+    // and its own membership rows disagree, which is what the throw above is
+    // about. The empty string is unreachable and is not a fallback anybody is
+    // meant to read.
+    creatorName:
+      members.find((member) => member.id === space.createdBy)?.name ?? "",
+    reader,
+    headers: asked,
+    opening,
+  });
 
   // A Budget is its items, of either kind (CONTEXT.md). A month with the rent
   // on it and nothing else has been planned, so the empty state is about the
@@ -80,6 +116,47 @@ export default async function SpacePage({
   // empty `variables` the same fact as "no Variable item exists". With no
   // Fixed item beside it, the month holds no item of either kind.
   const nothingPlanned = plan.fixed.length === 0 && plan.variables.length === 0;
+
+  // The plan there is to carry into this month, asked for only where it can be
+  // offered (#121). A month that already has a plan has nothing to be offered,
+  // and asking anyway would be a query paid for on every opening of this
+  // screen for an answer no card would draw.
+  //
+  // A closed month is that same case arrived at from the other side (#119):
+  // the card it would be offered on is not rendered at all, so the query is
+  // one whose answer nothing on the screen can use.
+  const copy =
+    nothingPlanned && !plan.closed
+      ? await planToCopyForward(space, month, reader)
+      : null;
+
+  /*
+   * What the month before this one left behind (#120).
+   *
+   * Read on *this* month and not on the one it came out of, which is the
+   * decision rather than a placement: the surplus becomes income of this month
+   * and the deficit is a fact about this month, so the screen it belongs on is
+   * the one whose money it is about. It is also what keeps #119 whole -- an
+   * approve button standing on September after September was closed would be
+   * the one control that survived the close (ADR-0054).
+   *
+   * Asked only where the month before this one is closed, off the rows
+   * `readableBudget` has already read: what a month left behind is not a figure
+   * until nothing more can go into it (decision 6), so the ordinary screen --
+   * this month, with last month still open -- pays nothing for this.
+   */
+  const carried = plan.previousClosed
+    ? await theCarryOver({
+        space,
+        memberId,
+        creatorName:
+          members.find((member) => member.id === space.createdBy)?.name ?? "",
+        inView: month,
+        previousClosed: plan.previousClosed,
+        inViewClosed: plan.closed,
+        reader,
+      })
+    : null;
 
   return (
     <SpaceScreen
@@ -111,12 +188,56 @@ export default async function SpacePage({
       }
     >
       {/*
+        The month that ended, said until it is closed -- and, exactly once, said
+        by a sheet that opens on its own (#118). Above everything, because it is
+        the only thing on this screen that is not about the month being read:
+        under the summary it would be an announcement a person reaches after
+        they have already started reading the figures it interrupts.
+      */}
+      {waiting ? <CloseNotice spaceId={space.id} waiting={waiting} /> : null}
+
+      {/*
+        And what is true of the month being read, when it is one that has been
+        closed (#119). Under the row above and not over it, by that row's own
+        argument: the announcement about a month somebody is *not* looking at
+        has to come before they start reading, and this one is about the screen
+        underneath it -- it says why there is nothing on it to touch.
+
+        A statement and never a warning. `Notice`'s stronger half is for a
+        consequence that cannot be taken back and has not happened yet; this
+        one has happened, and what is left is a fact about the screen.
+
+        No way out beside it, which is where this departs from the paid item it
+        is modelled on (ADR-0034). That refusal has an undo -- strike the
+        Movement -- and a sentence with no exit would have been a dead end with
+        good manners. This one has no undo by design (ADR-0002), and offering
+        one would be the unlock that has never existed.
+      */}
+      {plan.closed ? (
+        <Notice>{t("budget.closed", { month: plan.label })}</Notice>
+      ) : null}
+
+      {/*
         The two figures the month is about, and the meter between them: what it
         cost, what it was planned to cost, and how far through the plan that
         is. The pace rides inside the card, directly under the figures it is
         about, which is where the canvas draws it.
       */}
       <MonthSummary summary={plan.summary} pace={plan.pace} />
+
+      {/*
+        And what the month before this one left it (#120).
+
+        Under the summary and never over it, which is decision 4 drawn: a
+        deficit "does not enter that month's arithmetic", so it comes after the
+        four figures rather than standing between a person and them. A card
+        above the summary would read as part of the sum.
+
+        Under it and not further down for the surplus's sake: approving changes
+        the figures directly above, and a control whose effect is off the top of
+        the screen is a control whose effect nobody sees.
+      */}
+      {carried ? <CarryNotice spaceId={space.id} carried={carried} /> : null}
 
       {/*
         One way in, for both kinds (#80), and here rather than at the foot of
@@ -145,11 +266,25 @@ export default async function SpacePage({
         The whole-plan empty state travels with it, inside the same card and
         for reasons that belong to the card (`way-in.tsx`, ADR-0045).
       */}
-      <WayIntoThePlan
-        spaceId={space.id}
-        month={month}
-        nothingPlanned={nothingPlanned}
-      />
+      {/*
+        And gone entirely once the month is closed (#119). Every row in that
+        card writes something -- a new item, or a whole plan copied in -- so
+        omission is the whole of it, the way a paid row loses its control.
+
+        Its empty state goes with it, and that is not collateral. "Todavía no
+        planeaste este mes" is a *not yet*, the same tense "Pendiente" is
+        refused for one card below: a September nobody planned is not a
+        September anybody is going to plan. What is left is the Notice above,
+        which says why.
+      */}
+      {plan.closed ? null : (
+        <WayIntoThePlan
+          spaceId={space.id}
+          month={month}
+          nothingPlanned={nothingPlanned}
+          copy={copy}
+        />
+      )}
 
       {/*
         What the month already owes on days it knows about, and what has been
@@ -162,6 +297,7 @@ export default async function SpacePage({
         items={plan.fixed}
         spaceName={space.name}
         memberName={reading.name}
+        closed={plan.closed}
       />
 
       {/*

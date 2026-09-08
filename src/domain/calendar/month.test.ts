@@ -4,6 +4,7 @@ import {
   dayOf,
   daysBetween,
   firstDayOf,
+  hasEnded,
   isCalendarDate,
   isMonth,
   daysIn,
@@ -14,6 +15,7 @@ import {
   monthsToPlan,
   nextMonth,
   previousMonth,
+  sameDayIn,
   UnreadableDateError,
   UnreadableMonthError,
 } from "./month";
@@ -279,5 +281,70 @@ describe("how far through a month a day is", () => {
     // is a sentence about a day nobody is standing on.
     expect(monthSoFar(month("2026-08"), calendarDate("2026-09-18"))).toBeNull();
     expect(monthSoFar(month("2026-10"), calendarDate("2026-09-18"))).toBeNull();
+  });
+});
+
+describe("the same day of the month, carried into another month", () => {
+  it("keeps the day of the month it was on", () => {
+    expect(sameDayIn(month("2026-10"), calendarDate("2026-09-22"))).toBe(
+      "2026-10-22",
+    );
+    expect(sameDayIn(month("2026-01"), calendarDate("2025-12-01"))).toBe(
+      "2026-01-01",
+    );
+  });
+
+  /*
+   * The one case that has no exact answer, and the only place in this module
+   * where a day is moved rather than refused. `dayOf` refuses the 31st of
+   * September because a person typed it and a typed day is an answer; nobody
+   * types this one. A plan carried forward has to land somewhere, and the last
+   * day the month has is the nearest day that arrives (ADR-0050).
+   */
+  it("lands on the last day of a month too short to hold it", () => {
+    expect(sameDayIn(month("2026-09"), calendarDate("2026-08-31"))).toBe(
+      "2026-09-30",
+    );
+    expect(sameDayIn(month("2026-02"), calendarDate("2026-01-31"))).toBe(
+      "2026-02-28",
+    );
+    expect(sameDayIn(month("2024-02"), calendarDate("2024-01-31"))).toBe(
+      "2024-02-29",
+    );
+  });
+
+  it("carries a day into the month it is already on", () => {
+    expect(sameDayIn(month("2026-09"), calendarDate("2026-09-05"))).toBe(
+      "2026-09-05",
+    );
+  });
+});
+
+describe("whether a month is over", () => {
+  it("is not over on any of its own days, including the last one", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-09-01"))).toBe(false);
+    expect(hasEnded(month("2026-09"), calendarDate("2026-09-30"))).toBe(false);
+  });
+
+  it("is over from the first day of the month after it", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-10-01"))).toBe(true);
+  });
+
+  it("is not over while the day standing in it is still to come", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-08-31"))).toBe(false);
+  });
+
+  /*
+   * The reason this takes a day rather than reading a clock (ADR-0018). At
+   * nine at night on the 30th in Bogota the server is already in October and
+   * the Member is not, and the one act this answers for cannot be undone.
+   */
+  it("answers differently for two people standing in different days", () => {
+    expect(hasEnded(month("2026-09"), calendarDate("2026-10-01"))).toBe(true);
+    expect(hasEnded(month("2026-09"), calendarDate("2026-09-30"))).toBe(false);
+  });
+
+  it("is over for every month behind the one being lived in", () => {
+    expect(hasEnded(month("2025-12"), calendarDate("2026-09-15"))).toBe(true);
   });
 });

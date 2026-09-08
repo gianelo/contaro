@@ -1,4 +1,5 @@
 import type { ReadSession } from "@/auth/session";
+import { ClosedMonthError } from "@/db/closed-months";
 import type { CalendarDate } from "@/domain/calendar/month";
 import {
   MAX_MOVEMENT_NAME_LENGTH,
@@ -59,6 +60,17 @@ export type Refusal =
   | { kind: "not-signed-in" }
   | { kind: "no-such-space" }
   | { kind: "no-such-movement" }
+  /**
+   * The month is closed, and a closed month never changes (ADR-0002). It is
+   * the same refusal the plan meets, from the same place, because the close
+   * freezes a month's Movements as much as its plan.
+   *
+   * A late ticket is not this. `recordMovement` dates a Movement by the day
+   * somebody says the money moved, and a September receipt found in October is
+   * an October expense -- ADR-0002 decided that, and it is what the close's own
+   * sheet promises. This is a Movement aimed into a month that is finished.
+   */
+  | { kind: "month-closed" }
   | { kind: "failed"; cause: unknown };
 
 /**
@@ -166,6 +178,13 @@ async function inSpace<Done>(
     if (error instanceof UnrecordableMovementError) {
       return { kind: "rejected", field: error.field };
     }
+    // The one refusal a closed month makes, arriving from the one place it is
+    // decided (`refuseAClosedMonth`). Named here and not asked here, exactly as
+    // the plan's handler names it: the month a correction lands in is the
+    // Movement's own, and only the store has read it.
+    if (error instanceof ClosedMonthError) {
+      return { kind: "month-closed" };
+    }
     return { kind: "failed", cause: error };
   }
 }
@@ -184,6 +203,8 @@ export function refusalMessage(refusal: Refusal): string {
       return t("movements.error.space");
     case "no-such-movement":
       return t("movements.error.gone");
+    case "month-closed":
+      return t("movements.error.monthClosed");
     case "failed":
       return t("movements.error.failed");
     case "rejected":

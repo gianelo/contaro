@@ -134,7 +134,7 @@ test.describe("a Member who reads numbers the Argentine way", () => {
     await page.getByLabel("Moneda").selectOption("COP");
     await page.getByRole("button", { name: "Crear el espacio" }).click();
 
-    await expect(page.getByText("Peso colombiano (COP)")).toBeVisible();
+    await expect(page.getByText("Bogotá · COP")).toBeVisible();
     await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
       "COP 0",
     );
@@ -152,7 +152,7 @@ test.describe("a Member who reads numbers the Argentine way", () => {
     await page.getByLabel("Moneda").selectOption("USD");
     await page.getByRole("button", { name: "Crear el espacio" }).click();
 
-    await expect(page.getByText("Dólar estadounidense (USD)")).toBeVisible();
+    await expect(page.getByText("Viaje · USD")).toBeVisible();
 
     // Nothing is recorded yet (#7), but the figure that is there is already
     // denominated in the Space's money and not in the reader's.

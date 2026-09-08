@@ -4,7 +4,12 @@ import type { Space } from "@/domain/space/space";
 import { handleAddCategory, refusalMessage } from "./add";
 
 const ana = { memberId: "member-ana" };
-const casa: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const casa: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: ana.memberId,
+};
 
 const mate: Category = {
   id: "category-mate",

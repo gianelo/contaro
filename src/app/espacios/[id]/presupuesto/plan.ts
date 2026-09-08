@@ -1,4 +1,6 @@
 import type { ReadSession } from "@/auth/session";
+import type { CopiedPlan } from "@/db/budget-items";
+import { ClosedMonthError } from "@/db/closed-months";
 import {
   FixedItemAlreadyPaidError,
   MAX_BUDGET_ITEM_NAME_LENGTH,
@@ -10,7 +12,7 @@ import {
   type FixedItemAmendment,
   type FixedItemDraft,
 } from "@/domain/budget/budget";
-import type { CalendarDate } from "@/domain/calendar/month";
+import type { CalendarDate, Month } from "@/domain/calendar/month";
 import type { Movement, Recorder } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
@@ -61,6 +63,16 @@ export type BudgetPorts = {
    * pending item of that id to pay.
    */
   pay: (recorder: Recorder, itemId: string) => Promise<Movement | null>;
+  /**
+   * One month's plan written onto another, and what that turned out to be.
+   *
+   * Whole months and not a list of items, because whether a month can be
+   * copied at all is decided over rows nobody handed in: what the month it
+   * comes from still holds, and whether the month it lands on has been planned
+   * in the meantime. A port taking items would be a port that had already made
+   * both of those decisions somewhere else (`copyPlanIntoMonth`).
+   */
+  copyPlan: (space: Space, from: Month, into: Month) => Promise<CopiedPlan>;
 };
 
 /** The month's plan now says what the Member meant it to say. */
@@ -71,6 +83,9 @@ export type Removed = { kind: "removed" };
 
 /** A Fixed item is paid, and here is the Movement that says so. */
 export type Paid = { kind: "paid"; movement: Movement };
+
+/** A month that had no plan has one, carried from the month that did. */
+export type Copied = { kind: "copied"; items: readonly BudgetItem[] };
 
 /**
  * Every way this can fail to happen, each one something a screen can act on.
@@ -85,6 +100,26 @@ export type Refusal =
   | { kind: "no-such-space" }
   | { kind: "no-such-item" }
   | { kind: "already-paid" }
+  /**
+   * The month a copy was carrying has nothing on it any more. Its own answer
+   * beside the one below, because the two are fixed differently: this one
+   * leaves the month unplanned and the plan has to be written by hand.
+   */
+  | { kind: "nothing-to-copy" }
+  /**
+   * The month a copy would have landed on was planned in between -- by the
+   * other thumb, by hand or by a copy of its own. Nothing was written twice,
+   * and what a person wanted is already on the screen behind the sheet.
+   */
+  | { kind: "already-planned" }
+  /**
+   * The month is closed, and a closed month never changes (ADR-0002). Its own
+   * outcome and not a rejected field, for the reason `already-paid` is one:
+   * nothing on the screen was mistyped, so pointing at an input would send a
+   * person to correct something that was never the problem. What it earns is a
+   * sentence saying the month is finished.
+   */
+  | { kind: "month-closed" }
   | { kind: "failed"; cause: unknown };
 
 /**
@@ -238,6 +273,37 @@ export async function handleRemoveBudgetItem(
 }
 
 /**
+ * A month with no plan gets the most recent one there is, carried forward
+ * (#121).
+ *
+ * Both months arrive from the screen and neither is derived here. The month
+ * being planned is the one the screen is open on, and the month it copies is
+ * the one the offer *named* -- which is the whole reason the offer names it.
+ * Deriving "the previous month" at this depth would copy a month nobody was
+ * shown, on exactly the plans that reach furthest back.
+ *
+ * Every outcome of the write comes back as it was decided, because all three
+ * are decided over rows and not over answers: the store reads what is there
+ * inside the transaction that writes, and this hands the result on. A handler
+ * that re-read either month to say the same thing would be a second opinion
+ * arriving a moment later than the one that counted.
+ */
+export async function handleCopyPlan(
+  ports: BudgetPorts,
+  spaceId: string,
+  from: Month,
+  into: Month,
+): Promise<Copied | Refusal> {
+  return inSpace(ports, spaceId, async (space) => {
+    const outcome = await ports.copyPlan(space, from, into);
+
+    return outcome.kind === "copied"
+      ? { kind: "copied", items: outcome.items }
+      : outcome;
+  });
+}
+
+/**
  * The two things every one of the above does first: who is asking, and whether
  * they are in this Space.
  *
@@ -278,6 +344,14 @@ async function inSpace<Done>(
     if (error instanceof FixedItemAlreadyPaidError) {
       return { kind: "already-paid" };
     }
+    // The one refusal a closed month makes, arriving from the one place it is
+    // decided (`refuseAClosedMonth`). Named here and not asked here: this
+    // handler would be a second half-answer, and the month it would have to
+    // ask about is not one it always holds -- a correction's month is the
+    // item's, which only the store has read.
+    if (error instanceof ClosedMonthError) {
+      return { kind: "month-closed" };
+    }
     return { kind: "failed", cause: error };
   }
 }
@@ -298,6 +372,12 @@ export function refusalMessage(refusal: Refusal): string {
       return t("budget.error.gone");
     case "already-paid":
       return t("budget.error.alreadyPaid");
+    case "nothing-to-copy":
+      return t("budget.error.nothingToCopy");
+    case "already-planned":
+      return t("budget.error.alreadyPlanned");
+    case "month-closed":
+      return t("budget.error.monthClosed");
     case "failed":
       return t("budget.error.failed");
     case "rejected":

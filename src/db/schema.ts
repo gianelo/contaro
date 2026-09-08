@@ -51,11 +51,29 @@ export const members = pgTable("members", {
  * is that the column never changes after the insert: migration 0002 puts a
  * trigger on it, so ADR-0001 holds against every path into this table, not only
  * the one that goes through `amendSpace`.
+ *
+ * `created_by` is the one asymmetry between a Space's two Members (#116,
+ * ADR-0051): the creator closes a month and approves the carry-over, and the
+ * invited Member does neither. Here rather than a `role` on the membership
+ * row, because it is a fact about the Space and because a role column is a
+ * permission system growing out of two acts.
+ *
+ * It does not cascade from `members`, the way `space_invitations.invited_by`
+ * does not: the Space is owed an honest record of who made it even if that
+ * Member's own row is one day gone. Migration 0015 also freezes it -- the
+ * creator is recovered once and never changed, so ADR-0051's exception cannot
+ * be handed to somebody by an UPDATE.
+ *
+ * Nullable only because ADR-0008 forbids adding a required column in one
+ * deploy; 0015 backfills every existing row and bridges the window, so a row
+ * that reaches a reader without one has gone round the domain, and `asSpace`
+ * refuses it the way it refuses an unknown currency.
  */
 export const spaces = pgTable("spaces", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   currency: text("currency").notNull(),
+  createdBy: uuid("created_by").references(() => members.id),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -298,9 +316,32 @@ export const movements = pgTable(
     recordedBy: uuid("recorded_by")
       .notNull()
       .references(() => members.id),
-    attributedTo: uuid("attributed_to")
-      .notNull()
-      .references(() => members.id),
+    /**
+     * Whose money it was, and the half of **Origin** that is a person.
+     *
+     * Nullable since #120, and null in exactly one place: the Carry-over.
+     * ADR-0003 decided in the product's first week that a month's leftover
+     * enters the next one "attributed to no Member... because no Member earned
+     * it", and ADR-0016 named the two columns it would take -- "a nullable
+     * `attributed_to` and an `origin`". These are those columns.
+     *
+     * What keeps the null from being a hole is the check below: a Movement came
+     * from a Member or it came from a month, never from both and never from
+     * neither.
+     */
+    attributedTo: uuid("attributed_to").references(() => members.id),
+    /**
+     * The month a Carry-over came out of, and null on every other Movement.
+     *
+     * **Origin** (CONTEXT.md) as one column rather than as a tag beside a
+     * payload. A `origin_kind` next to this would say what this already says,
+     * and two columns that have to agree are two columns that one day will not.
+     *
+     * Text with a shape check, the way `closed_months.month` is: months are
+     * written `YYYY-MM` so that the text order and the calendar order are one
+     * order, which is what every walk over them relies on.
+     */
+    carriedFrom: text("carried_from"),
     /**
      * What it was: "Éxito", "Uber" (#66). The name a row on the month's list
      * is read by, with its Category as the quieter second line.
@@ -360,6 +401,50 @@ export const movements = pgTable(
       sql`(${table.struckBy} IS NULL AND ${table.struckAt} IS NULL)
         OR (${table.struckBy} IS NOT NULL AND ${table.struckAt} IS NOT NULL)`,
     ),
+    // Months are written the one way the whole product writes them, so that
+    // text order and calendar order are one order (`closed_months_month_is_a_month`).
+    check(
+      "movements_carried_from_is_a_month",
+      sql`${table.carriedFrom} IS NULL
+        OR ${table.carriedFrom} ~ '^\\d{4}-(0[1-9]|1[0-2])$'`,
+    ),
+    // **Origin**, as the one rule that makes the null above a shape instead of
+    // a hole: a Movement came from a Member, or it came from the Carry-over of
+    // a month, and never from both or from neither (ADR-0003, CONTEXT.md). A
+    // report about what each Member contributed reads the rows where
+    // `attributed_to` is a name, and this is what guarantees the rest are
+    // exactly the carried ones.
+    check(
+      "movements_comes_from_a_member_or_from_a_month",
+      sql`(${table.carriedFrom} IS NULL AND ${table.attributedTo} IS NOT NULL)
+        OR (${table.carriedFrom} IS NOT NULL AND ${table.attributedTo} IS NULL)`,
+    ),
+    // A surplus is money that still exists and can be spent again, so it comes
+    // back as income (ADR-0003). Taken with the filing check above, this is
+    // also what says a carry-over carries no Category.
+    check(
+      "movements_a_carry_over_is_income",
+      sql`${table.carriedFrom} IS NULL OR ${table.direction} = 'income'`,
+    ),
+    // It lands in the month *after* the one it came out of, which is the whole
+    // direction of the act. Written the way `closed_months_is_closed_after_it_ended`
+    // is, and for the same reason: the month a date falls in is a fact this
+    // column can be compared against without a second column to hold it.
+    check(
+      "movements_a_carry_over_lands_after_its_month",
+      sql`${table.carriedFrom} IS NULL
+        OR to_char(${table.occurredOn}, 'YYYY-MM') > ${table.carriedFrom}`,
+    ),
+    // A month is carried over once, and "once" is counted in standing rows.
+    //
+    // Partial on `struck_at` deliberately, which is ADR-0031's shape for the
+    // other thing a plan brings into existence: a Fixed item is paid only while
+    // the Movement that paid it stands, and a carry-over is approved only while
+    // the Movement it created stands. Striking it out is the undo, and an
+    // unconditional index would make it an undo that leads nowhere.
+    uniqueIndex("movements_one_carry_over_per_month")
+      .on(table.spaceId, table.carriedFrom)
+      .where(sql`${table.carriedFrom} IS NOT NULL AND ${table.struckAt} IS NULL`),
     // Every read is "this Space's Movements, in this month", which is exactly
     // this pair. Struck rows are left in the index: they are a small minority
     // and a partial index would have to be dropped the day #8 shows them.
@@ -377,8 +462,9 @@ export const movements = pgTable(
  * thing rather than a shortcut: a Budget *is* the items a Space has for a
  * month, so it comes into existence with the first one and there is no moment
  * anybody creates an empty plan. What the close of a month freezes (ADR-0002)
- * is the month -- its Movements as much as its plan -- so that will not hang
- * here either.
+ * is the month -- its Movements as much as its plan -- so it does not hang here
+ * either: it has its own table now (`closedMonths`, #117), which the Movements
+ * are asked against as much as these rows are.
  *
  * `kind` says which of the two an item is. `name` is asked of both (#79), and
  * the two columns after it are what only a Fixed one carries (#13). Those two
@@ -535,5 +621,97 @@ export const budgetItems = pgTable(
     // one Category are how a person plans a month in weeks, and they behave as
     // a single item of their combined amount rather than as a duplicate.
     index("budget_items_space_id_month_idx").on(table.spaceId, table.month),
+  ],
+);
+
+/**
+ * Which of a Space's months have been closed (#117).
+ *
+ * A table of its own and not a column, because there is nowhere to put a
+ * column: ADR-0019 refused a `budgets` row, and a flag on the plan would be a
+ * flag that half of what the close freezes does not point at -- a month with no
+ * plan at all can still be closed. So the close gets the home ADR-0019 said it
+ * would get, and it is a home the Movements can see too: they carry no month,
+ * only the day they happened on, and `YYYY-MM` here is what both sides are
+ * asked against.
+ *
+ * A row is the whole fact. There is no `closed` boolean anywhere and nothing to
+ * unset: a month is closed if it has a row here, and every month that does not
+ * is open -- including the ones nobody has reached yet. ADR-0029's argument,
+ * applied to a second thing: a flag has to be unset somewhere else.
+ *
+ * The row is written once and never again. Migration 0016 refuses UPDATE and
+ * DELETE on this table outright, because ADR-0002 says there is no unlock and a
+ * rule only the code knows about is a rule that survives until the second
+ * caller.
+ */
+export const closedMonths = pgTable(
+  "closed_months",
+  {
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    /**
+     * The month closed, written `YYYY-MM`, exactly as `budget_items.month` is
+     * and for the same reasons: a month is the unit, and written this way it
+     * sorts the way a calendar orders months.
+     */
+    month: text("month").notNull(),
+    /**
+     * The Member who closed it, which is always the Space's creator
+     * (ADR-0051).
+     *
+     * It does not cascade from `members`, the way `spaces.created_by` and
+     * `space_invitations.invited_by` do not: the close is irreversible, so the
+     * Space is owed an honest record of who performed it even if that Member's
+     * own row is one day gone.
+     */
+    closedBy: uuid("closed_by")
+      .notNull()
+      .references(() => members.id),
+    /**
+     * The day it was closed on, as the Reader was standing in it (ADR-0018).
+     *
+     * A `date` and not the `closed_at` timestamp beside it, because the two
+     * answer different questions: this is the day a person decided the month
+     * was finished, and that is when the row reached the database. At nine at
+     * night on the 30th in Bogota those are two different days, and the one
+     * worth reading back is theirs.
+     */
+    closedOn: date("closed_on").notNull(),
+    closedAt: timestamp("closed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    // A month is closed once. The pair is the primary key rather than a unique
+    // index, because there is nothing else here to identify a row by: the row
+    // *is* the pair, and a second one would be a second answer to a question
+    // that has no undo.
+    primaryKey({ columns: [table.spaceId, table.month] }),
+    // The same twelve `budget_items.month` admits, refused here too. Every
+    // write in the product asks this table whether its month is closed, so a
+    // row written under a month no calendar has would be a row nothing could
+    // ever match -- a close that silently froze nothing.
+    check(
+      "closed_months_month_is_a_month",
+      sql`${table.month} ~ '^\\d{4}-(0[1-9]|1[0-2])$'`,
+    ),
+    // A month is closed after it has ended, never during it (ADR-0002 as
+    // `closeMonth` reads it). The domain refuses the same thing on the
+    // Reader's day; this refuses it for every path that never goes through the
+    // domain, and it is the one comparison that can be made from the row alone.
+    //
+    // The day is written out as a month and the two months compared as text,
+    // the way `budget_items_due_on_is_in_its_month` already does it, rather
+    // than reading `month` back into a date. A `to_date` here would be handed
+    // the very strings the constraint above exists to refuse, and it raises
+    // before that one is reached -- so a thirteenth month would be turned away
+    // by a message about a date range, which is a constraint lying about what
+    // was wrong with the row.
+    check(
+      "closed_months_is_closed_after_it_ended",
+      sql`to_char(${table.closedOn}, 'YYYY-MM') > ${table.month}`,
+    ),
   ],
 );

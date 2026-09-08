@@ -1,0 +1,55 @@
+/*
+ * A Movement of a closed month: the record, and the card that says why nothing
+ * on this screen can be done to it (#119).
+ */
+.record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+/*
+ * What it was, when, and how much -- the same three things the row on the
+ * month's list carries, in the same order and with the same circle at the
+ * start, so the screen a tap lands on reads as the row it came from.
+ */
+.what {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.said {
+  display: flex;
+  flex-direction: column;
+  /* Takes the width the circle and the amount leave, so the figure keeps the
+     right-hand edge a person runs their eye down. */
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+
+.beneath {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+/* The loudest thing here, for the reason the row's own figure is: it is what
+   somebody opened the screen to read. */
+.amount {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* Money coming in, on top of the written "+" and never instead of it. */
+.income {
+  color: var(--color-accent);
+}

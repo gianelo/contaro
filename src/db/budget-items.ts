@@ -1,7 +1,8 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import {
   amendFixedItem,
   amendItem,
+  copyOfPlan,
   FixedItemAlreadyPaidError,
   paymentFor,
   planFixedItem,
@@ -22,6 +23,7 @@ import type { Movement, Recorder } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import { bySpace } from "./by-space";
 import { categoriesTheSpaceCanSee } from "./categories";
+import { refuseAClosedMonth } from "./closed-months";
 import type { Queries } from "./connection";
 import { isIdentifier } from "./identifier";
 import { recordMovementInSpace } from "./movements";
@@ -116,6 +118,11 @@ export async function planBudgetItemInSpace(
 ): Promise<BudgetItem> {
   const checked = planItem(draft, await asPlanning(db, space));
 
+  // The one refusal a closed month makes (`refuseAClosedMonth`). After it, the
+  // month's plan is as frozen as its Movements -- there is no line to add to a
+  // month somebody has finished with.
+  await refuseAClosedMonth(db, space.id, checked.month);
+
   const [created] = await db
     .insert(budgetItems)
     .values({
@@ -153,6 +160,8 @@ export async function planFixedItemInSpace(
   draft: FixedItemDraft,
 ): Promise<FixedItem> {
   const checked = planFixedItem(draft, await asPlanning(db, space));
+
+  await refuseAClosedMonth(db, space.id, checked.month);
 
   const [created] = await db
     .insert(budgetItems)
@@ -214,6 +223,14 @@ export async function payFixedItemInSpace(
     const item = await findBudgetItemInSpace(tx, context.space, itemId);
     if (!item || item.kind !== "fixed") return null;
 
+    // The item's own month, which is not the month the Movement below lands
+    // in. Marking a Fixed item paid writes a pointer onto the plan, so a
+    // closed September refuses it even in October -- and decision 1 of the
+    // #109 map is exactly that refusal read from the other side: an unpaid
+    // Fixed item stays unpaid, in its own month, forever. The Movement's own
+    // month is asked again by `recordMovementInSpace`.
+    await refuseAClosedMonth(tx, context.space.id, item.month);
+
     // Throws if the item is already paid, which this then never gets to
     // write. The WHERE below is what covers the tap that arrives between
     // this read and that write.
@@ -268,6 +285,8 @@ export async function amendBudgetItemInSpace(
   const existing = await findBudgetItemInSpace(db, space, itemId);
   if (!existing) return null;
 
+  await refuseAClosedMonth(db, space.id, existing.month);
+
   const corrected = amendItem(existing, changes, await asPlanning(db, space));
 
   const [updated] = await db
@@ -308,6 +327,8 @@ export async function amendFixedItemInSpace(
 ): Promise<FixedItem | null> {
   const existing = await findBudgetItemInSpace(db, space, itemId);
   if (!existing || existing.kind !== "fixed") return null;
+
+  await refuseAClosedMonth(db, space.id, existing.month);
 
   const corrected = amendFixedItem(existing, changes, await asPlanning(db, space));
 
@@ -387,6 +408,8 @@ export async function removeBudgetItemFromSpace(
   const existing = await findBudgetItemInSpace(db, space, itemId);
   if (!existing) return false;
 
+  await refuseAClosedMonth(db, space.id, existing.month);
+
   unplan(existing);
 
   const payment = existing.kind === "fixed" ? existing.payment : null;
@@ -464,6 +487,138 @@ export async function budgetItemsInMonth(
 
   return rows.map((row) => asBudgetItem(row, space));
 }
+
+/**
+ * The most recent month before this one that a Space planned anything on, or
+ * nothing at all where it never has (#121).
+ *
+ * It reaches back with no bound, and that is decision 22 of #109 rather than
+ * an oversight. A cap was offered and refused: if March had a plan and nobody
+ * opened the app until October, March is still the last plan there is and
+ * still worth offering. What makes an unbounded reach safe is that the screen
+ * *names* the month it found, so a plan old enough to be wrong is visibly old
+ * enough to be wrong before the tap rather than after.
+ *
+ * Deliberately not `monthsToPlan`'s fourteen (ADR-0039). That window is a
+ * navigation affordance -- how far a pill can be moved in one opening -- and
+ * this is a question about rows. The plan is being carried forward, so the
+ * month it came from never has to be reachable.
+ *
+ * `month` is text that sorts the way a calendar orders months, which is the
+ * whole of why this is one index scan and not a walk backwards asking twelve
+ * questions (`budget_items_space_id_month_idx`).
+ */
+export async function latestPlannedMonthBefore(
+  db: Database,
+  space: Space,
+  before: Month,
+): Promise<Month | null> {
+  const [row] = await db
+    .selectDistinct({ month: budgetItems.month })
+    .from(budgetItems)
+    .where(and(eq(budgetItems.spaceId, space.id), lt(budgetItems.month, before)))
+    .orderBy(desc(budgetItems.month))
+    .limit(1);
+
+  if (!row) return null;
+
+  // The same refusal `whichMonth` makes about a row, for the same reason: the
+  // column is text, and a screen is better off with a stack trace naming the
+  // Space than with an offer to copy a month nobody has.
+  if (!isMonth(row.month)) {
+    throw new Error(
+      `Space ${space.id} has a plan on "${row.month}", which is not a month on any calendar.`,
+    );
+  }
+
+  return row.month;
+}
+
+/**
+ * Writes one month's plan onto another month. Answers what landed, or that
+ * there was nothing to carry, or that the month it would land on is already
+ * planned.
+ *
+ * All three reads and the write in one transaction, because the offer this
+ * serves is only ever shown on a month with no plan: two thumbs answering it
+ * at once, or one thumb answering it twice, would otherwise write the plan
+ * twice and leave a month expecting double the rent. That is the same class of
+ * gap `payFixedItemInSpace` closes, and it is closed the same way -- by not
+ * leaving one.
+ *
+ * The lock is what a unique constraint would be if there were a row to put one
+ * on. There is not: a Budget is its items and has no row of its own
+ * (ADR-0019), so "this month has a plan" is a fact about a set of rows and
+ * cannot be spelled as a key. Two transactions reading an empty October under
+ * READ COMMITTED would both find it empty and both insert; taken on the Space
+ * and the month together, the second one waits, reads the first one's plan,
+ * and says so. Held to the transaction, so it is released by the commit or the
+ * rollback and never by anything remembering to.
+ *
+ * One INSERT for every item rather than one per row: a copy is one act, and a
+ * plan half-written by a connection that dropped is the shape this exists to
+ * make impossible.
+ */
+export async function copyPlanIntoMonth(
+  db: Database,
+  space: Space,
+  from: Month,
+  into: Month,
+): Promise<CopiedPlan> {
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${space.id}), hashtext(${into}))`,
+    );
+
+    // The month it lands on, and never the month it comes from. A closed month
+    // is a month a plan may still be *read* out of -- that is decision 24 of
+    // the #109 map and ADR-0050's own "the copy is a snapshot and not a link"
+    // -- and it is only a month nothing may be written into.
+    await refuseAClosedMonth(tx, space.id, into);
+
+    const source = await budgetItemsInMonth(tx, space, from);
+    if (source.length === 0) return { kind: "nothing-to-copy" };
+
+    const already = await budgetItemsInMonth(tx, space, into);
+    if (already.length > 0) return { kind: "already-planned" };
+
+    // Through the domain, so a Category this Space can no longer see refuses
+    // the whole copy by name rather than arriving one line short.
+    const drafts = copyOfPlan(source, into, await asPlanning(tx, space));
+
+    const rows = await tx
+      .insert(budgetItems)
+      .values(
+        drafts.map((draft) => ({
+          spaceId: draft.spaceId,
+          month: draft.month,
+          categoryId: draft.categoryId,
+          amount: draft.amount.amount,
+          kind: draft.kind,
+          name: draft.name,
+          // Undefined and not null on a Variable one, so the column keeps the
+          // default the check constraint expects of its kind.
+          dueOn: draft.kind === "fixed" ? draft.dueOn : undefined,
+        })),
+      )
+      .returning(budgetItemColumns);
+
+    return {
+      kind: "copied",
+      // Pending by construction: nothing here writes a `movement_id`, so no
+      // read of the ledger is needed to know none of them is paid.
+      items: rows.map((row) => asBudgetItem(asPending(row), space)),
+    };
+  });
+}
+
+/** What copying a plan onto a month can turn out to be. */
+export type CopiedPlan =
+  | { kind: "copied"; items: readonly BudgetItem[] }
+  /** The month it would have copied has no plan on it any more. */
+  | { kind: "nothing-to-copy" }
+  /** Somebody planned the month in between, by hand or by copying it too. */
+  | { kind: "already-planned" };
 
 /**
  * The same month's plan for several Spaces at once, grouped by the Space it

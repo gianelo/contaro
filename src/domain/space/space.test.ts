@@ -9,13 +9,26 @@ import {
 
 const ana = "3f2b0c1e-0000-4000-8000-000000000001";
 
-const casa = { id: "3f2b0c1e-0000-4000-8000-0000000000ca", name: "Casa", currency: "ARS" } as const;
+const casa = {
+  id: "3f2b0c1e-0000-4000-8000-0000000000ca",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: ana,
+} as const;
 
 describe("creating a Space", () => {
   it("gives it the name and the currency it was asked for", () => {
     const { space } = createSpace({ name: "Casa", currency: "ARS" }, ana);
 
-    expect(space).toEqual({ name: "Casa", currency: "ARS" });
+    expect(space).toEqual({ name: "Casa", currency: "ARS", createdBy: ana });
+  });
+
+  // #116: the creator used to be taken, used once to seed the membership, and
+  // dropped. ADR-0051 rests two acts on it, so the Space keeps it.
+  it("remembers who created it", () => {
+    const { space } = createSpace({ name: "Casa", currency: "ARS" }, ana);
+
+    expect(space.createdBy).toBe(ana);
   });
 
   it("puts the creator inside it, so nobody creates a Space they cannot open", () => {

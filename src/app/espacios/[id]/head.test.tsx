@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import type { Space } from "@/domain/space/space";
 import { SpaceHead } from "./head";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 
 describe("the head of a screen inside a Space", () => {
   /*
@@ -14,7 +19,7 @@ describe("the head of a screen inside a Space", () => {
     render(<SpaceHead space={CASA} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Casa");
-    expect(screen.getByText("Peso argentino (ARS)")).toBeInTheDocument();
+    expect(screen.getByText("ARS")).toBeInTheDocument();
   });
 
   /*
@@ -30,9 +35,7 @@ describe("the head of a screen inside a Space", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "Presupuesto",
     );
-    expect(
-      screen.getByText("Casa · Peso argentino (ARS)"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Casa · ARS")).toBeInTheDocument();
   });
 
   // The month pill shares the title's row on the canvas, so it is a slot on

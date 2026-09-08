@@ -139,6 +139,20 @@ const icons = {
   "arrow-up": {
     draw: <path d="M12 19V5M5 12l7-7 7 7" />,
   },
+  /*
+   * A shut padlock: the shackle over a closed body, drawn as two shapes so the
+   * curve keeps the common weight the rectangle is drawn at. It marks a month
+   * nothing can be written into any more (#119), and never a control -- there
+   * is no key in this product and no drawing of one.
+   */
+  lock: {
+    draw: (
+      <>
+        <rect x="4" y="10.5" width="16" height="10" rx="2" />
+        <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+      </>
+    ),
+  },
   rotate: {
     draw: (
       <>

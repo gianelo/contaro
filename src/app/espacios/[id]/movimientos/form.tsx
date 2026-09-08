@@ -54,6 +54,12 @@ export type MovementFormProps = {
   ) => Promise<MovementFormState>;
   submit: string;
   working: string;
+  /**
+   * The Space's closed months, passed straight through to the day picker,
+   * which is what refuses one (#119). See `WhenProps` for the shape and for
+   * how far back it reaches.
+   */
+  closedMonths: readonly string[];
 };
 
 /**
@@ -92,6 +98,7 @@ export function MovementForm({
   action,
   submit,
   working,
+  closedMonths,
 }: MovementFormProps) {
   const [state, send, pending] = useActionState(action, nothingWrongYet);
   const [amount, setAmount] = useState(initial.amount);
@@ -210,6 +217,7 @@ export function MovementForm({
         attributedTo={attributedTo}
         onDayChange={setChosenDay}
         onMemberChange={setChosenMember}
+        closedMonths={closedMonths}
       />
 
       {/*
@@ -289,6 +297,10 @@ export function MovementForm({
           // Nothing typed is nothing to record, and the domain would refuse it
           // by name. Refusing it here means the ordinary mistake — a thumb on
           // Save before the amount — costs no round trip.
+          //
+          // A closed month is deliberately not here (#119). Decision 16 of the
+          // #109 map is "no greying, no disabling", and the day never becomes
+          // one inside a closed month: `When` declines to move it and says why.
           disabled={pending || amount === 0}
         >
           {pending ? working : submit}

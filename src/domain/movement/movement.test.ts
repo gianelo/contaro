@@ -5,6 +5,7 @@ import { money } from "../money/money";
 import type { Space } from "../space/space";
 import {
   amendMovement,
+  CarryOverIsNotCorrectedError,
   DirectionIsImmutableError,
   earned,
   MAX_MOVEMENT_AMOUNT,
@@ -19,7 +20,12 @@ import {
   type Recording,
 } from "./movement";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 const GIAN = "member-gian";
 const ANA = "member-ana";
 const BETO = "member-beto";
@@ -66,6 +72,7 @@ const draft = (changes: Partial<Parameters<typeof recordMovement>[0]> = {}) => (
   amount: 128_400,
   occurredOn: "2026-09-03",
   attributedTo: null,
+  carriedFrom: null,
   name: null,
   ...changes,
 });
@@ -86,6 +93,7 @@ describe("recording an expense", () => {
       occurredOn: TODAY,
       recordedBy: GIAN,
       attributedTo: GIAN,
+      carriedFrom: null,
       name: null,
     });
   });
@@ -252,6 +260,7 @@ describe("recording income", () => {
       occurredOn: TODAY,
       recordedBy: GIAN,
       attributedTo: GIAN,
+      carriedFrom: null,
       name: null,
     });
   });
@@ -319,6 +328,7 @@ describe("correcting a Movement that was got wrong", () => {
     occurredOn: TODAY,
     recordedBy: GIAN,
     attributedTo: GIAN,
+    carriedFrom: null,
     name: null,
   };
 
@@ -469,6 +479,7 @@ const movement = (
   occurredOn,
   recordedBy: GIAN,
   attributedTo: GIAN,
+  carriedFrom: null,
   name: null,
 });
 
@@ -573,6 +584,7 @@ describe("what a Movement is called", () => {
     occurredOn: TODAY,
     recordedBy: GIAN,
     attributedTo: GIAN,
+    carriedFrom: null,
     name: null,
   };
 
@@ -638,5 +650,56 @@ describe("what a Movement is called", () => {
     expect(() =>
       amendMovement(recorded, { name: TOO_LONG }, recording()),
     ).toThrow(UnrecordableMovementError);
+  });
+});
+
+describe("the one Movement nobody typed", () => {
+  const recorded = recordMovement(draft(), recording());
+
+  /*
+   * There is nowhere on a draft to claim a carry-over, and that is the strongest
+   * form the rule takes: not a check that refuses the field, but a field the
+   * entry screen cannot describe. The only thing that makes one is
+   * `approveCarryOver`, out of a month that has been closed.
+   */
+  it("is never what the entry screen records", () => {
+    expect(recorded.carriedFrom).toBeNull();
+  });
+
+  /*
+   * A carry-over has no field a correction could be about: its amount is what a
+   * closed month came to, its day is the first of the month it landed in, it
+   * carries no Category, and whose money it is, is nobody's -- which is the
+   * exact field a correction form posts back. Striking it out is the undo
+   * (ADR-0031).
+   */
+  it("is never corrected, whatever the correction asks for", () => {
+    const carried: Movement = {
+      ...recorded,
+      id: "movement-1",
+      direction: "income",
+      categoryId: null,
+      attributedTo: null,
+      carriedFrom: "2026-09" as Movement["carriedFrom"],
+    };
+
+    expect(() => amendMovement(carried, { amount: 999 }, recording())).toThrow(
+      CarryOverIsNotCorrectedError,
+    );
+  });
+
+  it("is not corrected by a change that mentions nothing at all", () => {
+    const carried: Movement = {
+      ...recorded,
+      id: "movement-1",
+      direction: "income",
+      categoryId: null,
+      attributedTo: null,
+      carriedFrom: "2026-09" as Movement["carriedFrom"],
+    };
+
+    expect(() => amendMovement(carried, {}, recording())).toThrow(
+      CarryOverIsNotCorrectedError,
+    );
   });
 });

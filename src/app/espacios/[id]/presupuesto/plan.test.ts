@@ -5,12 +5,14 @@ import {
   type BudgetItem,
   type FixedItem,
 } from "@/domain/budget/budget";
+import { ClosedMonthError } from "@/db/closed-months";
 import { calendarDate, month } from "@/domain/calendar/month";
 import { money } from "@/domain/money/money";
 import type { Movement } from "@/domain/movement/movement";
 import type { Space } from "@/domain/space/space";
 import {
   handleAmendBudgetItem,
+  handleCopyPlan,
   handleAmendFixedItem,
   handlePayFixedItem,
   handlePlanBudgetItem,
@@ -20,7 +22,12 @@ import {
   type PlannedItemDraft,
 } from "./plan";
 
-const CASA: Space = { id: "space-casa", name: "Casa", currency: "ARS" };
+const CASA: Space = {
+  id: "space-casa",
+  name: "Casa",
+  currency: "ARS",
+  createdBy: "member-gian",
+};
 const GIAN = "member-gian";
 
 const PLANNED: BudgetItem = {
@@ -56,6 +63,7 @@ const PAYMENT: Movement = {
   occurredOn: TODAY,
   recordedBy: GIAN,
   attributedTo: GIAN,
+  carriedFrom: null,
   name: null,
 };
 
@@ -95,6 +103,7 @@ const ports = (changes: Partial<BudgetPorts> = {}): BudgetPorts => ({
   amendFixed: async () => FIXED,
   remove: async () => true,
   pay: async () => PAYMENT,
+  copyPlan: async () => ({ kind: "copied", items: [PLANNED] }),
   ...changes,
 });
 
@@ -478,5 +487,173 @@ describe("marking a Fixed item paid", () => {
     expect(refusalMessage({ kind: "already-paid" })).toBe(
       "Ese gasto fijo ya estaba pagado.",
     );
+  });
+});
+
+describe("carrying a month's plan into another month", () => {
+  const AUGUST = month("2026-08");
+  const SEPTEMBER = month("2026-09");
+
+  it("copies the plan of the month it was told to copy", async () => {
+    const copyPlan = vi.fn(async () => ({
+      kind: "copied" as const,
+      items: [PLANNED],
+    }));
+
+    const outcome = await handleCopyPlan(
+      ports({ copyPlan }),
+      CASA.id,
+      AUGUST,
+      SEPTEMBER,
+    );
+
+    expect(outcome).toEqual({ kind: "copied", items: [PLANNED] });
+    expect(copyPlan).toHaveBeenCalledWith(CASA, AUGUST, SEPTEMBER);
+  });
+
+  // Membership before the write, the way every other handler proves it: a
+  // Space this Member is not in must read as no Space at all.
+  it("refuses somebody who is not signed in", async () => {
+    const copyPlan = vi.fn();
+
+    const outcome = await handleCopyPlan(
+      ports({ readSession: async () => null, copyPlan }),
+      CASA.id,
+      AUGUST,
+      SEPTEMBER,
+    );
+
+    expect(outcome).toEqual({ kind: "not-signed-in" });
+    expect(copyPlan).not.toHaveBeenCalled();
+  });
+
+  it("refuses a Space this Member is not in", async () => {
+    const outcome = await handleCopyPlan(
+      ports({ findSpace: async () => null }),
+      CASA.id,
+      AUGUST,
+      SEPTEMBER,
+    );
+
+    expect(outcome).toEqual({ kind: "no-such-space" });
+  });
+
+  /*
+   * The month emptied between the screen being drawn and the offer being
+   * answered. Its own outcome and not a silent success, because a person who
+   * tapped "Copiar el plan de agosto" and got an empty September back is owed
+   * the reason.
+   */
+  it("says so when the month it was copying has nothing left on it", async () => {
+    const outcome = await handleCopyPlan(
+      ports({ copyPlan: async () => ({ kind: "nothing-to-copy" }) }),
+      CASA.id,
+      AUGUST,
+      SEPTEMBER,
+    );
+
+    expect(outcome).toEqual({ kind: "nothing-to-copy" });
+  });
+
+  /*
+   * The other thumb planned September first. Told apart from the case above
+   * because the fix is different: this one already has the plan the person
+   * wanted, and reloading shows it.
+   */
+  it("says so when the month it was copying into was planned in between", async () => {
+    const outcome = await handleCopyPlan(
+      ports({ copyPlan: async () => ({ kind: "already-planned" }) }),
+      CASA.id,
+      AUGUST,
+      SEPTEMBER,
+    );
+
+    expect(outcome).toEqual({ kind: "already-planned" });
+  });
+
+  // A Category the Space can no longer see refuses the whole copy by name,
+  // through the same seam every other refused answer takes.
+  it("names the answer a refused copy was refused over", async () => {
+    const outcome = await handleCopyPlan(
+      ports({
+        copyPlan: async () => {
+          throw new UnplannableBudgetItemError("category", "not this Space's");
+        },
+      }),
+      CASA.id,
+      AUGUST,
+      SEPTEMBER,
+    );
+
+    expect(outcome).toEqual({ kind: "rejected", field: "category" });
+  });
+
+  it("has something to say about every way it can be refused", () => {
+    expect(refusalMessage({ kind: "nothing-to-copy" })).toBeTruthy();
+    expect(refusalMessage({ kind: "already-planned" })).toBeTruthy();
+  });
+});
+
+/*
+ * The close, met from the screen (#117). `amendItem` and the correction screen
+ * both promised the refusal would live in one place above the domain, and this
+ * is what the person gets when it fires: an outcome the screen can say a
+ * sentence about, and never the blank apology a `failed` earns.
+ */
+describe("a month that has been closed", () => {
+  const closed = () => new ClosedMonthError(month("2026-09"));
+
+  it("refuses a new item, as a closed month and not as a failure", async () => {
+    await expect(
+      handlePlanBudgetItem(
+        ports({
+          plan: async () => {
+            throw closed();
+          },
+        }),
+        { ...draft, dueDay: null },
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  it("refuses a correction the same way", async () => {
+    await expect(
+      handleAmendBudgetItem(
+        ports({
+          amend: async () => {
+            throw closed();
+          },
+        }),
+        CASA.id,
+        PLANNED.id,
+        { amount: 1_00 },
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  /*
+   * Decision 1 of the #109 map: an unpaid Fixed item stays unpaid, in its own
+   * month, forever. The screen is owed the reason, not an apology.
+   */
+  it("refuses marking a Fixed item paid the same way", async () => {
+    await expect(
+      handlePayFixedItem(
+        ports({
+          pay: async () => {
+            throw closed();
+          },
+        }),
+        CASA.id,
+        FIXED.id,
+      ),
+    ).resolves.toEqual({ kind: "month-closed" });
+  });
+
+  it("says the month is closed, and does not invite a second try", async () => {
+    const said = refusalMessage({ kind: "month-closed" });
+
+    expect(said).not.toBe("");
+    expect(said).not.toBe(refusalMessage({ kind: "failed", cause: null }));
+    expect(said.toLowerCase()).not.toContain("de nuevo");
   });
 });

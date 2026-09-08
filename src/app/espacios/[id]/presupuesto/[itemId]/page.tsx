@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ButtonLink } from "@/ui/button";
+import { Refusal } from "@/ui/refusal";
 import { t } from "@/i18n";
 import { numberLocalesFor, readerOf } from "@/app/reader";
 import { SpaceScreen } from "../../screen";
@@ -11,6 +12,7 @@ import { BudgetItemForm } from "../form";
 import { FixedItemForm } from "../fixed-form";
 import { amendBudgetItemAction, amendFixedItemAction } from "../actions";
 import { RemoveBudgetItem } from "./remove";
+import { monthIsClosed } from "../../closed";
 import styles from "./page.module.css";
 
 /**
@@ -23,11 +25,17 @@ import styles from "./page.module.css";
  * branch here rather than a second route, so the row that opens an item does
  * not have to know which kind it is to link to it.
  *
- * A Budget stays editable throughout its month, and nothing here asks whether
- * the month is still open. The close is what shuts editing down — it freezes
- * a month's Movements as much as its plan (ADR-0002) — and it has not been
- * built yet, so it will refuse this in one place rather than in two that would
- * then have to agree.
+ * A Budget stays editable throughout its month, and the close is what ends
+ * that: `refuseAClosedMonth` refuses every write into a closed month in one
+ * place, which every store asks before it writes — its plan and its Movements
+ * alike (ADR-0002).
+ *
+ * #119 is that refusal arriving before somebody types instead of after they
+ * submit. It is a question about a screen rather than about a rule, and the
+ * shape the product already has for it is the paid item below: omission and a
+ * sentence, never a greyed-out control. It is asked first because a closed
+ * month refuses both kinds and both acts — the correction and the removal —
+ * so branching on it inside either arm would be the same branch written twice.
  */
 export default async function BudgetItemPage({
   params,
@@ -44,15 +52,18 @@ export default async function BudgetItemPage({
   // in a Space this Member is not in must read the same as one that never was.
   if (!item) notFound();
 
-  const [categories, locales] = await Promise.all([
-    categoryChips(space.id),
-    Promise.resolve(numberLocalesFor(asked)),
-  ]);
-
   // The item's own month, and never the one the Reader is standing in. An item
   // reached without a month in the URL is still on the month it was planned
   // for, and everything that leaves this screen has to land back on that one.
   const month = item.month;
+
+  const [categories, locales, closed] = await Promise.all([
+    categoryChips(space.id),
+    Promise.resolve(numberLocalesFor(asked)),
+    // Asked of the item's month and never of the Reader's: an item planned for
+    // a September that is closed is refused in October just the same.
+    monthIsClosed(space.id, month),
+  ]);
 
   const back = (
     <div className={styles.back}>
@@ -61,6 +72,32 @@ export default async function BudgetItemPage({
       </ButtonLink>
     </div>
   );
+
+  /*
+   * A closed month is shown and not offered (#119), before either kind is
+   * asked which form it wants. Nothing on this screen survives the close: the
+   * correction is refused, the removal is refused, and a paid item's link to
+   * the Movement that paid it leads to a screen where striking it is refused
+   * too — so the way out that a paid item is owed does not exist here, and a
+   * sentence pointing at one would be a lie with good manners.
+   *
+   * There is no undo to name and there never will be (ADR-0002). What is left
+   * is the item as it stands and the way back to the month it is on.
+   */
+  if (closed) {
+    return (
+      <SpaceScreen space={space} tab="budget">
+        <h2 className={styles.title}>{item.name}</h2>
+
+        <Refusal
+          title={t("budget.item.closed.title")}
+          body={t("budget.item.closed.body")}
+        />
+
+        {back}
+      </SpaceScreen>
+    );
+  }
 
   if (item.kind === "fixed") {
     /*
@@ -75,16 +112,17 @@ export default async function BudgetItemPage({
         <SpaceScreen space={space} tab="budget">
           <h2 className={styles.title}>{item.name}</h2>
 
-          <div className={styles.paid}>
-            <p className={styles.paidTitle}>{t("budget.fixed.paid.title")}</p>
-            <p className={styles.paidBody}>{t("budget.fixed.paid.body")}</p>
+          <Refusal
+            title={t("budget.fixed.paid.title")}
+            body={t("budget.fixed.paid.body")}
+          >
             <ButtonLink
               href={`/espacios/${space.id}/movimientos/${item.paidBy}`}
               variant="plain"
             >
               {t("budget.fixed.paid.movement")}
             </ButtonLink>
-          </div>
+          </Refusal>
 
           {back}
         </SpaceScreen>

@@ -100,7 +100,7 @@ function whereItSits(movement: ReadableMovement): string | null {
  * applies to a Category that is over its plan — "said in colour, in words and
  * in an icon at once, never in colour alone".
  */
-function amountOf(movement: ReadableMovement): string {
+export function amountOf(movement: ReadableMovement): string {
   return movement.direction === "income"
     ? t("movements.amount.income", { amount: movement.amount })
     : movement.amount;

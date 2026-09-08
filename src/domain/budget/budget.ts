@@ -16,7 +16,9 @@
 import {
   dayOf,
   daysBetween,
+  dayOfMonth,
   isMonth,
+  sameDayIn,
   UnreadableDateError,
   type CalendarDate,
   type Month,
@@ -286,6 +288,71 @@ export function planFixedItem(
 }
 
 /**
+ * A month's plan, written again for another month (#121).
+ *
+ * Every rule the entry screen is held to, asked again here. It builds drafts
+ * and hands them to `planItem` and `planFixedItem` rather than reshaping the
+ * rows itself, for the reason `planFixedItemInSpace` sits beside
+ * `planBudgetItemInSpace` in the store: a second way of getting an item onto a
+ * plan that decided its own rules would be a second place for them to stop
+ * being true. A Category the Space can no longer see refuses the copy by name,
+ * which is louder than a plan quietly arriving one line short.
+ *
+ * Both kinds and no choice per line (decision 9 of #109). A Fixed item nobody
+ * paid still copies: it went unpaid for some reason, and the line matters for
+ * the month ahead either way.
+ *
+ * Nothing carries an identity across. A copy is a snapshot and not a link
+ * (decision 24 of #109) -- these are drafts of new items, and the month they
+ * came from is free to change or be closed without either of them noticing.
+ * The same sentence is what makes copying out of a month still open allowed.
+ *
+ * Every Fixed item lands pending, whatever it was. Its payment is a Movement
+ * in the month it came from, and that month's ledger is not this month's.
+ *
+ * It carries a plan *forward* and refuses to carry one back. The offer only
+ * ever names a month behind the one being read, so a draft pointing the other
+ * way came from a form nobody was shown -- and the screens are the only thing
+ * that would otherwise hold the direction, which is exactly the kind of rule
+ * that stops being true the first time a second caller appears. Refused by
+ * name on the month, so it reaches a person as the same sentence any other bad
+ * month does.
+ */
+export function copyOfPlan(
+  planned: readonly BudgetItem[],
+  into: Month,
+  planning: Planning,
+): readonly (NewBudgetItem | NewFixedItem)[] {
+  return planned.map((item) => {
+    if (item.month >= into) {
+      throw new UnplannableBudgetItemError(
+        "month",
+        `a plan is carried forward, and ${item.month} is not before ${into}`,
+      );
+    }
+
+    const draft = {
+      spaceId: item.spaceId,
+      month: into,
+      categoryId: item.categoryId,
+      amount: item.amount.amount,
+      name: item.name,
+    };
+
+    return item.kind === "fixed"
+      ? planFixedItem(
+          // The day it was on, in the month it is going to. Clamped by
+          // `sameDayIn` before `planFixedItem` sees it, because that one
+          // refuses a day the month does not have and is right to: what it is
+          // refusing is a typed answer, and nobody typed this (ADR-0050).
+          { ...draft, dueDay: dayOfMonth(sameDayIn(into, item.dueOn)) },
+          planning,
+        )
+      : planItem(draft, planning);
+  });
+}
+
+/**
  * Whether a Fixed item has been paid.
  *
  * One reading of `payment` rather than a field, so nothing anywhere can hold
@@ -429,10 +496,16 @@ export function dueNotice(
  * to.
  *
  * A Budget stays editable throughout its month (CONTEXT.md), and nothing here
- * asks whether the month is still open. The close is what shuts editing down,
- * it freezes a month's Movements as much as its plan, and it has not been
- * built yet -- so it will refuse this in one place, above the domain, rather
- * than growing a second half-answer here that would then have to agree with it.
+ * asks whether the month is still open. That promise is now paid: the close
+ * exists (#117), and it refuses this in one place above the domain --
+ * `refuseAClosedMonth` in `src/db/closed-months.ts`, which every write into a
+ * month asks before it writes.
+ *
+ * It stays out of here on purpose, and not because it was easier. The question
+ * is about rows: whether a month is closed cannot be answered from an item and
+ * a set of changes, and a `closed: boolean` threaded into this signature would
+ * be a second half-answer that had to agree with the first. The day the two
+ * disagreed is the day a closed month quietly accepted an edit.
  *
  * Neither the month nor the Space is a change: an item on another month is not
  * a correction of this plan, it is an item on another one. They are absent

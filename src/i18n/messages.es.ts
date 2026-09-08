@@ -25,7 +25,7 @@ export const es = {
   // Two whole sentences rather than a count glued to a word, so a second
   // language can put them in whatever order it puts them in.
   "spaces.who.alone": "Solo vos · {currency}",
-  "spaces.who.several": "{count} miembros · {currency}",
+  "spaces.who.shared": "Compartido con {member} · {currency}",
   "spaces.active": "Activo",
   // What the month has cost, and what it was planned to (story 5 of #1).
   "spaces.card.spent": "Gastado",
@@ -87,6 +87,10 @@ export const es = {
   "space.month.income": "Ingresos",
   "space.members": "Miembros",
   "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
+  // The same fact in the tense a closed month has (#119). "Todavía no" is a
+  // *not yet*, and a month that can never change again has no yet left -- the
+  // same reason "Pendiente" gives way to "Nunca se pagó" one tab across.
+  "space.movements.empty.closed": "No quedó ningún movimiento anotado acá.",
   "space.month.choose": "Elegir el mes",
   // The pill at the top of the plan and of the month's list (#40, #61). The
   // month first, because the accessible name has to start with the word a
@@ -94,6 +98,12 @@ export const es = {
   // walker they named: there is one way to change the month, and it is this.
   "space.month.pill": "{month}, elegir el mes",
   "space.month.inView": "Mes que est\u00e1s viendo",
+  // The second state a row of that list has ever carried (#119). Words and a
+  // padlock, never a colour on its own, for the reason the badge at the end of
+  // a Fixed row gives -- and said here rather than only on arrival, because a
+  // closed month is a screen that behaves differently and finding that out by
+  // reaching for a control that is gone is finding it out too late.
+  "space.month.closed": "Mes cerrado",
 
   // What the month was planned to cost, beside what it really cost (#40). A
   // pair of nouns on one card, the way the month's list writes "Ingresos" and
@@ -140,6 +150,35 @@ export const es = {
   // The empty state says what to do, not that there is nothing: a month
   // nobody has planned yet is the ordinary state of every first of the month.
   "budget.empty": "Todav\u00eda no planeaste este mes.",
+  // The one line a closed month adds to the top of the plan (#119). It is not
+  // an error and nothing just happened: it is why every control below it is
+  // missing, which is the exact job `Notice` exists for.
+  //
+  // The month is named rather than called "este mes", because somebody can
+  // arrive here from a link or from the picker and the sentence has to be true
+  // read on its own. In the past tense throughout: "no se puede cambiar" is
+  // what the close bought, and there is no unlock to hint at (ADR-0002).
+  "budget.closed":
+    "{month} está cerrado. Nada de lo que quedó acá se puede cambiar.",
+  // The same line at the top of the month's list. Its own key and not the
+  // plan's, because the two screens lose different things to the close and a
+  // shared string is a string that stops fitting one of them.
+  "movements.closed":
+    "{month} está cerrado. Nada de lo que quedó acá se puede cambiar.",
+  // What the Movement's own screen says where its form and its "Anular" used
+  // to be. The Category and the day under what it is called, the way the row
+  // on the list writes its second line.
+  "movements.closed.beneath": "{category} · {day}",
+  "movements.closed.title": "Este mes está cerrado",
+  "movements.closed.body":
+    "Lo que quedó anotado en un mes cerrado no se puede corregir ni anular. Nunca.",
+  // The other reason a Movement's screen has no form (#120). A carry-over is
+  // not typed, so there is nothing on it to correct -- but unlike the close,
+  // this refusal has a way out, and it is the "Anular" left standing under the
+  // card rather than a link inside it (ADR-0031, ADR-0034).
+  "movements.carriedOver.title": "Esto es un arrastre",
+  "movements.carriedOver.body":
+    "El monto es lo que sobró del mes que se cerró, así que no se corrige. Si te equivocaste, anulalo y aprobalo de nuevo.",
   // The words on the row that opens the plan, above both of its sections
   // (#81, ADR-0045). They name the destination and not the kind, which is what
   // #80 made sayable: there is one way in for both kinds now, so the row can
@@ -152,6 +191,46 @@ export const es = {
   // item is called wherever a person reads one, and the screen this row opens
   // is still titled with it.
   "budget.plan.new": "Agregar al plan",
+  // The offer to carry last month's plan forward (#121), on a row above
+  // "Agregar al plan" in the same card. Two answers to one sentence, in the
+  // order the artboard draws them: the plan a person almost certainly wants is
+  // first, and writing one from nothing stays where it always was.
+  //
+  // The month is named and never called "el mes pasado", which is decision 22
+  // of #109 and the thing that makes an unbounded lookback safe: the last plan
+  // there is can be from March, and "el plan del mes pasado" said about March
+  // in October is an offer accepted for a month nobody meant. Lower case,
+  // because a month inside a sentence is written that way in Spanish
+  // (`monthName`).
+  "budget.plan.copy": "Copiar el plan de {month}",
+  // The sheet the row opens, which is the shape "Marcar pagado" already uses:
+  // a row opens a sheet, the sheet says what is about to happen, the person
+  // confirms. The title names the month being copied *from*, because that is
+  // the fact a person is checking before they say yes; the button names the
+  // month it lands on, because that is what tapping it does.
+  "budget.plan.copy.title": "\u00bfCopiar el plan de {month}?",
+  // What the copy does, said before it happens rather than discovered after.
+  // The two facts a person cannot see from the row: the amounts come with it,
+  // and a Fijo arrives pending on a day in this month -- it does not arrive
+  // paid because somebody paid it last month (decision 9 of #109).
+  "budget.plan.copy.body":
+    "Se copian los gastos previstos con sus montos. Los gastos fijos vuelven a quedar pendientes y sus fechas se corren a {month}.",
+  // "4 gastos previstos \u00b7 $2.053.900". The noun in full and never
+  // "renglones", which `CONTEXT.md` refuses under Line and Row -- the artboard
+  // wrote it as working material and the vocabulary is decided here (ADR-0040).
+  "budget.plan.copy.tally": "{count} gastos previstos \u00b7 {total}",
+  "budget.plan.copy.tally.one": "1 gasto previsto \u00b7 {total}",
+  // The reassurance under the recap. It is the answer to the only real fear a
+  // person has about accepting a whole plan at once: that they are agreeing to
+  // it rather than starting from it.
+  "budget.plan.copy.reassurance": "Vas a poder editarlo todo el mes.",
+  "budget.plan.copy.confirm": "Copiar a {month}",
+  "budget.plan.copy.working": "Copiando\u2026",
+  // The way out, and it is not "Cancelar". Cancelling closes a sheet and
+  // leaves a person where they were; this names the other thing they can do,
+  // which is the plan they came to write. The row underneath does it, so this
+  // only has to close.
+  "budget.plan.copy.scratch": "Empezar de cero",
   // What a Budget item is called where a person reads it (#82, ADR-0040).
   // "Ítem" was never chosen for it: it is the container word `CONTEXT.md`'s
   // own avoid list already refuses under Line, Entry and Row, and it names
@@ -213,6 +292,19 @@ export const es = {
     "Para corregirlo o sacarlo del plan, primero anul\u00e1 el movimiento que lo pag\u00f3.",
   "budget.fixed.paid.movement": "Ver el movimiento",
 
+  // The same card, for the refusal that has no way out (#119). A closed month
+  // takes the correction and the removal off both kinds at once, so it is one
+  // pair of strings and not one per kind.
+  //
+  // No "Ver el movimiento" beside it and no third line offering anything,
+  // which is the whole difference from the pair above: that refusal is undone
+  // by striking a Movement, and this one is the single act in contaro with no
+  // undo at all (ADR-0002). A sentence pointing somewhere would be pointing at
+  // a screen that refuses the same thing.
+  "budget.item.closed.title": "Este mes está cerrado",
+  "budget.item.closed.body":
+    "Lo que quedó anotado en un mes cerrado no se puede corregir ni sacar del plan. Nunca.",
+
   // The other half of a Budget (#13): the amounts whose day and figure are
   // known in advance. Above the Variables, the way the canvas draws them, and
   // named for the kind of item rather than for the grouping. `GroupedList`
@@ -229,6 +321,11 @@ export const es = {
   // the state has to survive somebody who cannot tell the two grounds apart.
   "budget.fixed.paid": "Pagado",
   "budget.fixed.pending": "Pendiente",
+  // The third thing that badge can say, and it exists because the second one
+  // stopped being true (#119). "Pendiente" means *not yet*; after the close
+  // there is no yet, and an item that was never paid in a month that can never
+  // change again is owed the past tense.
+  "budget.fixed.never": "Nunca se pagó",
   // "Vivienda · 1 sep" — the Category and the day, under the name.
   "budget.fixed.beneath": "{category} \u00b7 {day}",
   // What an item close to its day says, in words and not only in the amber
@@ -277,8 +374,159 @@ export const es = {
   // "Esa invitación ya no está" (#82).
   "budget.error.gone": "Ese gasto previsto ya no est\u00e1.",
   "budget.error.alreadyPaid": "Ese gasto fijo ya estaba pagado.",
+  // The month a copy was carrying emptied in between. Named as the month
+  // rather than as "el plan", because what is gone is every item on it and a
+  // person is about to look for it.
+  "budget.error.nothingToCopy": "Ese mes ya no tiene un plan para copiar.",
+  // The other thumb won. Not an apology and not "prob\u00e1 de nuevo": trying
+  // again is exactly the wrong move, because the plan they wanted is already
+  // there and a second copy would double it.
+  "budget.error.alreadyPlanned":
+    "Este mes ya tiene un plan. Volv\u00e9 a cargar la pantalla para verlo.",
+  // The month is closed, and there is no way back into it (ADR-0002). Said as
+  // a fact and never as an apology, and with no "probá de nuevo": trying again
+  // is the one thing that will never work, and the person did nothing wrong.
+  // It says what to do instead, because there is something -- the money still
+  // goes somewhere, and it goes on this month.
+  "budget.error.monthClosed":
+    "Ese mes está cerrado y no se puede cambiar. Anotalo en el mes en curso.",
   "budget.error.signedOut": "Se cerr\u00f3 tu sesi\u00f3n. Entr\u00e1 de nuevo.",
   "budget.error.failed": "No pudimos guardar el gasto previsto. Prob\u00e1 de nuevo.",
+
+  // The monthly close (#117). The act itself, and every way it can be refused.
+  //
+  // ADR-0002 is the whole voice of this section: the close has no undo, so
+  // nothing here softens it or hedges it, and nothing invites a person to try
+  // again at something that already happened. The last one does invite a
+  // retry, and that is the difference it turns on: a dropped connection is the
+  // one refusal here where nothing was closed and trying again is the fix.
+  "close.error.notTheCreator":
+    "Solo quien creó el espacio puede cerrar un mes.",
+  // The month is still running for the person tapping, whatever the server
+  // thinks (ADR-0018). It says when they can come back rather than only that
+  // they cannot yet, because the answer is a day away and nothing they do
+  // brings it closer.
+  "close.error.notOverYet":
+    "Todavía no terminó el mes. Vas a poder cerrarlo cuando termine.",
+  // A month no calendar has, off a form nobody types into: the screen is
+  // broken rather than the answer wrong. Named anyway, the way the plan names
+  // its own, so a person who somehow sees it knows it was not them.
+  "close.error.month": "No pudimos ver de qué mes se trata.",
+  // The other thumb won, and nothing went wrong. No "probá de nuevo": the
+  // month is exactly as they wanted it, and there is no second close.
+  "close.error.alreadyClosed": "Ese mes ya estaba cerrado.",
+  "close.error.failed": "No pudimos cerrar el mes. Probá de nuevo.",
+
+  /*
+   * The month that ended, said on the Budget screen until it is closed (#118).
+   *
+   * Two sentences for one fact, and the difference between them is the whole
+   * asymmetry ADR-0051 admits: the creator is told the month ended and invited
+   * to finish it, and the invited Member is told the same thing and who it is
+   * waiting on. Neither is shown a button the other one owns.
+   *
+   * "Cuando no le falte nada" and not "cuando quieras". The close is not a
+   * preference -- it is a claim that the month is fully loaded -- and the only
+   * honest instruction is the one that names the condition.
+   */
+  "close.waiting.title": "Cierre del mes",
+  "close.waiting.mine": "{month} terminó. Cuando no le falte nada, cerralo.",
+  "close.waiting.theirs": "{month} terminó y espera que {member} lo cierre.",
+  "close.waiting.act": "Cerrar {month}",
+
+  // The sheet the artboard draws (`design/SheetCerrar.dc.html`), grouped the
+  // way it groups them: the plain paragraph carries the whole of what closing
+  // does, and the block set apart from it carries the one rule a person will
+  // meet later without being told -- what happens to a September ticket found
+  // in October.
+  "close.sheet.body":
+    "Esto no tiene vuelta atrás. Después de cerrar no vas a poder editar ni agregar nada a {month} — nunca.",
+  "close.sheet.late":
+    "Si aparece un ticket de {month} después, se va a cargar con la fecha del día en que lo cargues y va a descontar del presupuesto de {next}.",
+  // What the month holds, so nobody freezes it blind. The pending line is the
+  // only one worth acting on, so it is the only one that has a "nothing" to
+  // say: "0 fijos pendientes" is a worry printed where there is none.
+  //
+  // The artboard labels that line "Sin cargar hoy" and this is the one word on
+  // the sheet that departs from it. The row counts Fixed items of the whole
+  // month that were never marked paid; "hoy" is a different question and the
+  // label would misdescribe its own figure. Said as what it counts instead.
+  "close.sheet.movements": "Movimientos",
+  "close.sheet.pending": "Sin pagar",
+  "close.sheet.pending.none": "Nada pendiente",
+  "close.sheet.pending.one": "1 fijo pendiente",
+  "close.sheet.pending.many": "{count} fijos pendientes",
+  "close.sheet.confirm": "Cerrar {month}",
+  "close.sheet.working": "Cerrando\u2026",
+  // "Todavía no" and not "Cancelar" (the artboard). Cancelling says the tap
+  // was a mistake; this says the month is not finished yet, which is the true
+  // reason somebody backs out of this sheet.
+  "close.sheet.notYet": "Todavía no",
+
+  /*
+   * The Carry-over (#120, ADR-0003). What a closed month left the next one, and
+   * the one thing about it that is not symmetric.
+   *
+   * The whole voice of this section is that a surplus and a deficit are two
+   * different sentences with two different jobs. The surplus offers, and says
+   * where the money goes and that it belongs to neither Member. The deficit
+   * only ever states -- there is no verb anywhere in it, because approving a
+   * debt into existence was never a thing to put under a thumb -- and it has to
+   * answer, unasked, the question anybody would have: why is this not coming
+   * off this month.
+   */
+  "carry.title": "Arrastre",
+  // The surplus, as the card's own sentence. It names both months, because the
+  // whole of what a person needs to decide is where it came from and where it
+  // is going.
+  "carry.surplus.mine": "Sobraron {amount} en {month}.",
+  // The invited Member's row: it states, and names who it is waiting on, the
+  // same way the close's does (ADR-0051, ADR-0053). Never a greyed-out button.
+  "carry.surplus.theirs":
+    "Sobraron {amount} en {month} y espera que {member} lo apruebe.",
+  // The surplus on a month that has since been closed: shown and not offered
+  // (ADR-0054). The control comes off and the sentence stays.
+  "carry.surplus.closed": "Sobraron {amount} en {month} y no se aprobó.",
+  "carry.surplus.act": "Aprobar el arrastre",
+  // The deficit. Two sentences and not one: the first is what happened, and the
+  // second is the rule -- and the rule is the half a person would otherwise
+  // read as a bug.
+  "carry.deficit": "Se gastaron {amount} de más en {month}.",
+  "carry.deficit.why":
+    "No se descuenta de este mes: esa plata ya se gastó, y lo que la pagó se anota acá como gasto.",
+
+  // The sheet the surplus opens. It confirms one act and explains the one thing
+  // about it that surprises people: the money comes back with nobody's name on
+  // it, because nobody earned it (ADR-0003).
+  "carry.sheet.title": "Sobraron {amount} en {month}",
+  "carry.sheet.body":
+    "Si lo aprobás, entra como ingreso de {next}. No se atribuye a ninguno de los dos, porque no lo ganó nadie.",
+  "carry.sheet.confirm": "Aprobar el arrastre",
+  "carry.sheet.working": "Aprobando\u2026",
+  // "Ahora no" and not "Cancelar", which the artboard already drew: this act
+  // does not expire, and the honest reason somebody backs out of it is that
+  // they are not deciding it right now.
+  "carry.sheet.notNow": "Ahora no",
+
+  /*
+   * The refusals. The two in the middle are the ones nothing fixes -- a deficit
+   * is never carried, and a month that landed on its plan left nothing -- so
+   * neither invites a retry. The last one does, and for the reason the close's
+   * does: a dropped connection is the one refusal here where nothing happened
+   * and trying again is the fix.
+   */
+  "carry.error.notTheCreator":
+    "Solo quien creó el espacio puede aprobar el arrastre.",
+  "carry.error.nothingToCarry": "Ese mes no dejó nada para arrastrar.",
+  "carry.error.aDeficit":
+    "Lo que se gastó de más no se arrastra: esa plata ya se gastó, y lo que la pagó se anota en el mes en que se paga.",
+  "carry.error.notOverYet": "Todavía no terminó ese mes.",
+  "carry.error.notClosed":
+    "Ese mes todavía no está cerrado, así que lo que sobró no es definitivo.",
+  "carry.error.monthIsClosed":
+    "Este mes está cerrado y no se le puede agregar nada.",
+  "carry.error.month": "No pudimos ver de qué mes se trata.",
+  "carry.error.failed": "No pudimos aprobar el arrastre. Probá de nuevo.",
 
   "movements.new": "Anotar un movimiento",
   "movements.new.title": "Nuevo movimiento",
@@ -289,6 +537,10 @@ export const es = {
   // What an income row is called on the month's list. It carries no Category
   // (#8), so this is the whole of its name.
   "movements.income": "Ingreso",
+  // The one income nobody earned, read by where it came from (ADR-0003, #120).
+  // "Ingreso" alone would put a figure on the list that a person cannot account
+  // for, and there is no Category and no typed name to fall back on.
+  "movements.carriedOver": "Arrastre de {month}",
   // The one mark that tells money coming in from money going out at a glance.
   // A written sign, and since #39 a colour as well: the sign is what somebody
   // who cannot tell the two greens apart reads, and the colour is what makes
@@ -304,6 +556,15 @@ export const es = {
   "movements.change": "Cambiar",
   "movements.when.title": "Cuándo y de quién",
   "movements.when.change": "Cambiar cuándo y de quién",
+  // What the line says when the day picked falls inside a closed month (#119).
+  // It names the month rather than saying "ese mes", because the day above it
+  // is written as "30 de agosto" and the two have to be the same August.
+  //
+  // It names the way out in the same breath. The refusal on its own would be a
+  // dead end, and unlike the closed screens there is one here: pick another
+  // day. Nothing is offered that would unlock anything (ADR-0002).
+  "movements.when.closed":
+    "{month} está cerrado. Elegí un día de un mes que siga abierto.",
   "movements.day": "Día",
   "movements.attributedTo": "Es plata de",
   "movements.recordedBy": "Anotado por {member}",
@@ -329,6 +590,11 @@ export const es = {
   "movements.error.direction": "Elegí si es un gasto o un ingreso.",
   "movements.error.space": "No pudimos ver de qué espacio se trata.",
   "movements.error.gone": "Ese movimiento ya no está.",
+  // The same fact the plan states, said about a Movement. ADR-0002 decided
+  // where a late ticket goes, so this points at the answer rather than leaving
+  // a person holding a receipt with nowhere to put it.
+  "movements.error.monthClosed":
+    "Ese mes está cerrado y no se puede cambiar. Cargalo con la fecha de hoy y va a descontar del mes en curso.",
   "movements.error.signedOut": "Se cerró tu sesión. Entrá de nuevo.",
   "movements.error.failed": "No pudimos guardar el movimiento. Probá de nuevo.",
 

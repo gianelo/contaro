@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { Space } from "@/domain/space/space";
-import { currencyLabel } from "@/i18n/currency";
 import { t } from "@/i18n";
 import styles from "./head.module.css";
 
@@ -43,8 +42,6 @@ export type SpaceHeadProps = {
  * shell out of reach of a test that only wants to read a heading.
  */
 export function SpaceHead({ space, title, beside }: SpaceHeadProps) {
-  const currency = currencyLabel(space.currency);
-
   return (
     <header className={styles.head}>
       <div className={styles.headline}>
@@ -54,12 +51,18 @@ export function SpaceHead({ space, title, beside }: SpaceHeadProps) {
       {/*
         The Space is written into this line only where the title is not the
         Space: on a screen whose heading is already "Casa", a line reading
-        "Casa · Peso argentino (ARS)" says the same word twice.
+        "Casa · ARS" says the same word twice.
+
+        The currency is its code and not its name, because whoever reads this
+        line is already inside the Space: they chose that money once and can
+        never change it (ADR-0001). A currency's name is what a picker owes
+        somebody choosing between currencies they do not know, and there is
+        exactly one of those (ADR-0056).
       */}
       <p className={styles.beneath}>
         {title === undefined
-          ? currency
-          : t("space.beneath", { space: space.name, currency })}
+          ? space.currency
+          : t("space.beneath", { space: space.name, currency: space.currency })}
       </p>
     </header>
   );

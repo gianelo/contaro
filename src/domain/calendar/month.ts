@@ -144,6 +144,29 @@ export function lastDayOf(month: Month): CalendarDate {
 }
 
 /**
+ * Whether a month is behind the day somebody is standing in.
+ *
+ * The one question the monthly close rests on, and the reason it takes a day
+ * rather than reading a clock. ADR-0018 made "today" the Reader's, and this is
+ * where that matters most in the whole product: at nine at night on the 30th in
+ * Bogota the server is already in October and the Member is not, so a close
+ * decided on the server's day would offer to permanently freeze a month that,
+ * for the person looking at it, is still running. There is no undo.
+ *
+ * The last day of a month is still inside it. Somebody standing on the 30th of
+ * September has not finished September -- money moves on the last day of a
+ * month like any other -- so the month is over on the 1st of October and not a
+ * day sooner.
+ */
+export function hasEnded(of: Month, today: CalendarDate): boolean {
+  // Compared as text, which is exactly what `WRITTEN` buys: two days written
+  // with the same leading zeros sort the way the calendar orders them, so this
+  // is the same answer `daysBetween` would give without building two `Date`s
+  // to throw away.
+  return today > lastDayOf(of);
+}
+
+/**
  * How many days a month has.
  *
  * `lastDayOf` said as a number, because two things want the count rather than
@@ -154,7 +177,19 @@ export function lastDayOf(month: Month): CalendarDate {
  * module's business and nobody else's.
  */
 export function daysIn(month: Month): number {
-  return Number(lastDayOf(month).slice(8));
+  return dayOfMonth(lastDayOf(month));
+}
+
+/**
+ * Which of its month's days a day is: `2026-09-22` is the 22nd.
+ *
+ * The other direction of `dayOf`, and here for the reason that one is: reading
+ * a `CalendarDate` apart by string offset is this module's business and
+ * nobody else's. It was spelled out as `Number(date.slice(8))` in four places
+ * before it had a name, which is four copies of one fact about a format.
+ */
+export function dayOfMonth(date: CalendarDate): number {
+  return Number(date.slice(8));
 }
 
 /**
@@ -181,6 +216,26 @@ export function dayOf(of: Month, dayOfMonth: number): CalendarDate {
   // `calendarDate` is what refuses a 31st of September: it builds the day and
   // asks whether it came back the same.
   return calendarDate(`${of}-${String(dayOfMonth).padStart(2, "0")}`);
+}
+
+/**
+ * The day a plan carried into another month falls on: the 22nd of August
+ * becomes the 22nd of September.
+ *
+ * The one place in this module where a day is moved rather than refused, and
+ * the difference from `dayOf` is who chose it. `dayOf` refuses the 31st of
+ * September because somebody typed a 31 and a typed day is an answer -- moving
+ * it back would be answering for them. Nobody types this one: it is the day an
+ * item already had, carried into a month that was not consulted about it, and
+ * a plan copied forward has to land somewhere.
+ *
+ * So the last day the month has, which is the nearest day that will actually
+ * arrive, and never a day in the month after (ADR-0050). It stays visible and
+ * correctable on the plan it lands on, which is what makes moving it honest
+ * here and dishonest there.
+ */
+export function sameDayIn(of: Month, date: CalendarDate): CalendarDate {
+  return dayOf(of, Math.min(dayOfMonth(date), daysIn(of)));
 }
 
 /**

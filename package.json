@@ -17,7 +17,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "check:migrations": "node scripts/check-migrations.js",
-    "verify": "pnpm typecheck && pnpm lint && pnpm check:migrations && pnpm test",
+    "check:design": "node scripts/check-design-bundle.js",
+    "build:design": "node scripts/check-design-bundle.js --write",
+    "verify": "pnpm typecheck && pnpm lint && pnpm check:migrations && pnpm check:design && pnpm test",
     "test:db": "pnpm db:up && pnpm db:migrate && vitest run --config vitest.integration.config.ts",
     "verify:all": "pnpm verify && pnpm test:db && pnpm test:e2e"
   },

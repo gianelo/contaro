@@ -7,6 +7,7 @@ import { database } from "@/db/client";
 import {
   amendBudgetItemInSpace,
   amendFixedItemInSpace,
+  copyPlanIntoMonth,
   payFixedItemInSpace,
   planBudgetItemInSpace,
   planFixedItemInSpace,
@@ -19,6 +20,7 @@ import { report } from "@/app/report";
 import {
   handleAmendBudgetItem,
   handleAmendFixedItem,
+  handleCopyPlan,
   handlePayFixedItem,
   handlePlanBudgetItem,
   handleRemoveBudgetItem,
@@ -27,6 +29,7 @@ import {
   type BudgetPorts,
 } from "./plan";
 import { monthInView } from "../movimientos/month";
+import { month as asMonth, isMonth } from "@/domain/calendar/month";
 
 /**
  * All the behaviour is in `plan.ts`, which is driven directly by tests. This
@@ -66,6 +69,8 @@ async function ports(): Promise<BudgetPorts> {
       removeBudgetItemFromSpace(database(), space, itemId),
     pay: (recorder, itemId) =>
       payFixedItemInSpace(database(), recorder, itemId),
+    copyPlan: (space, from, into) =>
+      copyPlanIntoMonth(database(), space, from, into),
   };
 }
 
@@ -97,6 +102,49 @@ export async function payFixedItemAction(
         monthInView(answer(form, "mes"), todayFor(await headers())),
       ),
     );
+  }
+
+  return { error: refusalMessage(outcome) };
+}
+
+/**
+ * A month with no plan takes the most recent one there is (#121).
+ *
+ * Both months come off the form, and the one being copied is the one the offer
+ * named: the row a person tapped said "Copiar el plan de agosto", so agosto is
+ * what this copies even if a plan appeared on a nearer month in between. The
+ * alternative is a copy that quietly disagrees with the words that were tapped.
+ *
+ * The month it lands on goes through `monthInView` like every other redirect
+ * here, and the month it copies through `isMonth`. Two different questions:
+ * one is "which screen is this" and falls back to the month being lived in,
+ * and the other is "which plan was offered", which has no sensible fallback --
+ * a month nobody named is a month nobody agreed to copy, so it is refused by
+ * the same seam a bad amount is.
+ */
+export async function copyPlanAction(
+  _previous: BudgetFormState,
+  form: FormData,
+): Promise<BudgetFormState> {
+  const spaceId = answer(form, "spaceId");
+  const into = monthInView(answer(form, "mes"), todayFor(await headers()));
+  const from = answer(form, "desde");
+
+  if (!isMonth(from)) {
+    return { error: refusalMessage({ kind: "rejected", field: "month" }) };
+  }
+
+  const outcome = await handleCopyPlan(
+    await ports(),
+    spaceId,
+    asMonth(from),
+    into,
+  );
+
+  report("Copying a month's plan forward", outcome);
+
+  if (outcome.kind === "copied") {
+    redirect(budgetScreen(spaceId, into));
   }
 
   return { error: refusalMessage(outcome) };

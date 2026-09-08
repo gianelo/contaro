@@ -15,6 +15,7 @@ const movement = (changes: Partial<ReadableMovement> = {}): ReadableMovement => 
   day: "Hoy",
   occurredOn: calendarDate("2026-09-05"),
   categoryId: "food.groceries",
+  carriedFrom: null,
   attributedTo: "member-1",
   mark: { kind: "icon", name: "cart", tint: "green" },
   whose: { name: "Gian Solo", colour: "first" },

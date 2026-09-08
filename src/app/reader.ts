@@ -54,6 +54,20 @@ export function todayFor(headers: Headers): CalendarDate {
 }
 
 /**
+ * The day a moment fell on, where this request's Reader is standing.
+ *
+ * `todayFor` above answers it for now; this answers it for a moment already
+ * recorded — when a Member last opened a Space, when they joined it (#118).
+ * Beside it and through the same private zone, so a caller that needs a stored
+ * instant read as a day cannot reach for the zone and start deciding for
+ * itself: that is how four copies of one turn appeared before `todayFor`
+ * collected them.
+ */
+export function dayForReader(headers: Headers, at: Date): CalendarDate {
+  return dayIn(timeZoneFor(headers), at);
+}
+
+/**
  * The person a screen is being written for, and the two things about them a
  * screen needs to know.
  *

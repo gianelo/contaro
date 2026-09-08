@@ -1,5 +1,6 @@
 import { database } from "@/db/client";
 import { membersOfSpace } from "@/db/spaces";
+import { closedMonthsFrom } from "@/db/closed-months";
 import { findMovementInSpace, movementsInMonth } from "@/db/movements";
 import type { CalendarDate, Month } from "@/domain/calendar/month";
 import { calendarDate, isMonth, monthOf } from "@/domain/calendar/month";
@@ -15,7 +16,7 @@ import type { SpaceMember } from "@/domain/space/access";
 import type { Space } from "@/domain/space/space";
 import { t } from "@/i18n";
 import type { ReadableBranch } from "@/i18n/category";
-import { dayLabel, monthLabel } from "@/i18n/day";
+import { dayLabel, monthLabel, monthName } from "@/i18n/day";
 import type { Reader } from "@/app/reader";
 import type { ChipBranch } from "@/ui/branching-chip-field";
 import { incomeMark } from "@/i18n/category";
@@ -26,7 +27,11 @@ import {
   readableCatalogueFor,
   type Naming,
 } from "../categorias/catalogue";
-import { monthChoices, type ReadableMonthChoice } from "../months";
+import {
+  earliestOffered,
+  monthChoices,
+  type ReadableMonthChoice,
+} from "../months";
 
 /**
  * The day it is, by the server's clock.
@@ -109,7 +114,22 @@ export type ReadableMovement = {
   day: string;
   occurredOn: CalendarDate;
   categoryId: string | null;
-  attributedTo: string;
+  /**
+   * Whose money it was, or nothing at all on the one Movement nobody earned:
+   * the Carry-over (ADR-0003). The correction screen never opens on one, so
+   * this is read and never posted back.
+   */
+  attributedTo: string | null;
+  /**
+   * The month a carry-over came out of, and nothing on every other Movement
+   * (**Origin** in CONTEXT.md).
+   *
+   * The month itself and not a `carried: boolean`, because the two screens that
+   * read it read different things from it: the row already has the sentence it
+   * is named by, and the detail screen has a refusal to draw and needs to know
+   * this is the row it is about at all.
+   */
+  carriedFrom: Month | null;
   /**
    * What is drawn in the circle at the start of the row (#39).
    *
@@ -165,6 +185,15 @@ export type ReadableMonth = {
    * different months depending on the tab is a picker a thumb cannot predict.
    */
   choices: readonly ReadableMonthChoice[];
+  /**
+   * Whether this month has been closed (#119).
+   *
+   * The list itself loses nothing to it -- every row here is a link, and the
+   * raised control records a Movement dated today, which is never inside a
+   * closed month. It is carried because the screens below it are where the
+   * controls live.
+   */
+  closed: boolean;
 };
 
 /**
@@ -230,10 +259,13 @@ export async function readableMonth(
   month: Month,
   reader: Reader,
 ): Promise<ReadableMonth> {
-  const [recorded, catalogue, members] = await Promise.all([
+  const [recorded, catalogue, members, closed] = await Promise.all([
     movementsInMonth(database(), space, month),
     readableCatalogueFor(space.id),
     spaceMembers(space.id),
+    // The same question the plan asks and over the same window (#119), so the
+    // one pill both screens wear cannot be marked two ways.
+    closedMonthsFrom(database(), space.id, earliestOffered(month)),
   ]);
 
   const named = namesFrom(catalogue);
@@ -254,7 +286,8 @@ export async function readableMonth(
     // with them.
     spent: formatMoney(spent(recorded, space.currency), reader.locales),
     earned: formatMoney(earned(recorded, space.currency), reader.locales),
-    choices: monthChoices(month, monthOf(reader.today)),
+    choices: monthChoices(month, monthOf(reader.today), closed),
+    closed: closed.has(month),
   };
 }
 
@@ -330,10 +363,19 @@ function readable(
   // that reached this line has one (`filing`, plus the check in migration
   // 0005). Written down rather than left as a mystery, because a fallback with
   // no reason reads like a case somebody expected.
+  // A carry-over is read by where it came from, which is the only thing there
+  // is to say about it: it has no Category because income carries none, and no
+  // name because nobody typed one. "Ingreso" alone would put a figure on the
+  // month's list that a person cannot account for -- the one row in the ledger
+  // whose explanation is a month rather than a purchase (ADR-0003).
   const categoryName =
-    movement.direction === "income"
-      ? t("movements.income")
-      : (category?.name ?? movement.categoryId ?? "");
+    movement.carriedFrom !== null
+      ? t("movements.carriedOver", {
+          month: monthName(movement.carriedFrom, monthOf(reader.today)),
+        })
+      : movement.direction === "income"
+        ? t("movements.income")
+        : (category?.name ?? movement.categoryId ?? "");
 
   return {
     id: movement.id,
@@ -362,8 +404,14 @@ function readable(
     day: dayLabel(movement.occurredOn, reader.today),
     occurredOn: movement.occurredOn,
     categoryId: movement.categoryId,
+    carriedFrom: movement.carriedFrom,
     attributedTo: movement.attributedTo,
-    whose: whose.get(movement.attributedTo) ?? null,
+    // Nothing on a carry-over, which is ADR-0003's "attributed to no Member"
+    // arriving on the screen: no circle, because there is nobody to draw in it.
+    whose:
+      movement.attributedTo === null
+        ? null
+        : (whose.get(movement.attributedTo) ?? null),
     recordedBy: movement.recordedBy,
   };
 }

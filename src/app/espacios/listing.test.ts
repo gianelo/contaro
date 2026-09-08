@@ -20,7 +20,10 @@ const listed = (
   name: string,
   currency: CurrencyCode,
   members: readonly { id: string; name: string }[] = [gian],
-): SpaceWithMembers => ({ space: { id, name, currency }, members });
+): SpaceWithMembers => ({
+  space: { id, name, currency, createdBy: members[0]?.id ?? gian.id },
+  members,
+});
 
 const expense = (spaceId: string, amount: number, currency: CurrencyCode) =>
   ({
@@ -32,6 +35,7 @@ const expense = (spaceId: string, amount: number, currency: CurrencyCode) =>
     occurredOn: calendarDate("2026-09-03"),
     recordedBy: gian.id,
     attributedTo: gian.id,
+    carriedFrom: null,
     name: null,
   }) satisfies Movement;
 
@@ -54,8 +58,10 @@ const read = (
   movements: Record<string, readonly Movement[]> = {},
   items: Record<string, readonly BudgetItem[]> = {},
   lastOpened: string | null = null,
+  readBy: string = gian.id,
 ) =>
   readableSpaces(
+    readBy,
     spaces,
     new Map(Object.entries(movements)),
     new Map(Object.entries(items)),
@@ -142,10 +148,25 @@ describe("the Spaces a Member chooses from", () => {
       expect(card?.who).toBe("Solo vos · COP");
     });
 
-    it("counts the Members of a shared Space, and names its money", () => {
+    it("names the other Member of a shared Space, and its money", () => {
       const [card] = read([listed("space-1", "Casa", "COP", [gian, ana])]);
 
-      expect(card?.who).toBe("2 miembros · COP");
+      expect(card?.who).toBe("Compartido con Ana Junta · COP");
+    });
+
+    // The half that can actually be wrong. Both names are already beside this
+    // line on the avatars; the only thing this line adds is which of the two
+    // is the other one, so reading it as Ana has to name Gian.
+    it("names the other one and never whoever is reading", () => {
+      const [card] = read(
+        [listed("space-1", "Casa", "COP", [gian, ana])],
+        {},
+        {},
+        null,
+        ana.id,
+      );
+
+      expect(card?.who).toBe("Compartido con Gian Solo · COP");
     });
 
     it("hands the card everyone in it, so it can draw them", () => {
