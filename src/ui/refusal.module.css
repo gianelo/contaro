@@ -1,0 +1,29 @@
+/*
+ * The soft card a refusal takes, in the place the form it replaces would have
+ * been. Its own ground rather than the page's, because it has to read as a
+ * block that is standing in for something and not as a paragraph somebody
+ * scrolled past.
+ */
+.refusal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-7);
+  border-radius: var(--radius-lg);
+  background: var(--color-fill);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.body {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}

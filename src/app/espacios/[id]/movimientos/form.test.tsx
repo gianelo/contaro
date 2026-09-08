@@ -34,6 +34,7 @@ const props = {
   action: async () => nothingWrongYet,
   submit: "Guardar",
   working: "Guardando…",
+  closedMonths: [],
 } satisfies MovementFormProps;
 
 /**
@@ -156,5 +157,22 @@ describe("saying what a Movement was", () => {
     );
 
     expect(screen.getByRole("textbox", { name: "Qué fue" })).toHaveValue("Éxito");
+  });
+
+  /*
+   * #119, decision 16: "no greying, no disabling". A closed month never
+   * reaches this button, because `When` refuses the day rather than letting it
+   * through to be refused here.
+   */
+  it("leaves Save alone in a Space with closed months", () => {
+    render(
+      <MovementForm
+        {...props}
+        initial={{ ...props.initial, amount: 1500 }}
+        closedMonths={["2026-08"]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeEnabled();
   });
 });

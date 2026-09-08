@@ -38,6 +38,8 @@ export type MonthChoice = {
   href: string;
   /** Whether it is the month currently being read. */
   inView: boolean;
+  /** Whether it has been closed, and so is read and never written (#119). */
+  closed: boolean;
 };
 
 export type MonthPillProps = {
@@ -114,13 +116,36 @@ export function MonthPill({ label, choices }: MonthPillProps) {
                 a list somebody has to count their way through, and the tick is
                 a labelled image so it is read out rather than seen only.
               */
+              /*
+                Two marks and not one, because they are two independent facts
+                about one row (#119): where the reader is standing, and what
+                they will find when they land. A closed month reads first --
+                it is the one that changes what the next screen is, and the
+                row a person is already on has the least to learn from a tick.
+
+                Both are labelled images rather than colour, for the reason the
+                tick has always been one: a list where the difference is a
+                different grey is a list somebody has to count their way
+                through, and the padlock is read out rather than only seen.
+              */
               trailing={
-                choice.inView ? (
-                  <Icon
-                    name="check"
-                    size={CHECK}
-                    label={t("space.month.inView")}
-                  />
+                choice.closed || choice.inView ? (
+                  <>
+                    {choice.closed ? (
+                      <Icon
+                        name="lock"
+                        size={CHECK}
+                        label={t("space.month.closed")}
+                      />
+                    ) : null}
+                    {choice.inView ? (
+                      <Icon
+                        name="check"
+                        size={CHECK}
+                        label={t("space.month.inView")}
+                      />
+                    ) : null}
+                  </>
                 ) : undefined
               }
             >

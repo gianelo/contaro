@@ -87,6 +87,10 @@ export const es = {
   "space.month.income": "Ingresos",
   "space.members": "Miembros",
   "space.movements.empty": "Todavía no anotaste ningún movimiento acá.",
+  // The same fact in the tense a closed month has (#119). "Todavía no" is a
+  // *not yet*, and a month that can never change again has no yet left -- the
+  // same reason "Pendiente" gives way to "Nunca se pagó" one tab across.
+  "space.movements.empty.closed": "No quedó ningún movimiento anotado acá.",
   "space.month.choose": "Elegir el mes",
   // The pill at the top of the plan and of the month's list (#40, #61). The
   // month first, because the accessible name has to start with the word a
@@ -94,6 +98,12 @@ export const es = {
   // walker they named: there is one way to change the month, and it is this.
   "space.month.pill": "{month}, elegir el mes",
   "space.month.inView": "Mes que est\u00e1s viendo",
+  // The second state a row of that list has ever carried (#119). Words and a
+  // padlock, never a colour on its own, for the reason the badge at the end of
+  // a Fixed row gives -- and said here rather than only on arrival, because a
+  // closed month is a screen that behaves differently and finding that out by
+  // reaching for a control that is gone is finding it out too late.
+  "space.month.closed": "Mes cerrado",
 
   // What the month was planned to cost, beside what it really cost (#40). A
   // pair of nouns on one card, the way the month's list writes "Ingresos" and
@@ -140,6 +150,28 @@ export const es = {
   // The empty state says what to do, not that there is nothing: a month
   // nobody has planned yet is the ordinary state of every first of the month.
   "budget.empty": "Todav\u00eda no planeaste este mes.",
+  // The one line a closed month adds to the top of the plan (#119). It is not
+  // an error and nothing just happened: it is why every control below it is
+  // missing, which is the exact job `Notice` exists for.
+  //
+  // The month is named rather than called "este mes", because somebody can
+  // arrive here from a link or from the picker and the sentence has to be true
+  // read on its own. In the past tense throughout: "no se puede cambiar" is
+  // what the close bought, and there is no unlock to hint at (ADR-0002).
+  "budget.closed":
+    "{month} está cerrado. Nada de lo que quedó acá se puede cambiar.",
+  // The same line at the top of the month's list. Its own key and not the
+  // plan's, because the two screens lose different things to the close and a
+  // shared string is a string that stops fitting one of them.
+  "movements.closed":
+    "{month} está cerrado. Nada de lo que quedó acá se puede cambiar.",
+  // What the Movement's own screen says where its form and its "Anular" used
+  // to be. The Category and the day under what it is called, the way the row
+  // on the list writes its second line.
+  "movements.closed.beneath": "{category} · {day}",
+  "movements.closed.title": "Este mes está cerrado",
+  "movements.closed.body":
+    "Lo que quedó anotado en un mes cerrado no se puede corregir ni anular. Nunca.",
   // The words on the row that opens the plan, above both of its sections
   // (#81, ADR-0045). They name the destination and not the kind, which is what
   // #80 made sayable: there is one way in for both kinds now, so the row can
@@ -253,6 +285,19 @@ export const es = {
     "Para corregirlo o sacarlo del plan, primero anul\u00e1 el movimiento que lo pag\u00f3.",
   "budget.fixed.paid.movement": "Ver el movimiento",
 
+  // The same card, for the refusal that has no way out (#119). A closed month
+  // takes the correction and the removal off both kinds at once, so it is one
+  // pair of strings and not one per kind.
+  //
+  // No "Ver el movimiento" beside it and no third line offering anything,
+  // which is the whole difference from the pair above: that refusal is undone
+  // by striking a Movement, and this one is the single act in contaro with no
+  // undo at all (ADR-0002). A sentence pointing somewhere would be pointing at
+  // a screen that refuses the same thing.
+  "budget.item.closed.title": "Este mes está cerrado",
+  "budget.item.closed.body":
+    "Lo que quedó anotado en un mes cerrado no se puede corregir ni sacar del plan. Nunca.",
+
   // The other half of a Budget (#13): the amounts whose day and figure are
   // known in advance. Above the Variables, the way the canvas draws them, and
   // named for the kind of item rather than for the grouping. `GroupedList`
@@ -269,6 +314,11 @@ export const es = {
   // the state has to survive somebody who cannot tell the two grounds apart.
   "budget.fixed.paid": "Pagado",
   "budget.fixed.pending": "Pendiente",
+  // The third thing that badge can say, and it exists because the second one
+  // stopped being true (#119). "Pendiente" means *not yet*; after the close
+  // there is no yet, and an item that was never paid in a month that can never
+  // change again is owed the past tense.
+  "budget.fixed.never": "Nunca se pagó",
   // "Vivienda · 1 sep" — the Category and the day, under the name.
   "budget.fixed.beneath": "{category} \u00b7 {day}",
   // What an item close to its day says, in words and not only in the amber
@@ -430,6 +480,15 @@ export const es = {
   "movements.change": "Cambiar",
   "movements.when.title": "Cuándo y de quién",
   "movements.when.change": "Cambiar cuándo y de quién",
+  // What the line says when the day picked falls inside a closed month (#119).
+  // It names the month rather than saying "ese mes", because the day above it
+  // is written as "30 de agosto" and the two have to be the same August.
+  //
+  // It names the way out in the same breath. The refusal on its own would be a
+  // dead end, and unlike the closed screens there is one here: pick another
+  // day. Nothing is offered that would unlock anything (ADR-0002).
+  "movements.when.closed":
+    "{month} está cerrado. Elegí un día de un mes que siga abierto.",
   "movements.day": "Día",
   "movements.attributedTo": "Es plata de",
   "movements.recordedBy": "Anotado por {member}",

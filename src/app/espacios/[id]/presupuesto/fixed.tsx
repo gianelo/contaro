@@ -19,6 +19,13 @@ export type FixedItemsProps = {
   spaceName: string;
   /** The signed-in Member's name. Both halves of the recap are them. */
   memberName: string;
+  /**
+   * Whether the month this section belongs to has been closed (#119).
+   *
+   * One boolean and not a filtered set of rows, because a closed month changes
+   * what every row on it says and offers, and every row on it the same way.
+   */
+  closed: boolean;
 };
 
 /**
@@ -35,6 +42,11 @@ export type FixedItemsProps = {
  * of them left the other with nowhere to live. A paid row keeps the link and
  * loses the control -- there is nothing left to pay, and a control that opened
  * a sheet only to refuse is a control that exists to say no.
+ *
+ * A closed month is that same shape read from the other side (#119). Nothing
+ * here can be paid any more, so every row loses its control and keeps its
+ * link -- and the badge stops saying "Pendiente", which means *not yet* and is
+ * a promise a closed month cannot keep.
  */
 export function FixedItems({
   spaceId,
@@ -42,6 +54,7 @@ export function FixedItems({
   items,
   spaceName,
   memberName,
+  closed,
 }: FixedItemsProps) {
   // Which item the confirmation is about, and null while it is closed. The
   // item and not a boolean beside an id: the sheet writes its name, its
@@ -61,7 +74,11 @@ export function FixedItems({
   return (
     <>
       <GroupedList label={t("budget.fixed")}>
-        {items.map((item) => (
+        {items.map((item) => {
+          // Read once per row, so the three places it is used cannot disagree.
+          const saidDay = closed ? null : item.due;
+
+          return (
           <GroupedListItem
             key={item.id}
             href={`/espacios/${spaceId}/presupuesto/${item.id}`}
@@ -74,10 +91,21 @@ export function FixedItems({
             beside={
               <>
                 <span className={styles.amount}>{item.amount}</span>
+                {/*
+                  Three states written with two grounds, and the third is a
+                  word rather than a colour (#119): a payment that stands is
+                  the same "Pagado" whether the month is closed or not, and an
+                  item that never got one says so instead of promising a "yet"
+                  the close has already taken away.
+                */}
                 {item.paid ? (
                   <Badge variant="accent">{t("budget.fixed.paid")}</Badge>
                 ) : (
-                  <Badge variant="muted">{t("budget.fixed.pending")}</Badge>
+                  <Badge variant="muted">
+                    {closed
+                      ? t("budget.fixed.never")
+                      : t("budget.fixed.pending")}
+                  </Badge>
                 )}
               </>
             }
@@ -89,7 +117,7 @@ export function FixedItems({
               "Pendiente", which is the state the tap would leave behind.
             */
             besideAction={
-              item.paid
+              item.paid || closed
                 ? undefined
                 : {
                     label: t("budget.fixed.pay.row", { name: item.name }),
@@ -103,12 +131,21 @@ export function FixedItems({
               means, on one line. `due` is words and not only the amber it is
               written in: somebody who cannot tell the two greys apart still
               reads that the day is close, which is the whole point of it.
+
+              A closed month says nothing about the day at all (#119). It
+              already goes quiet on a paid item -- a countdown to a day that no
+              longer matters is noise beside "Pagado" -- and beside "Nunca se
+              pagó" it would be worse than noise: a second answer claiming a
+              deadline is still running in a month that ended.
             */}
-            <span className={item.due === null ? styles.beneath : styles.near}>
-              {item.due === null ? item.beneath : `${item.beneath} · ${item.due}`}
+            <span className={saidDay === null ? styles.beneath : styles.near}>
+              {saidDay === null
+                ? item.beneath
+                : `${item.beneath} · ${saidDay}`}
             </span>
           </GroupedListItem>
-        ))}
+          );
+        })}
       </GroupedList>
 
       {state.error ? (

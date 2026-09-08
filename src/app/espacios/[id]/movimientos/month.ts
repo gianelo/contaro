@@ -1,5 +1,6 @@
 import { database } from "@/db/client";
 import { membersOfSpace } from "@/db/spaces";
+import { closedMonthsFrom } from "@/db/closed-months";
 import { findMovementInSpace, movementsInMonth } from "@/db/movements";
 import type { CalendarDate, Month } from "@/domain/calendar/month";
 import { calendarDate, isMonth, monthOf } from "@/domain/calendar/month";
@@ -26,7 +27,11 @@ import {
   readableCatalogueFor,
   type Naming,
 } from "../categorias/catalogue";
-import { monthChoices, type ReadableMonthChoice } from "../months";
+import {
+  earliestOffered,
+  monthChoices,
+  type ReadableMonthChoice,
+} from "../months";
 
 /**
  * The day it is, by the server's clock.
@@ -165,6 +170,15 @@ export type ReadableMonth = {
    * different months depending on the tab is a picker a thumb cannot predict.
    */
   choices: readonly ReadableMonthChoice[];
+  /**
+   * Whether this month has been closed (#119).
+   *
+   * The list itself loses nothing to it -- every row here is a link, and the
+   * raised control records a Movement dated today, which is never inside a
+   * closed month. It is carried because the screens below it are where the
+   * controls live.
+   */
+  closed: boolean;
 };
 
 /**
@@ -230,10 +244,13 @@ export async function readableMonth(
   month: Month,
   reader: Reader,
 ): Promise<ReadableMonth> {
-  const [recorded, catalogue, members] = await Promise.all([
+  const [recorded, catalogue, members, closed] = await Promise.all([
     movementsInMonth(database(), space, month),
     readableCatalogueFor(space.id),
     spaceMembers(space.id),
+    // The same question the plan asks and over the same window (#119), so the
+    // one pill both screens wear cannot be marked two ways.
+    closedMonthsFrom(database(), space.id, earliestOffered(month)),
   ]);
 
   const named = namesFrom(catalogue);
@@ -254,7 +271,8 @@ export async function readableMonth(
     // with them.
     spent: formatMoney(spent(recorded, space.currency), reader.locales),
     earned: formatMoney(earned(recorded, space.currency), reader.locales),
-    choices: monthChoices(month, monthOf(reader.today)),
+    choices: monthChoices(month, monthOf(reader.today), closed),
+    closed: closed.has(month),
   };
 }
 

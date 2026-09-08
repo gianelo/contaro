@@ -21,6 +21,7 @@ const props = {
   attributedTo: gian,
   onDayChange: vi.fn(),
   onMemberChange: vi.fn(),
+  closedMonths: [] as readonly string[],
 };
 
 describe("the day and who the money belongs to", () => {
@@ -96,5 +97,74 @@ describe("the day and who the money belongs to", () => {
     const { container } = render(<When {...props} members={[gian]} />);
 
     expect(container.querySelector('input[name="attributedTo"]')).toBeNull();
+  });
+
+  /*
+   * #119, decision 20. This is the one path in the product that reaches
+   * backwards, and a closed month refuses whatever lands in it. The refusal is
+   * owed before somebody types rather than after they submit — and it is a
+   * refusal and never a disabled control, which decision 16 forbids outright.
+   */
+  describe("picking a day inside a closed month", () => {
+    const open = async () => {
+      await userEvent.click(
+        screen.getByRole("button", { name: "Cambiar cuándo y de quién" }),
+      );
+    };
+
+    it("does not take the day", async () => {
+      const onDayChange = vi.fn();
+      render(
+        <When {...props} onDayChange={onDayChange} closedMonths={["2026-08"]} />,
+      );
+      await open();
+
+      fireEvent.change(screen.getByLabelText("Día"), {
+        target: { value: "2026-08-30" },
+      });
+
+      expect(onDayChange).not.toHaveBeenCalled();
+    });
+
+    it("says which month it was, where the field is", async () => {
+      render(<When {...props} closedMonths={["2026-08"]} />);
+      await open();
+
+      fireEvent.change(screen.getByLabelText("Día"), {
+        target: { value: "2026-08-30" },
+      });
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /Agosto est\u00e1 cerrado/,
+      );
+    });
+
+    // The line outside still names the day that was kept: nothing was taken
+    // away, the new one was simply not accepted.
+    it("keeps the day the form already held", async () => {
+      render(<When {...props} closedMonths={["2026-08"]} />);
+      await open();
+
+      fireEvent.change(screen.getByLabelText("Día"), {
+        target: { value: "2026-08-30" },
+      });
+
+      expect(screen.getByLabelText("Día")).toHaveValue("2026-09-04");
+    });
+
+    it("takes a day of an open month and says nothing", async () => {
+      const onDayChange = vi.fn();
+      render(
+        <When {...props} onDayChange={onDayChange} closedMonths={["2026-08"]} />,
+      );
+      await open();
+
+      fireEvent.change(screen.getByLabelText("Día"), {
+        target: { value: "2026-09-02" },
+      });
+
+      expect(onDayChange).toHaveBeenCalledWith("2026-09-02");
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
   });
 });

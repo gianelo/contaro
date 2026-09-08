@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { month } from "@/domain/calendar/month";
-import { monthChoices } from "./months";
+import { earliestOffered, monthChoices } from "./months";
 
 const SEPTEMBER = month("2026-09");
+
+/** A Space that has closed nothing, for the tests that are not about closing. */
+const NONE: ReadonlySet<string> = new Set();
 
 describe("the months the pill offers", () => {
   /*
@@ -11,7 +14,7 @@ describe("the months the pill offers", () => {
    * only promise it; one function is what makes it true.
    */
   it("offers the whole year the month in view falls in, and one either side", () => {
-    expect(monthChoices(SEPTEMBER, SEPTEMBER).map((choice) => choice.month)).toEqual([
+    expect(monthChoices(SEPTEMBER, SEPTEMBER, NONE).map((choice) => choice.month)).toEqual([
       "2025-12",
       "2026-01",
       "2026-02",
@@ -33,7 +36,7 @@ describe("the months the pill offers", () => {
   // the fourteen: a list where nothing is marked is a list nobody can place
   // themselves in.
   it("marks the month being read, and only it", () => {
-    const marked = monthChoices(SEPTEMBER, SEPTEMBER).filter(
+    const marked = monthChoices(SEPTEMBER, SEPTEMBER, NONE).filter(
       (choice) => choice.inView,
     );
 
@@ -48,7 +51,7 @@ describe("the months the pill offers", () => {
    * stays bare in the same list, which is the whole point of the rule.
    */
   it("names a month of another year with its year, and the reader's without one", () => {
-    const labels = monthChoices(month("2027-03"), SEPTEMBER).map(
+    const labels = monthChoices(month("2027-03"), SEPTEMBER, NONE).map(
       (choice) => choice.label,
     );
 
@@ -57,8 +60,55 @@ describe("the months the pill offers", () => {
   });
 
   it("names a month of the reader's own year without one", () => {
-    const choices = monthChoices(SEPTEMBER, SEPTEMBER);
+    const choices = monthChoices(SEPTEMBER, SEPTEMBER, NONE);
 
     expect(choices.map((choice) => choice.label)).toContain("Septiembre");
+  });
+});
+
+describe("the closed months among them", () => {
+  /*
+   * #119, decision 19. The pill has carried exactly one per-row state ever, and
+   * this is the second: sending somebody into a closed month unwarned leaves
+   * them to find out the screen behaves differently once they have arrived.
+   */
+  it("marks a month a row says is closed", () => {
+    const choices = monthChoices(SEPTEMBER, SEPTEMBER, new Set(["2026-07"]));
+
+    expect(
+      choices.filter((choice) => choice.closed).map((choice) => choice.month),
+    ).toEqual(["2026-07"]);
+  });
+
+  // A Space that has closed nothing gets fourteen open months, and not a
+  // caller that has to remember to pass something.
+  it("marks none where nothing is closed", () => {
+    const choices = monthChoices(SEPTEMBER, SEPTEMBER, new Set());
+
+    expect(choices.some((choice) => choice.closed)).toBe(false);
+  });
+
+  /*
+   * A closed month is still a month somebody can read, and the one they are
+   * reading may be it. The two marks are independent facts about one row, so
+   * neither is derived from the other.
+   */
+  it("marks the month in view closed where it is both", () => {
+    const [inView] = monthChoices(SEPTEMBER, SEPTEMBER, new Set(["2026-09"]))
+      .filter((choice) => choice.inView);
+
+    expect(inView).toMatchObject({ month: "2026-09", closed: true });
+  });
+});
+
+describe("how far back the closed question reaches", () => {
+  /*
+   * The same literal the first test spells out, asked of the other half of the
+   * pair (#119): a screen that asked about closed months over a shorter stretch
+   * than the pill offers would leave rows at the top of the sheet unmarked, and
+   * unmarked here means "open".
+   */
+  it("starts where the pill's own window starts", () => {
+    expect(earliestOffered(SEPTEMBER)).toBe("2025-12");
   });
 });
