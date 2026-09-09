@@ -203,10 +203,99 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the eighteen artboards its manifest lists, and the manifest", () => {
+  it("holds the nineteen artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(19);
+    expect(files).toHaveLength(20);
     expect(files.at(-1)).toBe("canvas.json");
+  });
+});
+
+describe("the header (#65), drawn on the screens that carry it and nowhere else", () => {
+  /**
+   * The header row is marked `data-role="app-header"` and its hamburger is
+   * marked `aria-label="Abrir menú del Espacio"` — what each element *is*,
+   * not the geometry it happens to be drawn with today. A redraw (rounded
+   * caps turning square, the path getting simplified, an added
+   * `aria-hidden`) does not touch either marker, so it cannot silently break
+   * header-presence coverage for a reason that has nothing to do with
+   * whether the header, or the hamburger, is still there.
+   *
+   * The two are no longer the same property: `Espacios.dc.html` carries the
+   * hamburger — it opens the same `SheetMenuEspacio.dc.html` every shell
+   * screen opens — without the identity-plus-bell row around it, so it is
+   * named in `withSpaceMenuTrigger` but not in `withHeader`.
+   */
+  const headerRow = 'data-role="app-header"';
+  const spaceMenuTrigger = 'aria-label="Abrir menú del Espacio"';
+
+  const withHeader = [
+    "Presupuesto.dc.html",
+    "Movimientos.dc.html",
+    "Presupuesto63Desplegado.dc.html",
+  ];
+
+  const withoutHeader = [
+    "Main.dc.html",
+    "CargarGastoOscuro.dc.html",
+    "CrearEspacio.dc.html",
+    "Espacios.dc.html",
+    "AgregarUnFormulario.dc.html",
+    "MasHoja.dc.html",
+    "MasIntacto.dc.html",
+    "ArrastreDeficit.dc.html",
+    "CorregirElGastoPrevisto.dc.html",
+    "CorregirElGastoFijo.dc.html",
+    "CorregirElGastoFijoPagado.dc.html",
+    "SheetPagar.dc.html",
+    "SheetCopiar.dc.html",
+    "SheetArrastre.dc.html",
+    "SheetCerrar.dc.html",
+    "SheetMenuEspacio.dc.html",
+  ];
+
+  // Everything withHeader carries, plus Espacios.dc.html: the one screen
+  // that carries the hamburger without the row around it.
+  const withSpaceMenuTrigger = [...withHeader, "Espacios.dc.html"];
+
+  const withoutSpaceMenuTrigger = withoutHeader.filter((file) => file !== "Espacios.dc.html");
+
+  it.each(withHeader)("draws the header row on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).toContain(headerRow);
+  });
+
+  it.each(withoutHeader)("draws no header row on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).not.toContain(headerRow);
+  });
+
+  it("accounts for every artboard the manifest lists, for the header row", () => {
+    const manifestFiles = Object.keys(sourcesIn(design)).filter((f) => f !== "canvas.json");
+    expect([...withHeader, ...withoutHeader].sort()).toEqual([...manifestFiles].sort());
+  });
+
+  it.each(withSpaceMenuTrigger)("draws the Space-menu hamburger on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).toContain(spaceMenuTrigger);
+  });
+
+  it.each(withoutSpaceMenuTrigger)("draws no Space-menu hamburger on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).not.toContain(spaceMenuTrigger);
+  });
+
+  it("accounts for every artboard the manifest lists, for the Space-menu hamburger", () => {
+    const manifestFiles = Object.keys(sourcesIn(design)).filter((f) => f !== "canvas.json");
+    expect([...withSpaceMenuTrigger, ...withoutSpaceMenuTrigger].sort()).toEqual(
+      [...manifestFiles].sort(),
+    );
+  });
+
+  it("opens the Space menu sheet with Ajustes, the multi-month balance and Cerrar sesión", () => {
+    const sheet = readFileSync(path.join(design, "SheetMenuEspacio.dc.html"), "utf8");
+    expect(sheet).toContain("Ajustes");
+    expect(sheet).toContain("Balance de varios meses");
+    expect(sheet).toContain("Cerrar sesión");
   });
 });
 

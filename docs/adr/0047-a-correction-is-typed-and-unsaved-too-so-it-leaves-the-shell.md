@@ -252,3 +252,21 @@ line in its §Consequences saying this one keeps the bar is no longer true.
 ADR-0037 closed on "nobody should read this ADR and believe every screen in the
 app now fits", and handed over `972 / 664 / 750`. This is the change that owed
 it. Those numbers are `639` / `664` / `571`.
+
+## Amended by #65: the account row this ADR sent away now has a name, and the exception still holds
+
+#65 gave the account row this ADR removed a shape and a name: the header,
+identity plus a bell plus a hamburger, drawn for the first time in
+`design/`. It replaces the row everywhere the row was implicit, and this
+screen is not one of those places — it is the screen that argued the row
+should leave, and the argument still stands. Neither this screen nor the two
+`nota-correcciones` already named as its undocumented siblings —
+`CorregirElGastoPrevisto.dc.html` and `CorregirElGastoFijo.dc.html`, both
+#105's to redraw — gets the header. What is typed and not yet saved has
+nothing to gain from a menu offering three other places to go, whether that
+menu is a tab bar or a hamburger wearing one.
+
+ADR-0059 records where the header does land: `Presupuesto.dc.html`,
+`Movimientos.dc.html` and `Presupuesto63Desplegado.dc.html`, at the 52px this
+ADR measured the account row at, above. The number this ADR made famous —
+what the account row cost — turned out to be worth keeping.
