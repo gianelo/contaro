@@ -203,10 +203,67 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the eighteen artboards its manifest lists, and the manifest", () => {
+  it("holds the nineteen artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(19);
+    expect(files).toHaveLength(20);
     expect(files.at(-1)).toBe("canvas.json");
+  });
+});
+
+describe("the header (#65), drawn on the screens that carry it and nowhere else", () => {
+  /**
+   * The header holds identity, the bell (#133) and the hamburger that opens
+   * the Space menu — drawn once as a hamburger icon's three lines. Every
+   * screen that draws it must draw exactly that path; every screen ADR-0047,
+   * ADR-0028 or this ADR name as an exception must draw none of it.
+   */
+  const hamburger = 'stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/>';
+
+  const withHeader = [
+    "Presupuesto.dc.html",
+    "Movimientos.dc.html",
+    "Presupuesto63Desplegado.dc.html",
+  ];
+
+  const withoutHeader = [
+    "Main.dc.html",
+    "CargarGastoOscuro.dc.html",
+    "CrearEspacio.dc.html",
+    "Espacios.dc.html",
+    "AgregarUnFormulario.dc.html",
+    "MasHoja.dc.html",
+    "MasIntacto.dc.html",
+    "ArrastreDeficit.dc.html",
+    "CorregirElGastoPrevisto.dc.html",
+    "CorregirElGastoFijo.dc.html",
+    "CorregirElGastoFijoPagado.dc.html",
+    "SheetPagar.dc.html",
+    "SheetCopiar.dc.html",
+    "SheetArrastre.dc.html",
+    "SheetCerrar.dc.html",
+    "SheetMenuEspacio.dc.html",
+  ];
+
+  it.each(withHeader)("draws the header on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).toContain(hamburger);
+  });
+
+  it.each(withoutHeader)("draws no header on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).not.toContain(hamburger);
+  });
+
+  it("accounts for every artboard the manifest lists", () => {
+    const manifestFiles = Object.keys(sourcesIn(design)).filter((f) => f !== "canvas.json");
+    expect([...withHeader, ...withoutHeader].sort()).toEqual([...manifestFiles].sort());
+  });
+
+  it("opens the Space menu sheet with Ajustes, the multi-month balance and Cerrar sesión", () => {
+    const sheet = readFileSync(path.join(design, "SheetMenuEspacio.dc.html"), "utf8");
+    expect(sheet).toContain("Ajustes");
+    expect(sheet).toContain("Balance de varios meses");
+    expect(sheet).toContain("Cerrar sesión");
   });
 });
 
