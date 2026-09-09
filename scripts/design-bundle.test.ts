@@ -212,12 +212,21 @@ describe("the design folder in this repo", () => {
 
 describe("the header (#65), drawn on the screens that carry it and nowhere else", () => {
   /**
-   * The header holds identity, the bell (#133) and the hamburger that opens
-   * the Space menu — drawn once as a hamburger icon's three lines. Every
-   * screen that draws it must draw exactly that path; every screen ADR-0047,
-   * ADR-0028 or this ADR name as an exception must draw none of it.
+   * The header row is marked `data-role="app-header"` and its hamburger is
+   * marked `aria-label="Abrir menú del Espacio"` — what each element *is*,
+   * not the geometry it happens to be drawn with today. A redraw (rounded
+   * caps turning square, the path getting simplified, an added
+   * `aria-hidden`) does not touch either marker, so it cannot silently break
+   * header-presence coverage for a reason that has nothing to do with
+   * whether the header, or the hamburger, is still there.
+   *
+   * The two are no longer the same property: `Espacios.dc.html` carries the
+   * hamburger — it opens the same `SheetMenuEspacio.dc.html` every shell
+   * screen opens — without the identity-plus-bell row around it, so it is
+   * named in `withSpaceMenuTrigger` but not in `withHeader`.
    */
-  const hamburger = 'stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/>';
+  const headerRow = 'data-role="app-header"';
+  const spaceMenuTrigger = 'aria-label="Abrir menú del Espacio"';
 
   const withHeader = [
     "Presupuesto.dc.html",
@@ -244,19 +253,42 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
     "SheetMenuEspacio.dc.html",
   ];
 
-  it.each(withHeader)("draws the header on %s", (file) => {
+  // Everything withHeader carries, plus Espacios.dc.html: the one screen
+  // that carries the hamburger without the row around it.
+  const withSpaceMenuTrigger = [...withHeader, "Espacios.dc.html"];
+
+  const withoutSpaceMenuTrigger = withoutHeader.filter((file) => file !== "Espacios.dc.html");
+
+  it.each(withHeader)("draws the header row on %s", (file) => {
     const source = readFileSync(path.join(design, file), "utf8");
-    expect(source).toContain(hamburger);
+    expect(source).toContain(headerRow);
   });
 
-  it.each(withoutHeader)("draws no header on %s", (file) => {
+  it.each(withoutHeader)("draws no header row on %s", (file) => {
     const source = readFileSync(path.join(design, file), "utf8");
-    expect(source).not.toContain(hamburger);
+    expect(source).not.toContain(headerRow);
   });
 
-  it("accounts for every artboard the manifest lists", () => {
+  it("accounts for every artboard the manifest lists, for the header row", () => {
     const manifestFiles = Object.keys(sourcesIn(design)).filter((f) => f !== "canvas.json");
     expect([...withHeader, ...withoutHeader].sort()).toEqual([...manifestFiles].sort());
+  });
+
+  it.each(withSpaceMenuTrigger)("draws the Space-menu hamburger on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).toContain(spaceMenuTrigger);
+  });
+
+  it.each(withoutSpaceMenuTrigger)("draws no Space-menu hamburger on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).not.toContain(spaceMenuTrigger);
+  });
+
+  it("accounts for every artboard the manifest lists, for the Space-menu hamburger", () => {
+    const manifestFiles = Object.keys(sourcesIn(design)).filter((f) => f !== "canvas.json");
+    expect([...withSpaceMenuTrigger, ...withoutSpaceMenuTrigger].sort()).toEqual(
+      [...manifestFiles].sort(),
+    );
   });
 
   it("opens the Space menu sheet with Ajustes, the multi-month balance and Cerrar sesión", () => {

@@ -253,7 +253,7 @@ ADR-0037 closed on "nobody should read this ADR and believe every screen in the
 app now fits", and handed over `972 / 664 / 750`. This is the change that owed
 it. Those numbers are `639` / `664` / `571`.
 
-## The account row this ADR sent away now has a name, and the exception still holds
+## Amended by #65: the account row this ADR sent away now has a name, and the exception still holds
 
 #65 gave the account row this ADR removed a shape and a name: the header,
 identity plus a bell plus a hamburger, drawn for the first time in

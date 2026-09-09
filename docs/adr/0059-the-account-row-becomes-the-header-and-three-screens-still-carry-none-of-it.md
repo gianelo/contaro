@@ -25,7 +25,11 @@ row inside a menu a thumb has to open on purpose first. Two deliberate taps
 where there was one accidental one is the confirmation the old row never had,
 without adding a sheet whose entire purpose is asking "are you sure" — the
 same trade ADR-0047 made for a struck Movement, folded into the menu instead
-of standing beside it.
+of standing beside it. That is now true everywhere sign-out is reachable, not
+just on the three headered screens: `Espacios.dc.html` opens the same sheet
+through the same icon, so there is exactly one place in the product where a
+Member signs out, and it costs the same two deliberate taps no matter which
+of the four shell screens they open it from.
 
 ## Which screens carry it, measured against what each one already is
 
@@ -42,20 +46,35 @@ not already carry — it draws, for the first time, the weight that was already
 there, and gives it a shape worth carrying.
 
 **Gets something else: `Espacios.dc.html`.** The Spaces list is not inside a
-Space, so there is no Space menu to open from it — no `Ajustes` for a Space
-not yet chosen, no balance screen for one either. But `espacios/page.tsx`
-renders `AppShell` with no `navigation` prop at all (ADR-0027: the four tabs
-are a Space's and the list is not inside one), which means the account row's
-`Salir` is, today, the *only* reachable sign-out on that screen — there is no
-tab bar underneath it to fall back to `Ajustes`. Giving this screen the full
-header would duplicate the identity the greeting already draws — "Hola,
-Gian", with an avatar — for no reason beyond consistency with screens that
-have a Space to hang a menu off of. So it keeps the greeting exactly as
-drawn, and the greeting's row gains one thing: a quiet, grey `Salir` at its
-trailing edge, sized as an ordinary 44px target and coloured `#8E8E93` rather
-than the accent green the old row wore. Identity is not repeated — it is
-answered once, by the avatar and the name already there — and sign-out stays
-reachable from the one screen that would otherwise lose it.
+Space, so giving it the full header would duplicate the identity the
+greeting already draws — "Hola, Gian", with an avatar — for no reason beyond
+consistency with screens that have a title and a tab bar to sit under it. So
+it keeps the greeting exactly as drawn, at the height it already had. But its
+trailing edge no longer answers sign-out on its own: it gets the hamburger,
+the same icon opening the same `SheetMenuEspacio.dc.html` the three headered
+screens open. `espacios/page.tsx` renders `AppShell` with no `navigation`
+prop at all (ADR-0027: the four tabs are a Space's and the list is not inside
+one), so this remains the one screen with no tab bar underneath it to fall
+back to `Ajustes` from — which is exactly why it cannot be the one place
+sign-out is still a single unconfirmed tap beside a name, recoloured or not.
+Putting the same hamburger here closes that gap instead of leaving it open
+under a quieter colour.
+
+The Space menu's own rows are Space-scoped — `Ajustes` and the multi-month
+balance belong to a Space — and the Spaces list is the one shell screen not
+inside one. It is not a new problem: this screen already has a notion of
+which Space is current. `lastOpenedSpace` (`src/db/spaces.ts`) reads the one
+Space this Member most recently opened, or `null` if they never have, and
+`spacesToChooseFrom` (`src/app/espacios/listing.ts`) hands that id to
+`readableSpaces` as `lastOpenedId`, which is what the `Activo` badge on the
+"Casa" card already renders — a Space this same screen already knows how to
+name as "the one being used." The hamburger's menu, opened from here, is
+scoped to that Space: the same one the badge points at, and the same one a
+Member would land in menu-first if they had opened it from that Space's own
+header instead. Identity is not repeated — it is answered once, by the
+avatar and the name already there — and sign-out, `Ajustes` and the balance
+screen are all reachable from the one screen that would otherwise have none
+of the three.
 
 **Gets none of it, and stays that way on purpose:**
 
@@ -119,13 +138,20 @@ getting a definition.
 ## Where it is held
 
 `scripts/design-bundle.test.ts`, in "the header (#65), drawn on the screens
-that carry it and nowhere else": it names every artboard the header applies
-to and every one it does not, matched against the header's hamburger icon
-path so the two lists cannot drift from what is actually drawn, and it names
-every artboard the manifest lists so a nineteenth screen with an unnamed
-opinion cannot be added silently. It also pins the Space menu sheet's three
-rows — `Ajustes`, `Balance de varios meses`, `Cerrar sesión` — by their
-Spanish text, the same way the rest of this canvas's copy is checked.
+that carry it and nowhere else". The header's row carries
+`data-role="app-header"` and the hamburger carries
+`aria-label="Abrir menú del Espacio"`, so the test reads what each element
+*is* rather than pinning the exact geometry it happens to be drawn with today
+— a rounded cap turning square, or the path being simplified, proves nothing
+about whether the header or the hamburger is still there. Two lists, not
+one, because they are no longer the same set now that `Espacios.dc.html`
+carries the hamburger without the row around it: `withHeader` names the three
+screens that carry the whole row, `withSpaceMenuTrigger` names those three
+plus `Espacios.dc.html`. Both are checked against the manifest so a
+nineteenth screen with an unnamed opinion cannot be added silently. It also
+pins the Space menu sheet's three rows — `Ajustes`, `Balance de varios
+meses`, `Cerrar sesión` — by their Spanish text, the same way the rest of
+this canvas's copy is checked.
 
 Nothing here is measured against a viewport the way ADR-0047's screens are:
 these three screens were never on a fold path this change moves, and adding
