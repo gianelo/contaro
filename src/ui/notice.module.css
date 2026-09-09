@@ -1,4 +1,8 @@
 .notice {
+  /* A block laid out by its container's `gap`, so the browser's default `1em`
+     paragraph margin is not spacing anybody chose -- it is 28px added on top
+     of whatever gap the container already declares (ADR-0037, ADR-0058). */
+  margin: 0;
   padding: var(--space-6) var(--space-7);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
