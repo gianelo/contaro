@@ -1,10 +1,11 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { AppShell } from "@/ui/app-shell";
 import { ButtonLink } from "@/ui/button";
+import { EntryHead } from "@/ui/entry-head";
 import { Refusal } from "@/ui/refusal";
 import { t } from "@/i18n";
 import { numberLocalesFor, readerOf } from "@/app/reader";
-import { SpaceScreen } from "../../screen";
 import { currentSpace } from "../../space";
 import { categoryChips } from "../../movimientos/month";
 import { readableBudgetItem } from "../budget";
@@ -13,7 +14,6 @@ import { FixedItemForm } from "../fixed-form";
 import { amendBudgetItemAction, amendFixedItemAction } from "../actions";
 import { RemoveBudgetItem } from "./remove";
 import { monthIsClosed } from "../../closed";
-import styles from "./page.module.css";
 
 /**
  * One item of the plan: correcting it, or taking it off the month altogether
@@ -36,6 +36,17 @@ import styles from "./page.module.css";
  * sentence, never a greyed-out control. It is asked first because a closed
  * month refuses both kinds and both acts — the correction and the removal —
  * so branching on it inside either arm would be the same branch written twice.
+ *
+ * It carries no tab bar, no account row and no Space heading, which is why it
+ * renders `AppShell` directly rather than going through `SpaceScreen` like
+ * every other screen inside a Space. ADR-0028 made that trade for the
+ * Movement entry screen and ADR-0047 read it again for the Movement
+ * correction screen; this is that same reading extended to a plan item's
+ * correction, which holds the identical typed-but-unsaved state — a keypad,
+ * a name, a picker and a `Guardar` under the same thumb (#105). It is also the
+ * only way either form fits a phone: neither did before this, on the worst
+ * Space either can be opened in (ADR-0047 amended, which carries the
+ * measurements).
  */
 export default async function BudgetItemPage({
   params,
@@ -65,13 +76,10 @@ export default async function BudgetItemPage({
     monthIsClosed(space.id, month),
   ]);
 
-  const back = (
-    <div className={styles.back}>
-      <ButtonLink href={`/espacios/${space.id}?mes=${month}`} variant="plain">
-        {t("action.cancel")}
-      </ButtonLink>
-    </div>
-  );
+  // Where Cancelar goes on every branch: the month this item was opened from,
+  // and never "this month" (the item may be on one the Reader is not standing
+  // in at all).
+  const back = `/espacios/${space.id}?mes=${month}`;
 
   /*
    * A closed month is shown and not offered (#119), before either kind is
@@ -86,16 +94,14 @@ export default async function BudgetItemPage({
    */
   if (closed) {
     return (
-      <SpaceScreen space={space} tab="budget">
-        <h2 className={styles.title}>{item.name}</h2>
+      <AppShell>
+        <EntryHead back={back} cancel={t("action.cancel")} title={item.name} />
 
         <Refusal
           title={t("budget.item.closed.title")}
           body={t("budget.item.closed.body")}
         />
-
-        {back}
-      </SpaceScreen>
+      </AppShell>
     );
   }
 
@@ -109,8 +115,8 @@ export default async function BudgetItemPage({
      */
     if (item.paidBy !== null) {
       return (
-        <SpaceScreen space={space} tab="budget">
-          <h2 className={styles.title}>{item.name}</h2>
+        <AppShell>
+          <EntryHead back={back} cancel={t("action.cancel")} title={item.name} />
 
           <Refusal
             title={t("budget.fixed.paid.title")}
@@ -123,15 +129,17 @@ export default async function BudgetItemPage({
               {t("budget.fixed.paid.movement")}
             </ButtonLink>
           </Refusal>
-
-          {back}
-        </SpaceScreen>
+        </AppShell>
       );
     }
 
     return (
-      <SpaceScreen space={space} tab="budget">
-        <h2 className={styles.title}>{t("budget.fixed.edit.title")}</h2>
+      <AppShell>
+        <EntryHead
+          back={back}
+          cancel={t("action.cancel")}
+          title={t("budget.fixed.edit.title")}
+        />
 
         <FixedItemForm
           spaceId={space.id}
@@ -152,15 +160,17 @@ export default async function BudgetItemPage({
         />
 
         <RemoveBudgetItem spaceId={space.id} itemId={item.id} month={month} />
-
-        {back}
-      </SpaceScreen>
+      </AppShell>
     );
   }
 
   return (
-    <SpaceScreen space={space} tab="budget">
-      <h2 className={styles.title}>{t("budget.item.edit.title")}</h2>
+    <AppShell>
+      <EntryHead
+        back={back}
+        cancel={t("action.cancel")}
+        title={t("budget.item.edit.title")}
+      />
 
       <BudgetItemForm
         spaceId={space.id}
@@ -180,8 +190,6 @@ export default async function BudgetItemPage({
       />
 
       <RemoveBudgetItem spaceId={space.id} itemId={item.id} month={month} />
-
-      {back}
-    </SpaceScreen>
+    </AppShell>
   );
 }

@@ -1,8 +1,18 @@
+/*
+ * The same 4px `form.module.css` now puts between its own blocks, and not the
+ * 16px that used to hold this off Guardar -- the identical trade
+ * `strike.module.css` made for the screen that corrects a Movement, there at
+ * 8px rather than 4 because that screen asks one field fewer (#105,
+ * ADR-0047). Both screens hold Guardar, a destructive control and Cancelar in
+ * the same shrunk shell, and both give up the same kind of margin to fit it --
+ * this one gives up more because the Fixed item's form has one more question
+ * to fit above it.
+ */
 .remove {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  margin-top: var(--space-8);
+  margin-top: var(--space-2);
 }
 
 .error {

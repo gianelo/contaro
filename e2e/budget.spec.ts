@@ -5,7 +5,12 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
-import { createMember, createSpaceFor, startSession } from "./session";
+import {
+  createMember,
+  createSpaceFor,
+  joinSpace,
+  startSession,
+} from "./session";
 import {
   box,
   foldOf,
@@ -664,6 +669,169 @@ test("a Member corrects the rent, and cannot while it is paid", async ({
   // The section goes with its last item, and the struck Movement stays in the
   // ledger as an entry (ADR-0015): a plan being tidied takes nothing with it.
   await expect(fijos).toHaveCount(0);
+});
+
+/**
+ * The counterpart of ADR-0028 and ADR-0047, made a third time.
+ *
+ * By the time a Member is on this screen they have an amount typed into a
+ * keypad and a name typed into a field -- the same typed-but-unsaved state
+ * ADR-0047 found on the screen that corrects a Movement, in the very same
+ * form this screen shares with the plan's entry screen (#80). A bar offering
+ * three other places is three ways to lose both (#105).
+ */
+test("correcting a gasto previsto is one thing too, with nothing else offered", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { space } = await aMemberWithASpace("Lina Corrige", context, baseURL!);
+
+  await page.goto(`/espacios/${space.id}`);
+  await plan(page, space.id, "Súper de la semana", "24000000");
+  const variables = page.getByRole("group", { name: "Variables" });
+  await openPlanOf(variables, "Supermercado");
+  await variables.getByRole("link", { name: /Súper de la semana/ }).click();
+
+  await expect(page.getByRole("navigation", { name: "Principal" })).toHaveCount(
+    0,
+  );
+
+  // The way out is in the head, where a thumb reaching to leave already is,
+  // rather than a scroll past the keypad and the form at the foot of the
+  // page. It goes back to the month this item was opened on.
+  await expect(page.getByRole("link", { name: "Cancelar" })).toHaveAttribute(
+    "href",
+    new RegExp(`^/espacios/${space.id}\\?mes=\\d{4}-\\d{2}$`),
+  );
+
+  // The screen names itself once: `SpaceScreen` used to draw the Space's name
+  // as an <h1> with "Corregir el gasto previsto" as an <h2> under it, which is
+  // the same screen saying what it is twice, at two sizes.
+  await expect(
+    page.getByRole("heading", { name: "Corregir el gasto previsto", level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2 })).toHaveCount(0);
+});
+
+/**
+ * Both correction screens on a phone, whole, before and after they are
+ * answered -- the sibling of the plan's entry screen's fold test and the
+ * Movement correction screen's, sharing the same `foldOf` (#105).
+ *
+ * The worst Space a shipped one can produce, the same way the other two fold
+ * tests build one: two Members, so the Category catalogue could in principle
+ * have grown past what one Member planned alone, and both names long enough
+ * to wrap anything that reads them. Neither name, and neither Space's, is
+ * actually drawn on this screen -- there is no pill and no heading left to
+ * carry one, which is the one way this screen's worst case is easier to meet
+ * than the Movement correction screen's. It is seeded anyway, so a change
+ * that ever put one back is the one this test would catch rather than a
+ * blind spot it left for later.
+ */
+test("a gasto previsto is corrected on a phone without scrolling down either", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const gian = await createMember("Maximiliano Bartolomé de la Concepción");
+  const ana = await createMember("Ana Corrige Previstos");
+  const space = await createSpaceFor(gian.id, "Casa compartida de Gian", "ARS");
+  await joinSpace(space.id, ana.id);
+  await startSession(context, baseURL!, gian);
+
+  await page.goto(`/espacios/${space.id}`);
+  await plan(page, space.id, "Súper de la semana", "24000000");
+
+  const variables = page.getByRole("group", { name: "Variables" });
+  await openPlanOf(variables, "Supermercado");
+  await variables.getByRole("link", { name: /Súper de la semana/ }).click();
+
+  const fold = () => foldOf(page, page.getByRole("button", { name: "Guardar" }));
+
+  const offered = await fold();
+  expect(offered.control).toBeLessThanOrEqual(offered.viewport);
+  expect(offered.document).toBeLessThanOrEqual(offered.viewport);
+
+  // And still after answering, which is the state a thumb is actually in when
+  // it reaches for Guardar. `plan` already left the item on a branch two
+  // levels deep, so the picker is already at its tallest in `offered` too --
+  // answering again is what proves it stays that way rather than collapsing.
+  await page.getByRole("button", { name: "Borrar el último número" }).click();
+  await categorise(page, "Comida", "Supermercado");
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toBeChecked();
+
+  const answered = await fold();
+  expect(answered.control).toBeLessThanOrEqual(answered.viewport);
+  expect(answered.document).toBeLessThanOrEqual(answered.viewport);
+});
+
+test("a gasto fijo is corrected on a phone without scrolling down either, paid or not", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const gian = await createMember("Maximiliano Bartolomé de la Concepción");
+  const ana = await createMember("Ana Corrige Fijos");
+  const space = await createSpaceFor(gian.id, "Casa compartida de Gian", "ARS");
+  await joinSpace(space.id, ana.id);
+  await startSession(context, baseURL!, gian);
+
+  await page.goto(`/espacios/${space.id}`);
+  await planFixed(page, space.id, "Arriendo", "180000000", "1");
+
+  const fijos = page.getByRole("group", { name: "Fijos" });
+  await fijos.getByRole("link", { name: /Arriendo/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Corregir el gasto fijo" }),
+  ).toBeVisible();
+
+  const fold = () => foldOf(page, page.getByRole("button", { name: "Guardar" }));
+
+  const offered = await fold();
+  expect(offered.control).toBeLessThanOrEqual(offered.viewport);
+  expect(offered.document).toBeLessThanOrEqual(offered.viewport);
+
+  // And still after answering every question this form asks beyond the
+  // Variable one's, which is the state a thumb is actually in when it reaches
+  // for Guardar: the day picker opened and a Category chosen two taps deep.
+  await page.getByLabel("Qué día del mes vence").selectOption("5");
+  // `planFixed`'s default Category opens the picker on its own branch
+  // (Hogar), so reaching a different one goes through "Cambiar" first, the
+  // way back out of a chosen heading.
+  await page.getByRole("button", { name: "Cambiar" }).click();
+  await categorise(page, "Comida", "Supermercado");
+  await expect(
+    page.getByRole("radio", { name: "Supermercado, Comida" }),
+  ).toBeChecked();
+
+  const answered = await fold();
+  expect(answered.control).toBeLessThanOrEqual(answered.viewport);
+  expect(answered.document).toBeLessThanOrEqual(answered.viewport);
+
+  // Marking it paid puts this same route on its other branch -- the refusal
+  // that replaces the form once there is a Movement to strike out first
+  // (ADR-0034) -- which is the worst case this route has left once Guardar is
+  // gone from it (#105, ADR-0047).
+  await page.goto(`/espacios/${space.id}`);
+  await fijos.getByRole("button", { name: /Arriendo/ }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Marcar pagado" })
+    .click();
+  await expect(fijos).toContainText("Pagado");
+
+  await fijos.getByRole("link", { name: /Arriendo/ }).click();
+  await expect(page.getByText("Este gasto fijo ya está pagado")).toBeVisible();
+
+  const paid = await foldOf(
+    page,
+    page.getByRole("link", { name: "Ver el movimiento" }),
+  );
+  expect(paid.control).toBeLessThanOrEqual(paid.viewport);
+  expect(paid.document).toBeLessThanOrEqual(paid.viewport);
 });
 
 /**

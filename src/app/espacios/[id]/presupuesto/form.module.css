@@ -8,13 +8,22 @@
  * on the table was the 50px keys, and the keys are what a thumb lands on
  * (#86, ADR-0046). Air is cheaper than aim.
  *
- * It reaches the screen that corrects an item too, which keeps its tab bar and
- * is taller than this one. Shorter is not worse there.
+ * It reached 8px and stopped there for the plan's entry screen and for the
+ * screen that corrects a Variable item, which leave this gap with room to
+ * spare. The screen that corrects a Fixed item is why it goes to 4px: it asks
+ * one more question than either of those (#105) -- the day a Fixed item falls
+ * due -- and 4 gaps at 8px left that screen's `Guardar` at 616, with
+ * `Sacar del plan` (its own 4px margin, 44px), and the shell's own 16px of
+ * padding still to come under it: 684 against 664. At 4px `Guardar` lands at
+ * 600, which is exactly what those remaining 64px (4 + 44 + 16) need to reach
+ * 664 (ADR-0047 amended). One rule for three forms, because #80 made them one
+ * form already -- the Variable screen's own air is thinner than it has to be,
+ * which is the same place ADR-0046 left the plan's entry screen.
  */
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 
 .error {
