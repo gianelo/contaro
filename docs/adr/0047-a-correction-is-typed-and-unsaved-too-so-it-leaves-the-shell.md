@@ -270,3 +270,187 @@ ADR-0059 records where the header does land: `Presupuesto.dc.html`,
 `Movimientos.dc.html` and `Presupuesto63Desplegado.dc.html`, at the 52px this
 ADR measured the account row at, above. The number this ADR made famous —
 what the account row cost — turned out to be worth keeping.
+
+## Amended by #105: the same reading, extended to a plan item
+
+#105 is the two `nota-correcciones` the previous amendment already named as
+this screen's undocumented siblings: `/presupuesto/{id}/{itemId}`, where a
+Variable item and a Fixed one are each corrected on the form #80 made one out
+of two. Neither had ever fitted a phone either, and the issue that opened #105
+measured 913px and 987px against 664. Those numbers still reproduce exactly
+today, unchanged, on the same `dev` this ADR was written against: a Space of
+one with a short name — the issue's own seed — measures 913 for the Variable
+form and 987 for the Fixed one, to the pixel. Nothing regressed to get there:
+of the three commits to touch this route between the issue and this change,
+#65 changed no file under `src/` (its header is a `design/` artboard, not yet
+wired to a route — ADR-0059), #64 *shortened* `SpaceHead`'s currency line
+rather than lengthening anything, and #99 zeroed a `Notice` margin neither of
+these forms draws.
+
+What grew the number this ADR measures below — 951px for the Variable form
+and 1025px for the Fixed one — is the seed, not the code. Both fold tests
+below are written the way this ADR's own already is, against the worst Space
+a shipped one can produce (two Members, both named at length, per
+ADR-0046/ADR-0047's own rule), and `SpaceScreen` — which every branch of this
+route still rendered before this change — puts the *Space's own name* in
+`SpaceHead`'s `<h1>`, above the form's own title: a duplicate heading nobody
+had noticed either, the identical bug ADR-0046 found and fixed on the plan's
+entry screen, still present here because this route never went through that
+fix. "Casa de Fina Justa" fits `SpaceHead` in one line, 90px; "Casa compartida
+de Gian", the name these fold tests use, wraps it to two, 128px — 38px more,
+which is exactly 951 − 913 and 1025 − 987. Both sets of numbers are correct,
+of two different Spaces: the issue measured the shipped floor and this
+measures the shipped ceiling, and the ceiling is the one a fold test has to
+hold to. It stops mattering the moment this change lands — `SpaceHead` is one
+of the things `AppShell` replaces below, so no Space's name is drawn on this
+route at all afterwards, at any length.
+
+The argument is the one this ADR already made, read once more rather than
+re-argued. `BudgetItemForm` and `FixedItemForm` hold an amount on a keypad and
+a name in a field before `Guardar` is ever reachable — the identical
+typed-but-unsaved shape this ADR found on `MovementForm`, and for the same
+kind of reason ADR-0046 already gave this exact form once: planning and
+correcting are one form (#80), so the plan's entry screen and both of these
+corrections have held this state all along. A bar offering three other places
+is three ways to lose it, whether the bar is a tab bar or, since #65, a
+hamburger wearing one. So both forms take the identical trade this ADR made
+for `MovementForm`: `AppShell` directly, `EntryHead` for Cancelar and the
+title, and the closed-month and paid-item refusals that already lived beside
+the forms take the same head rather than a second answer, because the route
+is one and the branch inside it is the item's kind and not the screen's
+shape.
+
+**Unlike the Movement correction screen, `beneath` is left empty.** There is
+no counterpart here to carry: this form asks for no attribution (`form.tsx`
+says why, and ADR-0046 already declined the same slot for the plan's entry
+screen for the same reason — a plan is about a month and not a moment). So
+this screen's head is 54px in every Space there could ever be, matching the
+plan's entry screen's own head exactly rather than the 90px the Movement
+correction screen's pill costs.
+
+**CI refused the margin this ADR trusted, and it was right to.** The first
+version of this change gave up margin until the Fixed form's `Guardar` sat at
+600 with nothing under it — 0px of spare, thinner than this ADR's own 25px
+and thinner than ADR-0046's 9px, trusted on the strength of ADR-0046's own
+finding that these shared blocks measure the same on Linux WebKit and SF "to
+a quarter of a pixel." CI measured the Fixed form's fold test at document 721
+against 664 — 57px over, three retries, the same number each time — with
+`Guardar` itself still inside the fold (around 657) and `Sacar del plan` the
+block still hanging past it. Whatever CI's font stack actually draws this
+particular row of controls at, it disagreed with the local measurement by far
+more than a quarter of a pixel, and 0px of spare left no room to be wrong by
+any of it. The Variable form's fold test passed on the same run — it had
+about 71px of real slack once `document`'s own floor is looked past, which is
+exactly why it survived a gap the Fixed form's zero did not.
+
+What that CI failure settles is not a number, which is gone, but which lesson
+of ADR-0046's to keep: not "a margin can be trusted once its blocks are
+proven font-stable" — the blocks were, and it still failed — but the older
+and plainer one, that a margin measured on one machine is evidence about that
+machine, full stop, and this ADR spent a paragraph arguing itself out of
+believing that about a margin of exactly zero.
+
+**Option C+ gives the screen real room back, rather than asking a smaller and
+smaller margin to hold.** Two changes:
+
+1. `fixed-form.tsx`'s name field and its due-day picker now share one row
+   (`fixed-form.module.css`, a stylesheet of this screen's own) instead of
+   stacking. Both controls keep the 44px they always stood at; laying them
+   out sideways instead of on top of each other gives back a whole row's
+   height and the gap around it, which the day question no longer needs a row
+   of its own to ask. The label that row carries is shortened from "Qué día
+   del mes vence" to "Vence el día" (`budget.fixed.dueDay`, used nowhere else
+   in the product, so the value changes rather than a second key standing
+   beside it for the same question) — the long form does not fit a column
+   narrow enough to leave the name room to grow, and a wrapped label would
+   have grown the row past the 44px both fields are built on.
+2. `Sacar del plan` leaves the form body entirely and moves into
+   `EntryHead`'s trailing slot — the room an invisible copy of Cancelar used
+   to hold for no reason but centring the title. It is a 44×44 icon button
+   now, a stroke-drawn trash can (`Icon`'s new `trash`) rather than a filled
+   pill, because there was no longer room beside Cancelar to spell the words
+   out. Its accessible name still is those words: `aria-label` carries
+   `budget.item.remove` exactly as the button's own text used to, and it is
+   still a real submission through `removeBudgetItemAction`, unreimplemented.
+   Only the two branches that actually offer a form get it —
+   `BudgetItemCorrectionHead` (`presupuesto/[itemId]/head.tsx`) is what wires
+   the button to the head, and the closed-month and paid-Fixed-item branches
+   below it call `EntryHead` directly, with nothing passed for `trailing`,
+   because #119 and ADR-0034 already refuse both acts on those branches. A
+   destructive control on a screen built to refuse everything else would be
+   the one thing worse than the fold it replaced.
+
+`EntryHead`'s new `trailing` prop is additive and optional: the three screens
+that never pass it — `presupuesto/nuevo`, `movimientos/nuevo` and
+`movimientos/[movementId]` — get the mirror exactly as before, unchanged in
+every test that already covered them.
+
+**Together the two changes gave back enough that `form.module.css` and
+`remove.module.css` did not need to give up anything at all.** `.form`'s
+`gap` is `var(--space-4)` again, the value it shared with the plan's entry
+screen before this ADR ever touched it — a shared file this issue never
+named, which the Spec review was right to flag as reach. `remove.module.css`
+is deleted outright: `RemoveBudgetItem` moved into
+`BudgetItemCorrectionHead`, which is the only place left that needs a form to
+remove an item from. Nothing outside `/presupuesto/{id}/{itemId}` carries a
+line of this change any more except `EntryHead` and `Icon`, and both of those
+are extended rather than altered.
+
+**What it comes to**, measured on the same worst Space as before, offered and
+answered alike (the two no longer differ, because nothing about the Category
+picker's height changed):
+
+```
+                          Variable form        Fixed form
+   document (floored)         664px               664px
+   Guardar's bottom            541                 541
+```
+
+Both forms land at the identical `Guardar` position now. That is the merged
+row doing exactly what it is for: the Fixed form's fourth question no longer
+costs it a row the Variable form does not have, so the two forms are the same
+shape as far as the fold can tell, where the version CI failed measured them
+71px apart — 600 for the Fixed form, 529 for the Variable one. 123px of real
+room sits under `Guardar` on both now — the shell's own 16px of padding and
+nothing else, `Sacar del plan` no longer among it — against 0px on the Fixed
+form before this amendment and CI's 721 before that.
+
+**The paid Fixed item's screen was never the problem, and still is not.**
+Marking an item paid puts this same route on its other branch — the refusal
+that replaces the form once a Movement exists to strike out first (ADR-0034)
+— and it measured 664 before either version of this change, with
+`Ver el movimiento` ending at 388 first and 192 now. Nothing about Option C+
+touches it: it calls `EntryHead` directly, carries no `trailing`, and its
+document height and control position are unchanged from the shell-removal
+that shipped first. `CorregirElGastoFijoPagado.dc.html` needed no redraw of
+its own this time — it was already redrawn once, for the reason the previous
+amendment gave, and Option C+ changes nothing this branch renders. It still
+carries no trash icon, the one thing that has to stay true of it for #119 and
+ADR-0034 to mean anything on this screen.
+
+**#137 is where the removal control eventually goes.** "Removing a Movement
+and removing a plan item both live only on the screen that corrects them"
+commissions a proper removal flow for both kinds, with several shapes on the
+table. The head's icon is the bridge until that ships and not the answer:
+it fits a phone today, out of a slot that was otherwise doing nothing.
+
+## Where it is held
+
+`e2e/budget.spec.ts`: "a gasto previsto is corrected on a phone without
+scrolling down either" and "a gasto fijo is corrected on a phone without
+scrolling down either, paid or not" — siblings of this ADR's own fold test,
+sharing the same `foldOf`, seeded the same worst-Space way (two Members, both
+named at length) even though neither name is drawn on this particular screen:
+the point is that the test should catch a pill or a heading that ever put one
+back rather than assume today's absence holds. "A closed month offers no way
+to take the item off the plan either" is the counterpart of the paid branch's
+own coverage ("a Member corrects the rent, and cannot while it is paid"),
+seeded through a new `closeMonth` helper in `e2e/session.ts` (the same kind of
+direct write `joinSpace` already is) — it asserts the trailing icon's absence
+the same way the paid branch's test does, `toHaveCount(0)` on
+`{ name: "Sacar del plan" }`, because the one thing worse than the fold this
+change fixed is a destructive control on a screen that refuses everything
+else. The decision itself — no tab bar, `Cancelar` in the head, the screen
+naming itself once — is "correcting a gasto previsto is one thing too, with
+nothing else offered," the third screen now making this argument after
+`MovementForm` and the plan's entry screen.

@@ -18,6 +18,19 @@ export type EntryHeadProps = {
    * question, and no two screens have answered it the same way.
    */
   beneath?: ReactNode;
+  /**
+   * What stands where an invisible copy of `cancel` stands by default,
+   * balancing the row so the title centres against something of about the
+   * same weight rather than against nothing.
+   *
+   * Optional and additive, and every screen that does not pass it gets the
+   * mirror exactly as before -- three do (#105). The fourth is the screen
+   * that corrects a plan item, which puts a real control there instead of
+   * spending the room on a control nobody can reach: taking the item off the
+   * plan altogether, moved here from the foot of the form because CI proved
+   * there was no other place left to put it (#105, ADR-0047 amended).
+   */
+  trailing?: ReactNode;
 };
 
 /**
@@ -34,7 +47,13 @@ export type EntryHeadProps = {
  * screens now make that trade, so the head they make it with lives here rather
  * than twice: the centring below is the part a copy would get subtly wrong.
  */
-export function EntryHead({ back, cancel, title, beneath }: EntryHeadProps) {
+export function EntryHead({
+  back,
+  cancel,
+  title,
+  beneath,
+  trailing,
+}: EntryHeadProps) {
   return (
     <div className={styles.head}>
       <div className={styles.bar}>
@@ -44,15 +63,17 @@ export function EntryHead({ back, cancel, title, beneath }: EntryHeadProps) {
 
         <h1 className={styles.title}>{title}</h1>
 
-        {/*
-          The same word again, invisible and unreachable: it is what makes the
-          title centred on the screen rather than centred in what is left over
-          beside Cancelar. A width would have to be guessed and would be wrong
-          in another language.
-        */}
-        <span aria-hidden="true" className={styles.mirror}>
-          {cancel}
-        </span>
+        {trailing ?? (
+          /*
+            The same word again, invisible and unreachable: it is what makes
+            the title centred on the screen rather than centred in what is
+            left over beside Cancelar. A width would have to be guessed and
+            would be wrong in another language.
+          */
+          <span aria-hidden="true" className={styles.mirror}>
+            {cancel}
+          </span>
+        )}
       </div>
 
       {beneath}

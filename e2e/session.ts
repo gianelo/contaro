@@ -86,6 +86,41 @@ export async function joinSpace(spaceId: string, memberId: string) {
 }
 
 /**
+ * A month closed, written straight into the table the way `joinSpace` writes
+ * a membership: the shortcut for the specs that need a closed month to
+ * already exist and are about something else. `closeMonth.spec.ts` drives the
+ * real act, sheet and all; this is for a screen that only needs to find the
+ * month already shut when it opens.
+ *
+ * `closedOn` is a whole month after `month` on purpose: the domain refuses a
+ * close on the month still being lived in or the one right after it hasn't
+ * ended, and the check constraint on the row says the same thing back.
+ */
+export async function closeMonth(
+  spaceId: string,
+  month: string,
+  closedBy: string,
+) {
+  const [year, monthNumber] = month.split("-").map(Number) as [
+    number,
+    number,
+  ];
+  const closedOn = new Date(Date.UTC(year, monthNumber, 1))
+    .toISOString()
+    .slice(0, 10);
+
+  const { sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    await sql`
+      INSERT INTO closed_months (space_id, month, closed_by, closed_on)
+      VALUES (${spaceId}, ${month}, ${closedBy}, ${closedOn})
+    `;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
  * A Space belonging to a Member, made the way the product makes one. Building
  * a list of Spaces through the form would spend a page load per row to prove
  * something #4 already proves; these specs are about the list itself.

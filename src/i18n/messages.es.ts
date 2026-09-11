@@ -315,7 +315,13 @@ export const es = {
   // the way in are "Agregar al plan", which name the plan rather than either
   // kind, and the kind is decided by "budget.item.due" rather than by which
   // button was pressed.
-  "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
+  //
+  // Shortened from "Qu\u00e9 d\u00eda del mes vence" (#105, Option C+): the correction
+  // screen sits this label beside the name field rather than above it on a
+  // row of its own, and the long form does not fit a column narrow enough to
+  // leave the name room to grow. Used nowhere else, so the value changes
+  // rather than a second key standing beside it for the same question.
+  "budget.fixed.dueDay": "Vence el d\u00eda",
   "budget.fixed.amount": "Cu\u00e1nto es",
   // The badge at the end of a row. Two words, and never a colour on its own:
   // the state has to survive somebody who cannot tell the two grounds apart.

@@ -289,9 +289,9 @@ export async function removeBudgetItemAction(
 
   if (outcome.kind === "removed") {
     // The item is gone, so it cannot say which month it was on. The form
-    // carried it, which is why `RemoveBudgetItem` takes one. The Reader's own
-    // month is what a form that somehow carried none falls back to, and it is
-    // the month their plan is already open on (ADR-0018).
+    // carried it, which is why `BudgetItemCorrectionHead` takes one. The
+    // Reader's own month is what a form that somehow carried none falls back
+    // to, and it is the month their plan is already open on (ADR-0018).
     redirect(
       budgetScreen(
         spaceId,
