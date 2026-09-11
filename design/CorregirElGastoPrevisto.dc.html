@@ -16,15 +16,21 @@
 
   <!--
     The head #105 gives this screen instead of the account row and the Space
-    heading (ADR-0047 amended): Cancelar, the title, and an invisible copy of
-    Cancelar that only centres the title. No pill underneath -- this form asks
-    for no attribution, the same refusal ADR-0046 already gave the plan's
+    heading (ADR-0047 amended): Cancelar, the title, and -- since Option C+ --
+    taking the item off the plan altogether, in the slot that used to hold
+    nothing but an invisible copy of Cancelar. No pill underneath -- this form
+    asks for no attribution, the same refusal ADR-0046 already gave the plan's
     entry screen.
   -->
   <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px; min-height: 44px;">
     <span style="font-size: 17px; color: #0E7C66;">Cancelar</span>
     <span style="font-size: 17px; font-weight: 600;">Corregir el gasto previsto</span>
-    <span style="font-size: 17px; color: transparent;">Cancelar</span>
+    <div style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D6342C" stroke-width="1.8" stroke-linecap="round">
+        <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        <path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/>
+      </svg>
+    </div>
   </div>
   <div style="height: 10px;"></div>
 
@@ -93,25 +99,12 @@
     </div>
   </div>
 
-  <!--
-    4px, not the 16px this used to hold Sacar del plan off Guardar -- the same
-    margin the Fixed form's form.module.css now gives up everywhere this form
-    and that one share a rule (#105, ADR-0047 amended). This form does not need
-    it as badly (it asks one field fewer) but takes the identical value: one
-    route, one branch, not two separate answers.
-  -->
-  <div style="height: 4px;"></div>
-
-  <div style="padding: 0 16px;">
-    <div style="height: 44px; border-radius: 13px; background: #D6342C; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Sacar del plan</span>
-    </div>
-  </div>
-
   <!-- What is left of the viewport once this form's fixed-height blocks are
-       drawn: 135px on this form against 0 on the Fixed one, because this one
-       asks a field fewer. AppShell's own `min-height: 100dvh` is what actually
-       fills it in the running app. -->
+       drawn: 123px, the same on the Fixed form beside this one, now that its
+       due day no longer costs it a row and Sacar del plan no longer costs
+       either form one at the foot (#105, Option C+, ADR-0047 amended).
+       AppShell's own `min-height: 100dvh` is what actually fills it in the
+       running app. -->
   <span style="flex-grow: 1;"></span>
 
   <div style="height: 16px;"></div>

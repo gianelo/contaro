@@ -1,0 +1,44 @@
+.form {
+  display: flex;
+}
+
+/*
+ * 44x44, and read off the shared `hitTarget` class rather than off the touch
+ * token directly -- `hit-target.source.test.ts` holds that token to one
+ * stylesheet, so this composes the shared class (`cx(hitTarget,
+ * styles.trailing)` in head.tsx) instead of naming it here a second time.
+ * Nothing here asks for more than the minimum that gives, and the icon
+ * inside is smaller still, so the button settles at exactly the floor
+ * rather than growing past it.
+ *
+ * Plain rather than filled -- the icon carries the colour, the way `.cancel`
+ * beside it carries its own without a ground under it, so the head reads as
+ * one register of control and not two.
+ */
+.trailing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-destructive);
+  cursor: pointer;
+  appearance: none;
+}
+
+/* The same grey a disabled `plain` Button goes, for the reason that one does:
+   nothing here is filled, so fading it would read as loading rather than as
+   refused for a moment. */
+.trailing:disabled {
+  color: var(--color-disabled);
+  cursor: default;
+}
+
+.error {
+  padding: var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-destructive-soft);
+  color: var(--color-destructive-text);
+  font-size: var(--text-sm);
+}

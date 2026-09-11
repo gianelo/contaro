@@ -161,6 +161,21 @@ const icons = {
       </>
     ),
   },
+  /*
+   * A bin: the lid and its handle as one path, the body and the two ridges
+   * inside it as another. Thinner than the common weight for the reason
+   * `backspace` is -- the ridges sit close enough together that at weight 2
+   * they close up into a blob rather than reading as two lines.
+   */
+  trash: {
+    strokeWidth: 1.8,
+    draw: (
+      <>
+        <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        <path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6" />
+      </>
+    ),
+  },
 } satisfies Record<string, Drawing>;
 
 export type IconName = keyof typeof icons;

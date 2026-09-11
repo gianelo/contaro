@@ -200,6 +200,7 @@ describe("Icon", () => {
       "arrow-up",
       "rotate",
       "lock",
+      "trash",
     ];
 
     expect([...iconNames].sort()).toEqual([...canvas].sort());

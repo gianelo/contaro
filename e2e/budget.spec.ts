@@ -6,6 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 import {
+  closeMonth,
   createMember,
   createSpaceFor,
   joinSpace,
@@ -622,7 +623,7 @@ test("a Member corrects the rent, and cannot while it is paid", async ({
   // loses a digit and becomes 180.000.
   await page.getByRole("button", { name: "Borrar el último número" }).click();
   await page.getByLabel("Cómo se llama").fill("Arriendo y expensas");
-  await page.getByLabel("Qué día del mes vence").selectOption("5");
+  await page.getByLabel("Vence el día").selectOption("5");
   await page.getByRole("button", { name: "Cambiar" }).click();
   await categorise(page, "Comida", "Supermercado");
   await page.getByRole("button", { name: "Guardar" }).click();
@@ -669,6 +670,57 @@ test("a Member corrects the rent, and cannot while it is paid", async ({
   // The section goes with its last item, and the struck Movement stays in the
   // ledger as an entry (ADR-0015): a plan being tidied takes nothing with it.
   await expect(fijos).toHaveCount(0);
+});
+
+/**
+ * The counterpart of the paid branch's own refusal, for the branch beside it.
+ *
+ * #119 shows a closed month rather than offering it, before either kind is
+ * asked which form it wants -- so neither branch below this line is reached,
+ * and neither is `BudgetItemCorrectionHead`'s trailing slot. `EntryHead` is
+ * called directly here, with nothing passed for `trailing`, exactly as the
+ * paid branch calls it: a destructive control on a screen that has already
+ * refused everything else would be the one thing worse than the fold #105
+ * fixed (Option C+).
+ */
+test("a closed month offers no way to take the item off the plan either", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const { member, space } = await aMemberWithASpace(
+    "Cerrado No Toca",
+    context,
+    baseURL!,
+  );
+
+  const { thisMonth } = months();
+
+  await page.goto(`/espacios/${space.id}`);
+  await plan(page, space.id, "Súper de la semana", "24000000");
+
+  const variables = page.getByRole("group", { name: "Variables" });
+  await openPlanOf(variables, "Supermercado");
+  await variables.getByRole("link", { name: /Súper de la semana/ }).click();
+  await page.waitForURL(/\/presupuesto\//);
+  const itemUrl = page.url();
+
+  await closeMonth(space.id, thisMonth, member.id);
+
+  await page.goto(itemUrl);
+  await expect(page.getByText("Este mes está cerrado")).toBeVisible();
+
+  await expect(page.getByRole("button", { name: "Guardar" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Sacar del plan" }),
+  ).toHaveCount(0);
+
+  // The way back still works: Cancelar is the one control a closed month
+  // never takes away (ADR-0002).
+  await expect(page.getByRole("link", { name: "Cancelar" })).toHaveAttribute(
+    "href",
+    `/espacios/${space.id}?mes=${thisMonth}`,
+  );
 });
 
 /**
@@ -797,7 +849,7 @@ test("a gasto fijo is corrected on a phone without scrolling down either, paid o
   // And still after answering every question this form asks beyond the
   // Variable one's, which is the state a thumb is actually in when it reaches
   // for Guardar: the day picker opened and a Category chosen two taps deep.
-  await page.getByLabel("Qué día del mes vence").selectOption("5");
+  await page.getByLabel("Vence el día").selectOption("5");
   // `planFixed`'s default Category opens the picker on its own branch
   // (Hogar), so reaching a different one goes through "Cambiar" first, the
   // way back out of a chosen heading.

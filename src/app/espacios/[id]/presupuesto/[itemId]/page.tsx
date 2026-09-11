@@ -12,7 +12,7 @@ import { readableBudgetItem } from "../budget";
 import { BudgetItemForm } from "../form";
 import { FixedItemForm } from "../fixed-form";
 import { amendBudgetItemAction, amendFixedItemAction } from "../actions";
-import { RemoveBudgetItem } from "./remove";
+import { BudgetItemCorrectionHead } from "./head";
 import { monthIsClosed } from "../../closed";
 
 /**
@@ -43,10 +43,18 @@ import { monthIsClosed } from "../../closed";
  * Movement entry screen and ADR-0047 read it again for the Movement
  * correction screen; this is that same reading extended to a plan item's
  * correction, which holds the identical typed-but-unsaved state — a keypad,
- * a name, a picker and a `Guardar` under the same thumb (#105). It is also the
- * only way either form fits a phone: neither did before this, on the worst
- * Space either can be opened in (ADR-0047 amended, which carries the
- * measurements).
+ * a name, a picker and a `Guardar` under the same thumb (#105).
+ *
+ * Removing the shell was not enough on its own: CI proved it, at 721 against
+ * 664 on the Fixed form once every gap this route could give up was already
+ * spent. `BudgetItemCorrectionHead` is the rest of it, on the two branches
+ * that actually offer a form -- `FixedItemForm`'s own row merges the name and
+ * the due day, and the head carries taking the item off the plan in the slot
+ * that used to hold nothing but an invisible copy of Cancelar (Option C+,
+ * ADR-0047 amended). Neither reaches the closed-month or paid-item branches
+ * below, which call `EntryHead` directly: a destructive control on a screen
+ * that refuses everything else would be the one thing worse than the fold it
+ * fixed (#119, ADR-0034).
  */
 export default async function BudgetItemPage({
   params,
@@ -135,10 +143,12 @@ export default async function BudgetItemPage({
 
     return (
       <AppShell>
-        <EntryHead
+        <BudgetItemCorrectionHead
           back={back}
-          cancel={t("action.cancel")}
           title={t("budget.fixed.edit.title")}
+          spaceId={space.id}
+          itemId={item.id}
+          month={month}
         />
 
         <FixedItemForm
@@ -158,18 +168,18 @@ export default async function BudgetItemPage({
           submit={t("budget.item.save")}
           working={t("budget.item.save.working")}
         />
-
-        <RemoveBudgetItem spaceId={space.id} itemId={item.id} month={month} />
       </AppShell>
     );
   }
 
   return (
     <AppShell>
-      <EntryHead
+      <BudgetItemCorrectionHead
         back={back}
-        cancel={t("action.cancel")}
         title={t("budget.item.edit.title")}
+        spaceId={space.id}
+        itemId={item.id}
+        month={month}
       />
 
       <BudgetItemForm
@@ -188,8 +198,6 @@ export default async function BudgetItemPage({
         submit={t("budget.item.save")}
         working={t("budget.item.save.working")}
       />
-
-      <RemoveBudgetItem spaceId={space.id} itemId={item.id} month={month} />
     </AppShell>
   );
 }
