@@ -8,11 +8,18 @@
   padding: var(--space-9) 0 var(--space-8);
 }
 
+/*
+ * The words take the line, so whatever sits beside them lands at its trailing
+ * end rather than against them. Growing the words and not spacing the row
+ * apart, because the avatar and the name are one thing and a `space-between`
+ * on three children would push them away from each other too.
+ */
 .words {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  flex-grow: 1;
 }
 
 /*

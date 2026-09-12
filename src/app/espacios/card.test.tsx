@@ -6,6 +6,7 @@ import type { ReadableSpace } from "./listing";
 const space = (changes: Partial<ReadableSpace> = {}): ReadableSpace => ({
   id: "space-1",
   name: "Casa",
+  currency: "COP",
   members: [
     { id: "member-1", name: "Gian Solo" },
     { id: "member-2", name: "Ana Junta" },

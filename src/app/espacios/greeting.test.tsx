@@ -83,6 +83,32 @@ describe("what the Space list opens with", () => {
     });
   });
 
+  /*
+   * The trailing end of the one screen with no tab bar under it (ADR-0027),
+   * which is why it is the one screen that cannot leave sign-out out: there is
+   * no Ajustes tab here to fall back to. The greeting holds whatever is put
+   * there rather than knowing it is a hamburger, the same way the Space head
+   * holds a month pill it never names.
+   */
+  it("holds whatever is set beside it, at the end of its own row", () => {
+    render(
+      <Greeting
+        name="Gian"
+        beside={<button type="button">Abrir menú del Espacio</button>}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Abrir menú del Espacio" }),
+    ).toBeInTheDocument();
+  });
+
+  it("is the same row with nothing beside it", () => {
+    render(<Greeting name="Gian" />);
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
   // The greeting takes the whole name and the circle takes its first letter:
   // "Hola, Gian Solo" is not how anybody is greeted out loud.
   it("greets them by the name they go by, not by the whole of it", () => {
