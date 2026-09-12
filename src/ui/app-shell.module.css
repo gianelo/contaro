@@ -45,7 +45,7 @@
   flex-shrink: 0;
 }
 
-.account {
+.header {
   flex-shrink: 0;
   padding-inline: var(--gutter);
 }

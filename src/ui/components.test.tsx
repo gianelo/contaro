@@ -128,18 +128,24 @@ describe("AppShell", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the account through a slot too, whatever it holds", () => {
+  /*
+   * A header and no longer an account (ADR-0059). The slot is named for what
+   * it holds, and what it holds stopped being a name and a way out: it is the
+   * header of the product, and the shell shows it without deciding what is in
+   * it -- the same standing navigation has.
+   */
+  it("renders the header through a slot too, whatever it holds", () => {
     render(
-      <AppShell account={<section aria-label="Otra sesión" />}>
+      <AppShell header={<section aria-label="Otra cabecera" />}>
         <p>Contenido</p>
       </AppShell>,
     );
     expect(
-      screen.getByRole("region", { name: "Otra sesión" }),
+      screen.getByRole("region", { name: "Otra cabecera" }),
     ).toBeInTheDocument();
   });
 
-  it("renders without navigation or account at all", () => {
+  it("renders without navigation or header at all", () => {
     render(
       <AppShell>
         <p>Contenido</p>

@@ -23,6 +23,13 @@ import { t } from "@/i18n";
 export type ReadableSpace = {
   id: string;
   name: string;
+  /**
+   * What money it holds. Already said inside `who`, and here on its own too,
+   * because the Space menu opened from this screen says which Space it is
+   * about in the Space's own money ("Casa · COP") and a sentence about who
+   * else is in it is not that (ADR-0059).
+   */
+  currency: CurrencyCode;
   /** Everyone in it, in the order the Space's rows name them. */
   members: readonly SpaceMember[];
   /** Who it is shared with and what money it holds: "Compartido con Ana · COP". */
@@ -60,6 +67,7 @@ export function readableSpaces(
   return listed.map(({ space, members }) => ({
     id: space.id,
     name: space.name,
+    currency: space.currency,
     members,
     who: whoIsIn(memberId, members, space.currency),
     // Compared against the Spaces really on the list rather than trusted: an

@@ -1,17 +1,8 @@
+import type { ReactNode } from "react";
 import { Avatar, readerColour } from "@/ui/avatar";
 import { t } from "@/i18n";
+import { firstNameOf } from "../name";
 import styles from "./greeting.module.css";
-
-/**
- * The name somebody is greeted by, out of the name they signed in with.
- *
- * Google hands back a whole name and nobody is greeted with all of it: "Hola,
- * Gian Solo Barboza" is a form letter. The first word is what a person is
- * called, and where there is only one word it is already the answer.
- */
-function firstNameOf(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? name;
-}
 
 /**
  * What the Space list opens with (#38): the person, not the screen.
@@ -33,7 +24,18 @@ function firstNameOf(name: string): string {
  * greeting and much better than "Hola, " over an empty circle, which is the
  * screen claiming to know who arrived and then failing to say it.
  */
-export function Greeting({ name }: { name: string | null }) {
+export function Greeting({
+  name,
+  beside,
+}: {
+  name: string | null;
+  /**
+   * What shares the greeting's row at its trailing end: the hamburger, on the
+   * one screen that carries it without a header around it (ADR-0059). Held and
+   * never named, the way `SpaceHead` holds a month pill.
+   */
+  beside?: ReactNode;
+}) {
   const greeted = name ? firstNameOf(name) : "";
 
   return (
@@ -52,6 +54,8 @@ export function Greeting({ name }: { name: string | null }) {
         </h1>
         <p className={styles.lead}>{t("spaces.greeting.lead")}</p>
       </div>
+
+      {beside}
     </header>
   );
 }

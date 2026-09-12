@@ -10,7 +10,8 @@ import { ButtonLink } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Icon } from "@/ui/icon";
 import { monthOf } from "@/domain/calendar/month";
-import { Account } from "../account";
+import { signOutAction } from "../sign-out";
+import { SpaceMenu } from "../space-menu";
 import { readerOf } from "../reader";
 import { t } from "@/i18n";
 import { AnswerInvitation } from "./answer";
@@ -70,9 +71,41 @@ export default async function SpacesPage() {
     findMemberById(database(), session.user.id),
   ]);
 
+  const greeted = member?.name ?? session.user.name ?? null;
+
+  /*
+   * Which Space the hamburger's menu is about, on the one screen that is not
+   * inside one (ADR-0059). The Space last opened -- the one the `Activo` badge
+   * on its card already points at -- and it is read off the list rather than
+   * asked for again, `spacesToChooseFrom` having already worked it out.
+   *
+   * Nothing, for a Member who has never opened a Space. The menu then offers
+   * none of the rows that are a Space's, and still offers the way out: this is
+   * the one shell screen with no tab bar under it to reach Ajustes from, so it
+   * cannot be the screen where signing out is unreachable either.
+   */
+  const current = spaces.find((space) => space.lastOpened) ?? null;
+
   return (
-    <AppShell account={<Account />}>
-      <Greeting name={member?.name ?? session.user.name ?? null} />
+    <AppShell>
+      <Greeting
+        name={greeted}
+        beside={
+          <SpaceMenu
+            member={greeted}
+            space={
+              current
+                ? {
+                    id: current.id,
+                    name: current.name,
+                    currency: current.currency,
+                  }
+                : null
+            }
+            signOut={signOutAction}
+          />
+        }
+      />
 
       {waiting.length > 0 ? (
         <section

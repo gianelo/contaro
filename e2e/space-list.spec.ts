@@ -155,10 +155,10 @@ test("a Member switches between Spaces without signing out", async ({
 
   await expect(page.getByText("Viaje · USD")).toBeVisible();
   // Still the same session throughout: switching is navigation, not a new
-  // sign-in.
-  await expect(page.getByRole("region", { name: "Tu sesión" })).toContainText(
-    "Gaby Cambia",
-  );
+  // sign-in. Said by the header now rather than by the account row above it
+  // (ADR-0059), and said by the name a person is called by rather than all of
+  // it -- the same name the greeting on the list uses.
+  await expect(page.getByRole("banner")).toContainText("Gaby");
 });
 
 /*

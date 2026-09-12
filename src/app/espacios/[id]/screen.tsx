@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/ui/app-shell";
 import type { Space } from "@/domain/space/space";
 import { SpaceNavigation, type TabId } from "../../navigation";
-import { Account } from "../../account";
+import { AppHeader } from "../../header";
 import { SpaceHead } from "./head";
 
 /**
@@ -41,7 +41,15 @@ export function SpaceScreen({
   return (
     <AppShell
       navigation={<SpaceNavigation spaceId={space.id} activeId={tab} />}
-      account={<Account />}
+      header={
+        <AppHeader
+          space={{
+            id: space.id,
+            name: space.name,
+            currency: space.currency,
+          }}
+        />
+      }
     >
       <SpaceHead space={space} title={title} beside={beside} />
 
