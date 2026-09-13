@@ -49,3 +49,23 @@ If the concept you need isn't in the glossary yet, that's a signal: either you'r
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
 > _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+
+## Quoting an ADR
+
+Cite an ADR however the sentence reads best — `(ADR-0007)` is what this repo
+writes most. But when you present a run of words as **the ADR's own**, say so
+with the marker, so the claim is checked rather than trusted:
+
+```ts
+// ADR-0008 says "enforced by a check in CI, not written down and trusted",
+// and this is that check.
+```
+
+`ADR-00NN says "…"` and `ADR-00NN is "…"` are the two forms, and the quote has
+to open on the verb with nothing but space between them. Only a comment using
+that formula is checked: `scripts/adr-citations.test.ts` reads the named ADR
+and fails if the words are no longer there (ADR-0062). Markup and line breaks
+are forgiven; the words are not.
+
+Nothing obliges you to use it. Unmarked citations are fine and most of the tree
+is unmarked — adopt the marker on the ones you touch.

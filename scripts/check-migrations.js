@@ -2,9 +2,10 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { deliberateLoss, destructiveChanges } from "./destructive-migration.js";
 
-// ADR-0008: expand/contract is enforced by a check, not written down and
-// trusted. `drizzle-kit generate` emits DROP COLUMN without asking, so the SQL
-// it writes is a draft and not a verdict — this is what reads the verdict.
+// ADR-0008 says "enforced by a check in CI, not written down and trusted",
+// and this is that check. `drizzle-kit generate` emits DROP COLUMN without
+// asking, so the SQL it writes is a draft and not a verdict — this is what
+// reads the verdict.
 const migrations = path.join(import.meta.dirname, "..", "src", "db", "migrations");
 
 const failures = [];
