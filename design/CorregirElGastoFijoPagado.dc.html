@@ -8,11 +8,61 @@
 <x-dc>
 <helmet>
   <style>
+/* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
+:root {
+  color-scheme: light;
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+/* END generated palette */
+
     body { margin: 0; -webkit-font-smoothing: antialiased; }
-    a { color: #0E7C66; } a:hover { color: #0A5E4D; }
+    a { color: var(--color-accent); } a:hover { color: var(--color-accent-pressed); }
   </style>
 </helmet>
-<div style="position: relative; width: 390px; height: 664px; background: #F2F2F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: #1C1C1E; display: flex; flex-direction: column; box-sizing: border-box;">
+<div style="position: relative; width: 390px; height: 664px; background: var(--color-background); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: var(--color-text); display: flex; flex-direction: column; box-sizing: border-box;">
 
   <!--
     The same head #105 gives the two forms beside this artboard, on the same
@@ -23,18 +73,22 @@
     closed-month branch beside it does too.
   -->
   <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px; min-height: 44px;">
-    <span style="font-size: 17px; color: #0E7C66;">Cancelar</span>
+    <span style="font-size: 17px; color: var(--color-accent);">Cancelar</span>
     <span style="font-size: 17px; font-weight: 600;">Arriendo</span>
     <span style="font-size: 17px; color: transparent;">Cancelar</span>
   </div>
   <div style="height: 10px;"></div>
 
+  <!-- A Refusal card is a quiet block on the page, the same family as a
+       keypad key or the entry-head pill (#138): --color-fill, not
+       --color-background, so it reads as its own boundary rather than
+       vanishing into the page it sits on. -->
   <div style="padding: 0 16px;">
-    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 13px; background: #F2F2F7;">
-      <span style="font-size: 15px; font-weight: 600; color: #1C1C1E;">Este gasto fijo ya está pagado</span>
-      <span style="font-size: 14px; line-height: 1.5; color: #6C6C70;">Para corregirlo o sacarlo del plan, primero anulá el movimiento que lo pagó.</span>
+    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 13px; background: var(--color-fill);">
+      <span style="font-size: 15px; font-weight: 600; color: var(--color-text);">Este gasto fijo ya está pagado</span>
+      <span style="font-size: 14px; line-height: 1.5; color: var(--color-text-secondary);">Para corregirlo o sacarlo del plan, primero anulá el movimiento que lo pagó.</span>
       <div style="display: flex; align-items: center; min-height: 44px;">
-        <span style="font-size: 17px; font-weight: 600; color: #0E7C66;">Ver el movimiento</span>
+        <span style="font-size: 17px; font-weight: 600; color: var(--color-accent);">Ver el movimiento</span>
       </div>
     </div>
   </div>
