@@ -4,8 +4,10 @@ import { createMember, createSpaceFor, startSession } from "./session";
 test("the app runs and renders the shell in Spanish", async ({ page }) => {
   await page.goto("/");
 
-  // There is no screen above a Space, so entering means landing on the list
-  // of them (#5).
+  // Landing on the list is one of three answers now, and this is the Member it
+  // is still right for: the fixture belongs to nobody the database has, so
+  // there is no Space to be sent into (#108). What #5 decided is unchanged --
+  // there is no screen above a Space, and the list is not one.
   await expect(page).toHaveURL(/\/espacios$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
   // The screen greets whoever landed on it rather than naming itself (#38).
