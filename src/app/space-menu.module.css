@@ -1,0 +1,79 @@
+/*
+ * The hamburger and the menu behind it (ADR-0059).
+ */
+
+/*
+ * The trigger carries no ground of its own. It sits at the trailing end of a
+ * header whose left half is a name at the same weight, and a button drawn
+ * there would be the only framed thing on a row that is otherwise two words
+ * and two glyphs.
+ */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.trigger:active {
+  opacity: 0.6;
+}
+
+/*
+ * Which Space the menu is about, under the name it is titled with. Tertiary
+ * ink for the reason the Space card's own line under a name is: it is what
+ * the row above is about, not a second thing to read.
+ */
+.about {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
+/*
+ * The gap the canvas draws between the rows that go somewhere and the one
+ * that ends the session. It is the separation itself, not decoration: the two
+ * groups are one tap apart and one of them cannot be undone.
+ */
+.session {
+  margin-top: var(--space-4);
+}
+
+/*
+ * The tinted circle a row's glyph sits in, at the size the canvas draws it.
+ * Two tints and not one, because the rows are not the same kind of act: green
+ * goes somewhere, red leaves.
+ */
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+}
+
+.toSettings {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.toLeave {
+  color: var(--color-destructive);
+  background: var(--color-destructive-soft);
+}
+
+/*
+ * The one red thing on the sheet. The row is a button like the one above it
+ * and reads as an exit anyway, which is the whole reason it is coloured: a
+ * person scanning for the way out finds it without reading the label.
+ */
+.leave {
+  color: var(--color-destructive);
+}

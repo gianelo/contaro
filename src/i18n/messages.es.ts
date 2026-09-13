@@ -709,8 +709,21 @@ export const es = {
   "appearance.light": "Claro",
   "appearance.dark": "Oscuro",
 
-  "account.label": "Tu sesión",
-  "account.signOut": "Salir",
+  // The header, and the Space menu the hamburger opens (ADR-0059). "Cerrar
+  // sesión" and not the old row's "Salir": the row sat beside a title where
+  // one word had to do, and a row inside a menu has the width to say which
+  // session is being closed rather than which door is being left.
+  "space.menu.open": "Abrir menú del Espacio",
+  // Which Space the menu is about, in the Space's own money -- the same pair
+  // the Space card's line under the name already gives ("Casa · COP"). It
+  // matters most where it is least obvious: opened from the Spaces list, the
+  // menu is about whichever Space was last used.
+  "space.menu.about": "{space} · {currency}",
+  "space.menu.signOut": "Cerrar sesión",
+  // Names the group the way out sits in, for a screen reader walking the
+  // sheet. Off the screen, because the canvas draws the gap above it instead
+  // and a heading over a single red row would be a label louder than the row.
+  "space.menu.session": "Tu sesión",
 
   "action.cancel": "Cancelar",
   "action.done": "Listo",

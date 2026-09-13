@@ -8,17 +8,24 @@ export type AppShellProps = {
    */
   navigation?: ReactNode;
   /**
-   * Whoever is signed in, and the way out. A slot for the same reason
-   * navigation is one: the shell shows it, it does not decide what it is.
+   * The header of the product: who is signed in, and the controls that belong
+   * beside them (ADR-0059). A slot for the same reason navigation is one -- the
+   * shell shows it, it does not decide what it is.
+   *
+   * It was called `account` while it held a name and a green `Salir`, which is
+   * the pair ADR-0059 broke up. The slot outlives that row because what it
+   * really does is stack something above the content and outside it: inside
+   * `main` the header would scroll away with what it heads, and inset itself
+   * twice over on the content's own gutter.
    */
-  account?: ReactNode;
+  header?: ReactNode;
   children: ReactNode;
 };
 
-export function AppShell({ navigation, account, children }: AppShellProps) {
+export function AppShell({ navigation, header, children }: AppShellProps) {
   return (
     <div className={styles.shell}>
-      {account ? <div className={styles.account}>{account}</div> : null}
+      {header ? <div className={styles.header}>{header}</div> : null}
       <main className={styles.content}>{children}</main>
       {navigation ? (
         <div className={styles.navigation}>{navigation}</div>

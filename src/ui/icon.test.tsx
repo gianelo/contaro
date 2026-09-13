@@ -21,6 +21,15 @@ describe("Icon", () => {
     expect(drawn(container).innerHTML).toContain("M4 12.5l5 5L20 6.5");
   });
 
+  it("draws a menu as three strokes of one length, which is what tells it from a list", () => {
+    // The hamburger the canvas draws (`design/Presupuesto.dc.html`): three full
+    // strokes. `list` is those same three with the last one cut short, and a
+    // header reaching for it would be drawing a list where a menu goes.
+    const { container } = render(<Icon name="menu" />);
+
+    expect(drawn(container).innerHTML).toContain("M4 7h16M4 12h16M4 17h16");
+  });
+
   it("draws every shape an icon is made of, not only its first", () => {
     // `users` is three shapes. An icon module that renders one of them is an
     // icon module that silently loses two thirds of the set.
@@ -184,6 +193,7 @@ describe("Icon", () => {
       "calendar",
       "calendar-day",
       "list",
+      "menu",
       "users",
       "target",
       "plus",
@@ -198,6 +208,7 @@ describe("Icon", () => {
       "cart",
       "car",
       "arrow-up",
+      "leave",
       "rotate",
       "lock",
       "trash",
