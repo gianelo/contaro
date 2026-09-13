@@ -11,6 +11,7 @@ const segmented = read("src/ui/segmented-field.module.css");
 const light = read("design/Main.dc.html");
 const dark = read("design/CargarGastoOscuro.dc.html");
 const form = read("src/app/espacios/[id]/movimientos/form.tsx");
+const tokensCss = read("src/ui/tokens.css");
 
 /** The one inline style on the artboard that draws a key. */
 const key = /class="k"[^>]*style="([^"]*)"/.exec(light)?.[1];
@@ -99,23 +100,51 @@ describe("the numbers the entry screen reads off the canvas", () => {
     });
 
     it("lifts the chosen half off a track it would otherwise vanish into", () => {
-      // The dark artboard draws the thumb #3A3A3C on a #1C1C1E track, and the
-      // light one draws it white. Reading both is the point: the token this
-      // replaced resolved to the track's own colour in dark.
-      expect(dark).toContain("'#3A3A3C' : 'transparent'");
-      expect(light).toContain("'#FFFFFF' : 'transparent'");
+      // Both artboards name --color-segment-thumb directly since #138, the
+      // same token segmented-field.module.css already draws with -- no
+      // longer two independently pinned literals that happen to agree with
+      // it, but one token the browser resolves per scheme: #3A3A3C on the
+      // dark track, white on the light one, read here off tokens.css itself
+      // rather than re-typed as hexes a future edit could drift from.
+      const darkThumb = tokensCss.match(/--color-segment-thumb:\s*light-dark\([^,]+,\s*([^)]+)\)/)?.[1];
+      const lightThumb = tokensCss.match(/--color-segment-thumb:\s*light-dark\(\s*([^,]+),/)?.[1];
+      expect(dark).toContain("'var(--color-segment-thumb)' : 'transparent'");
+      expect(light).toContain("'var(--color-segment-thumb)' : 'transparent'");
+      expect(darkThumb).toBe("#3a3a3c");
+      expect(lightThumb).toBe("#ffffff");
       expect(segmented).toContain("var(--color-segment-thumb)");
     });
   });
 
   describe("a button that cannot be pressed", () => {
     it("is filled and inked the way both artboards fill it", () => {
-      // Two palettes and not one: the light pair happens to match
-      // --color-disabled and the dark pair does not, which is why the two
-      // grounds are named apart in tokens.css.
-      expect(light).toContain("'#C6C6C8'");
-      expect(dark).toContain("'#2C2C2E'");
-      expect(dark).toContain("'#6C6C70'");
+      // Both artboards name the token directly since #138, so the pair this
+      // test is about -- ground and ink, agreeing in light and diverging in
+      // dark, which is why they are named apart in tokens.css -- is read off
+      // tokens.css's own resolved values rather than off two independently
+      // pinned literals.
+      expect(light).toContain("'var(--color-disabled-surface)'");
+      expect(dark).toContain("'var(--color-disabled-surface)'");
+      expect(dark).toContain("'var(--color-on-disabled)'");
+
+      const disabledSurfaceDark = tokensCss.match(
+        /--color-disabled-surface:\s*light-dark\([^,]+,\s*([^)]+)\)/,
+      )?.[1];
+      const onDisabledDark = tokensCss.match(/--color-on-disabled:\s*light-dark\([^,]+,\s*([^)]+)\)/)?.[1];
+      expect(disabledSurfaceDark).toBe("#2c2c2e");
+      expect(onDisabledDark).toBe("#6c6c70");
+
+      // And the light halves, which the artboards used to pin and this file
+      // would otherwise have stopped reading. The pair agreeing in light is
+      // exactly as load-bearing as its diverging in dark: it is the agreement
+      // that makes "these are one pair here and two there" a fact rather than
+      // a story about the dark palette alone.
+      const disabledSurfaceLight = tokensCss.match(
+        /--color-disabled-surface:\s*light-dark\(\s*([^,]+),/,
+      )?.[1];
+      const onDisabledLight = tokensCss.match(/--color-on-disabled:\s*light-dark\(\s*([^,]+),/)?.[1];
+      expect(disabledSurfaceLight?.trim()).toBe("#c6c6c8");
+      expect(onDisabledLight?.trim()).toBe("#ffffff");
 
       expect(read("src/ui/button.module.css")).toContain(
         "var(--color-disabled-surface)",
@@ -125,13 +154,30 @@ describe("the numbers the entry screen reads off the canvas", () => {
 
   describe("an amount nobody has typed", () => {
     it("is greyed the way both artboards grey it", () => {
-      // The other half of the disabled pair, and the half this file never
-      // read. In light it happens to be the dead button's ground and in dark
-      // it is not -- which is exactly why the two are named apart, and exactly
-      // the mistake that would go unseen with only the light artboard open
-      // (#41, ADR-0028).
-      expect(light).toContain("'#C6C6C8' : '#1C1C1E'");
-      expect(dark).toContain("'#48484A' : '#FFFFFF'");
+      // Both artboards name --color-disabled and --color-text directly since
+      // #138, which closes off half of what ADR-0028 (#41) found: there is no
+      // second hardcoded literal left for a dark artboard to drift from.
+      //
+      // It does not close off the other half, so the halves are still read.
+      // #41's finding was that the *pair* had diverged -- in light the untyped
+      // amount happens to be the dead button's ground and in dark it is not,
+      // which is the whole reason the two are named apart -- and one token
+      // named in both artboards says nothing about whether either palette
+      // still holds the value the canvas was measured at. Read off tokens.css
+      // rather than re-typed, so this pins the canvas's numbers without
+      // becoming a second place a hex has to be edited.
+      expect(light).toContain("'var(--color-disabled)' : 'var(--color-text)'");
+      expect(dark).toContain("'var(--color-disabled)' : 'var(--color-text)'");
+
+      const halves = (name: string) =>
+        tokensCss.match(new RegExp(`--${name}:\\s*light-dark\\(\\s*([^,]+),\\s*([^)]+)\\)`));
+
+      const disabled = halves("color-disabled");
+      const text = halves("color-text");
+      expect(disabled?.[1]?.trim()).toBe("#c6c6c8");
+      expect(disabled?.[2]?.trim()).toBe("#48484a");
+      expect(text?.[1]?.trim()).toBe("#1c1c1e");
+      expect(text?.[2]?.trim()).toBe("#ffffff");
 
       expect(keypad).toContain("var(--color-disabled)");
     });
