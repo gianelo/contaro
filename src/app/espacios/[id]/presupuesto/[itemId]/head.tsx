@@ -6,6 +6,7 @@ import { cx } from "@/ui/cx";
 import { EntryHead } from "@/ui/entry-head";
 import { hitTarget } from "@/ui/hit-target";
 import { Icon } from "@/ui/icon";
+import { trailingControl } from "@/ui/trailing-control";
 import { nothingWrongYet } from "../plan";
 import { removeBudgetItemAction } from "../actions";
 import styles from "./head.module.css";
@@ -87,7 +88,7 @@ export function BudgetItemCorrectionHead({
                 ? t("budget.item.remove.working")
                 : t("budget.item.remove")
             }
-            className={cx(hitTarget, styles.trailing)}
+            className={cx(hitTarget, trailingControl, styles.trailing)}
           >
             <Icon name="trash" />
           </button>
