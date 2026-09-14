@@ -97,3 +97,29 @@ explained: `recap-tray.source.test.ts` reads all three stylesheets and asserts
 they draw one ground, one padding, one corner and one gap. It leaves `margin`
 alone, which is genuinely different in each — that is where a tray sits in its
 sheet, not what a tray is.
+
+## Amended by #143: the context has been corrected
+
+"Where the value came from", above, describes a trap that is no longer set.
+`design/Main.dc.html` no longer draws the light entry screen on `#FFFFFF`: it
+draws it on `--color-background`, the same ground `AppShell` gives it, and so
+does `design/AgregarUnFormulario.dc.html`. ADR-0064 is that change and the
+argument for it.
+
+Read that section as history rather than as a standing warning. The hex was
+right and the context was not — and the context has since been fixed, so a
+quiet surface measured off either artboard today is measured against the page
+the app actually draws.
+
+What this ADR decided does not move. `--color-fill` is still
+`light-dark(#e9e9ee, #1c1c1e)`, still a step off the page, and still named apart
+from `--color-fill-on-surface` for the reason argued above. Nothing in `src/`
+changed with the repaint: this ADR's rejection of repainting the *screen* white
+stands untouched, because what #143 repainted was the *drawing* of the screen,
+which is the half that was wrong.
+
+One line in "The direction flips between palettes" is now visible rather than
+merely asserted. `--color-fill` at 1.08:1 against the page is what the artboards
+show, where before they showed it at 1.21:1 against white. It reads weaker there
+now because it is weaker, which is the whole of #102 made legible in the place
+it should have been legible first.
