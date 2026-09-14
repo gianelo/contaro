@@ -148,6 +148,10 @@ test("creating a Space carries neither the header nor the hamburger", async ({
   // trades the shell for room -- the same trade the Movement entry screen and
   // both plan-item correction screens make (ADR-0047, ADR-0059). It used to
   // render the account row anyway, which is the drift this closes.
+  //
+  // Since #142 it does wear a head of its own, which is not this: the banner
+  // is the shell's and offers other places, and the head is the screen's own
+  // and offers the way out and the way in to this one screen (ADR-0065).
   await expect(page.getByRole("banner")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Abrir menú del Espacio" }),

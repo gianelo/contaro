@@ -3,36 +3,18 @@
 }
 
 /*
- * 44x44, and read off the shared `hitTarget` class rather than off the touch
- * token directly -- `hit-target.source.test.ts` holds that token to one
- * stylesheet, so this composes the shared class (`cx(hitTarget,
- * styles.trailing)` in head.tsx) instead of naming it here a second time.
- * Nothing here asks for more than the minimum that gives, and the icon
- * inside is smaller still, so the button settles at exactly the floor
- * rather than growing past it.
+ * Taking the item off the plan, in the head's trailing slot -- carried there
+ * because the slot was dead space by construction and this screen had no
+ * vertical room left to spend (#105, Option C+).
  *
- * Plain rather than filled -- the icon carries the colour, the way `.cancel`
- * beside it carries its own without a ground under it, so the head reads as
- * one register of control and not two.
+ * Only the colour, which is the whole of what this control means: the icon
+ * carries it, the way `.cancel` beside it carries its own without a ground
+ * under it. The shape -- plain, no border, no ground, grey when refused -- is
+ * `trailingControl`, and 44x44 is `hitTarget`, each written once; `head.tsx`
+ * composes all three (#142).
  */
 .trailing {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
   color: var(--color-destructive);
-  cursor: pointer;
-  appearance: none;
-}
-
-/* The same grey a disabled `plain` Button goes, for the reason that one does:
-   nothing here is filled, so fading it would read as loading rather than as
-   refused for a moment. */
-.trailing:disabled {
-  color: var(--color-disabled);
-  cursor: default;
 }
 
 .error {

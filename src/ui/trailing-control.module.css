@@ -1,0 +1,41 @@
+/*
+ * The one place a control standing in `EntryHead`'s trailing slot is reset.
+ *
+ * That slot holds an invisible copy of Cancelar by default, there only to
+ * centre the title, so anything real put in it is a button on a bar of plain
+ * text: it has to give up every ground, border and box a browser would give
+ * it, or the head reads as two registers of control instead of one. Two
+ * screens now do it -- taking an item off the plan (#105) and creating a Space
+ * (#142) -- and they arrived at the identical nine declarations separately,
+ * which is the second time this repo has watched that happen to a rule about
+ * what a control looks like (see hit-target.module.css).
+ *
+ * What is NOT here is colour and type. A destructive icon and an accent word
+ * are what the two screens actually mean by their control, and ADR-0046 drew
+ * that line already when the pill's shape moved to `@/ui/entry-head` and what
+ * it says stayed with the screens. The shape is shared; the meaning is not.
+ *
+ * The refused state is the exception, and it is here on purpose: a plain
+ * control goes grey, and it goes the same grey wherever it is, because what
+ * fading an unfilled control would say is "loading" and not "not yet".
+ *
+ * No touch size either -- `hitTarget` is that rule's one place, and both
+ * consumers compose the two classes together.
+ */
+.trailingControl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+.trailingControl:disabled {
+  color: var(--color-disabled);
+  cursor: default;
+}

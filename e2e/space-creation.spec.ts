@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createMember, startSession } from "./session";
 import { readableCurrencies } from "../src/i18n/currency";
 import { t } from "../src/i18n";
+import { foldOf } from "./layout";
 
 // Deliberately not the signed-in fixture: creating a Space writes a membership
 // row, so the session has to belong to a Member the database really has.
@@ -20,7 +21,7 @@ test("a Member creates a Space and lands inside it", async ({
 
   await page.getByLabel("Nombre").fill("Casa");
   await page.getByLabel("Moneda").selectOption("ARS");
-  await page.getByRole("button", { name: "Crear el espacio" }).click();
+  await page.getByRole("button", { name: "Crear" }).click();
 
   await expect(page).toHaveURL(
     /\/espacios\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
@@ -55,10 +56,20 @@ test("a Space without a name is not created", async ({
   await startSession(context, baseURL!, await createMember("Cami Vacia"));
 
   await page.goto("/espacios/nuevo");
-  await page.getByRole("button", { name: "Crear el espacio" }).click();
 
-  // The browser refuses the submission itself; the domain refuses it again if
-  // anything ever gets past that (see src/domain/space/space.test.ts).
+  // Refused before it is pressed, which is the state the canvas has always
+  // drawn `Crear` in on an empty form and the code did not have (#142).
+  await expect(page.getByRole("button", { name: "Crear" })).toBeDisabled();
+
+  // And refused again underneath, so the control being offered by mistake
+  // would still not create a nameless Space: the browser refuses the
+  // submission itself, and the domain refuses it a third time if anything
+  // ever gets past that (see src/domain/space/space.test.ts).
+  const submittable = await page
+    .locator("form")
+    .evaluate((form: HTMLFormElement) => form.checkValidity());
+
+  expect(submittable).toBe(false);
   await expect(page).toHaveURL(/\/espacios\/nuevo$/);
 });
 
@@ -78,17 +89,52 @@ test("a Space with no currency chosen is not created", async ({
   // whoever does not look, a question ADR-0001 makes unaskable again.
   await expect(picker).toHaveValue("");
 
-  await page.getByRole("button", { name: "Crear el espacio" }).click();
+  // A name alone does not offer the way in. This is the half of #142 a unit
+  // test cannot reach: `Crear` reads a real browser's validity, and what makes
+  // an unchosen currency invalid is that its option carries no value.
+  await expect(page.getByRole("button", { name: "Crear" })).toBeDisabled();
 
-  // The URL alone would prove nothing — it was already this before the click.
-  // What is asserted is that the browser itself refuses the submission, which
-  // is only true because the unchosen option carries no value.
   const submittable = await picker.evaluate((el: HTMLSelectElement) =>
     el.checkValidity(),
   );
 
   expect(submittable).toBe(false);
   await expect(page).toHaveURL(/\/espacios\/nuevo$/);
+});
+
+/**
+ * The whole screen on a phone, which moving both controls into the head is
+ * what buys: the sibling of the fold tests ADR-0047's family already has
+ * (#105, #142). `Crear` is at the top of the screen now rather than under a
+ * form, so what is measured is the document -- a screen whose whole job is
+ * typing must not put anything below the glass to scroll past.
+ *
+ * The longest name a Space can be given, so the field is at its tallest and
+ * the head is carrying a real answer rather than a placeholder.
+ */
+test("the creation screen fits a phone, whole, before and after it is answered", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await startSession(context, baseURL!, await createMember("Fito Pantalla"));
+
+  await page.goto("/espacios/nuevo");
+
+  const crear = page.getByRole("button", { name: "Crear" });
+
+  const empty = await foldOf(page, crear);
+  expect(empty.control).toBeLessThanOrEqual(empty.viewport);
+  expect(empty.document).toBeLessThanOrEqual(empty.viewport);
+
+  await page
+    .getByLabel("Nombre")
+    .fill("Casa compartida de Maximiliano Bartolomé");
+  await page.getByLabel("Moneda").selectOption("ARS");
+
+  const answered = await foldOf(page, crear);
+  expect(answered.control).toBeLessThanOrEqual(answered.viewport);
+  expect(answered.document).toBeLessThanOrEqual(answered.viewport);
 });
 
 test("the picker offers the currencies by name, in the order they are read", async ({
@@ -132,7 +178,7 @@ test.describe("a Member who reads numbers the Argentine way", () => {
     await page.goto("/espacios/nuevo");
     await page.getByLabel("Nombre").fill("Bogotá");
     await page.getByLabel("Moneda").selectOption("COP");
-    await page.getByRole("button", { name: "Crear el espacio" }).click();
+    await page.getByRole("button", { name: "Crear" }).click();
 
     await expect(page.getByText("Bogotá · COP")).toBeVisible();
     await expect(page.getByRole("region", { name: "Este mes" })).toContainText(
@@ -150,7 +196,7 @@ test.describe("a Member who reads numbers the Argentine way", () => {
     await page.goto("/espacios/nuevo");
     await page.getByLabel("Nombre").fill("Viaje");
     await page.getByLabel("Moneda").selectOption("USD");
-    await page.getByRole("button", { name: "Crear el espacio" }).click();
+    await page.getByRole("button", { name: "Crear" }).click();
 
     await expect(page.getByText("Viaje · USD")).toBeVisible();
 
