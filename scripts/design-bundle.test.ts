@@ -340,23 +340,31 @@ describe("an artboard names a token, not a colour (#138)", () => {
     expect(hardcodedColoursIn(readArtboard(file))).toEqual([]);
   });
 
-  describe("the ten correct #F2F2F7 page grounds (the acceptance criterion #138 names explicitly)", () => {
+  describe("the twelve correct #F2F2F7 page grounds (the acceptance criterion #138 names explicitly)", () => {
     // Measured directly off design/ (see the brief and this issue's own
-    // measurement): the root <div> of exactly these ten artboards is drawn at
-    // #F2F2F7, and it is drawn there *correctly* — it is the page itself,
+    // measurement): the root <div> of exactly these twelve artboards is drawn
+    // at #F2F2F7, and it is drawn there *correctly* — it is the page itself,
     // which --color-background names and which still holds this value in
     // tokens.css. A pass that "fixed" colour by repointing every #F2F2F7 at
-    // --color-fill (the token #102 actually moved) would make these ten
+    // --color-fill (the token #102 actually moved) would make these twelve
     // wrong while looking, to a diff, like the same kind of edit as the 36
     // keypad keys that are genuinely wrong. This is the test that tells the
-    // two apart: it fails the moment a future pass touches one of these ten.
-    const tenCorrectBackgrounds = [
+    // two apart: it fails the moment a future pass touches one of these.
+    //
+    // Ten when #138 wrote this list, twelve since #143: Main.dc.html and
+    // AgregarUnFormulario.dc.html were the two full screens drawn on
+    // --color-surface, which #138 deliberately left alone as a redraw rather
+    // than a rename. They are page grounds now, and belong here for the same
+    // reason the other ten do (ADR-0064).
+    const correctPageGrounds = [
+      "AgregarUnFormulario.dc.html",
       "ArrastreDeficit.dc.html",
       "CorregirElGastoFijo.dc.html",
       "CorregirElGastoFijoPagado.dc.html",
       "CorregirElGastoPrevisto.dc.html",
       "CrearEspacio.dc.html",
       "Espacios.dc.html",
+      "Main.dc.html",
       "MasIntacto.dc.html",
       "Movimientos.dc.html",
       "Presupuesto.dc.html",
@@ -372,7 +380,7 @@ describe("an artboard names a token, not a colour (#138)", () => {
       expect(declaration?.[1]?.trim()).toBe("#f2f2f7");
     });
 
-    it.each(tenCorrectBackgrounds)(
+    it.each(correctPageGrounds)(
       "%s's page ground names --color-background, and only --color-background",
       (file) => {
         const source = readArtboard(file);
@@ -400,7 +408,7 @@ describe("an artboard names a token, not a colour (#138)", () => {
         if (ground?.[1] === "#F2F2F7") return true;
         return ground?.[1] === "var(--color-background)" && schemeFor(file) === "light";
       });
-      expect(stillOnF2F2F7.sort()).toEqual([...tenCorrectBackgrounds].sort());
+      expect(stillOnF2F2F7.sort()).toEqual([...correctPageGrounds].sort());
     });
   });
 

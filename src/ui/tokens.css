@@ -24,10 +24,15 @@
    * twelve 44px targets as a field of loose numerals and the segmented control
    * as a white pill floating beside bare text (#102).
    *
-   * #f2f2f7 was right where it was read off: `design/Main.dc.html` draws the
+   * #f2f2f7 was right where it was read off: `design/Main.dc.html` drew the
    * whole entry screen on #FFFFFF and everything quiet on it in that grey. The
    * app draws that screen inside AppShell, whose ground is #F2F2F7. The value
    * was lifted out of a context that supplied its own contrast.
+   *
+   * Past tense on purpose: that context has been corrected. `Main.dc.html` and
+   * `AgregarUnFormulario.dc.html` are drawn on --color-background now, so a
+   * quiet surface read off either one is read against the page the app gives
+   * it, and this paragraph is history rather than a live trap (ADR-0064).
    *
    * The step goes *down* in light and *up* in dark, and that is not an
    * inconsistency -- it is the only direction each palette leaves. The light
