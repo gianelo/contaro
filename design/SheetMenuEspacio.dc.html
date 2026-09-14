@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+/* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
+:root {
+  color-scheme: light;
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+/* END generated palette */
+
+    /*
+     * #138 -- canvas staging, not a product colour. This bottom sheet is
+     * drawn over the page, and behind a real sheet the page is dimmed by
+     * `--color-scrim`, a translucent black the browser composites live. A
+     * static artboard has no paint step to composite in: it can only draw one
+     * flat pixel per surface, so the dimmed page is approximated here as a
+     * single opaque colour instead of the page-plus-scrim the running app
+     * actually layers. Naming that approximation its own `--canvas-*`
+     * property, rather than leaving it an unexplained hex or banning every hex
+     * outright, is what keeps it countable and self-documenting -- a blunter
+     * rule could not tell this staging apart from the drift #138 exists to
+     * catch.
+     */
+    :root { --canvas-scrim-over-page: #6E6E73; }
+
+    /*
+     * The other half of that same approximation, and staging for the same
+     * reason: the name of the screen the sheet is covering, showing through.
+     * The running app draws that heading in `--color-text` -- dark ink -- and
+     * then lays `--color-scrim` over the whole page, so the scrim makes it
+     * *darker*. Drawn here it has to read against the one flat grey above, so
+     * it is drawn light instead. No product token describes that, because the
+     * product never draws a 30px white heading on grey; naming a ground token
+     * for it just because the hex matched would be the rule satisfied and the
+     * meaning lost (#138).
+     */
+    :root { --canvas-page-ink-behind-scrim: #FFFFFF; }
+
+    body { margin: 0; -webkit-font-smoothing: antialiased; }
+    a { color: var(--color-accent); } a:hover { color: var(--color-accent-pressed); }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; background: var(--canvas-scrim-over-page); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: var(--color-text); display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;">
+  <div style="position: absolute; top: 22px; left: 16px; opacity: 0.45;">
+    <span style="font-size: 30px; font-weight: 700; color: var(--canvas-page-ink-behind-scrim);">Presupuesto</span>
+  </div>
+  <div style="background: var(--color-surface-raised); border-radius: 22px 22px 0 0; padding: 10px 20px 26px 20px; display: flex; flex-direction: column;">
+    <div style="width: 38px; height: 5px; border-radius: 999px; background: var(--color-grabber); align-self: center; margin-bottom: 18px;"></div>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 36px; height: 36px; border-radius: 999px; background: var(--color-member-first-ground); display: flex; align-items: center; justify-content: center;">
+        <span style="font-size: 14px; font-weight: 700; color: var(--color-member-first-ink);">G</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <span style="font-size: 17px; font-weight: 700; letter-spacing: -0.3px;">Gian</span>
+        <span style="font-size: 13px; color: var(--color-text-tertiary);">Casa · COP</span>
+      </div>
+    </div>
+
+    <div style="height: 1px; background: var(--color-separator); margin: 16px 0;"></div>
+
+    <div style="background: var(--color-fill-on-surface); border-radius: 13px; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--color-separator);">
+        <div style="width: 30px; height: 30px; border-radius: 999px; background: var(--color-accent-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke: var(--color-accent);"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
+        </div>
+        <span style="font-size: 16px; font-weight: 500; flex-grow: 1;">Ajustes</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke: var(--color-disabled);"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px;">
+        <div style="width: 30px; height: 30px; border-radius: 999px; background: var(--color-member-first-ground); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke: var(--color-member-first-ink);"><path d="M5 21V13M12 21V8M19 21v-5"/></svg>
+        </div>
+        <span style="font-size: 16px; font-weight: 500; flex-grow: 1;">Balance de varios meses</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke: var(--color-disabled);"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <div style="background: var(--color-fill-on-surface); border-radius: 13px; overflow: hidden; margin-top: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px;">
+        <div style="width: 30px; height: 30px; border-radius: 999px; background: var(--color-destructive-soft); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--color-destructive);"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </div>
+        <span style="font-size: 16px; font-weight: 500; color: var(--color-destructive);">Cerrar sesión</span>
+      </div>
+    </div>
+
+    <div style="height: 52px; display: flex; align-items: center; justify-content: center; margin-top: 6px;">
+      <span style="font-size: 17px; font-weight: 500; color: var(--color-accent);">Cancelar</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

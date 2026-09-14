@@ -15,3 +15,11 @@ Navigation lives inside a Space. `SpaceNavigation` builds every tab from the ide
 Every route inside `/espacios/[id]` calls `currentSpace(id)` rather than trusting a parent layout, which costs one lookup per screen and buys a membership check per screen. #6's Categories, #7's Movements and #10's Budgets all hang under the same identifier for the same reason.
 
 Switching Space loses the tab a person was on: coming back from the list lands on the Budget rather than where they were. That is the price of holding no state, and it is small — the list is two taps away and the Budget is where a person wants to be anyway.
+
+## Amended by #108: `/` no longer always goes to the list
+
+The sentence above that says `/` redirects to `/espacios` is no longer true. It now sends a Member to the Space they last opened, or to the only Space they have; the list is where it sends everybody else, and where it sends anybody with an Invitation waiting. ADR-0063 is that rule and the argument for it.
+
+Nothing else here moves. There is still no current-Space cookie, session field or server state of any kind: what the redirect reads is `space_members.last_opened_at`, a moment on a membership row that #38 already writes on every opening and that ADR-0029 argued is not a current-Space pointer — it belongs to the Member rather than to the Space, and it is only ever written. The URL still names the Space, and every route under `/espacios/[id]` still calls `currentSpace` on arrival, so the redirect buys a destination and never a way past the membership check.
+
+The Consequences below already made this change's case before it was made. The tab a person was on is still lost when they switch Space, and the Budget is still where they wanted to be — which is now also true of the moment they open the app.

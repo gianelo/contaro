@@ -1,0 +1,48 @@
+/*
+ * The name and the due day, side by side rather than stacked (#105, Option
+ * C+). CI measured this form's `Guardar` at 657 and the block still hanging
+ * off the fold at 721 -- 57px over, three retries running, once the shell
+ * removal and every gap this screen could give up were already spent. This
+ * is the field the day question no longer needs a 66px row of its own for:
+ * both controls keep the 44px they already stood at, laid out sideways
+ * instead of stacked, which is a whole row's height given back rather than
+ * borrowed from somewhere else on the screen.
+ */
+.row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.name {
+  flex: 1;
+  /* A flex item floors at its content width, so a name long enough to fill
+     the input would push the day column out of the row rather than scroll
+     inside its own -- the same rule `--measure` and `.words` already lean
+     on elsewhere (ADR-0041, ADR-0047). */
+  min-width: 0;
+}
+
+.day {
+  /*
+   * Wide enough for "VENCE EL DÍA" (`budget.fixed.dueDay`, shortened for
+   * exactly this column) not to wrap, and for the widest day this picker
+   * ever shows -- "31" plus the native arrow -- and no wider, so the name
+   * keeps the room it can actually use. A raw pixel value because nothing
+   * else on the scale wants it.
+   */
+  flex: 0 0 120px;
+}
+
+/*
+ * A safety net and not the reason the label fits: the column is sized for
+ * "VENCE EL DÍA" already. If a translation or a font ever draws it wider, the
+ * label is what gives -- a two-line label would grow this column past the
+ * 44px the row is built on, which `.label` was never asked to hold to on its
+ * own (ADR-0036 for an amount, ADR-0047 for a name; this is the same rule on
+ * a caption).
+ */
+.day label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

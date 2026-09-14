@@ -10,7 +10,8 @@ import { SelectField, TextField } from "@/ui/field";
 import { Keypad } from "@/ui/keypad";
 import { daysOf } from "./days";
 import { nothingWrongYet, type BudgetFormState } from "./plan";
-import styles from "./form.module.css";
+import formStyles from "./form.module.css";
+import styles from "./fixed-form.module.css";
 
 export type FixedItemFormProps = {
   spaceId: string;
@@ -83,7 +84,7 @@ export function FixedItemForm({
   const [amount, setAmount] = useState(initial.amount);
 
   return (
-    <form action={send} className={styles.form}>
+    <form action={send} className={formStyles.form}>
       {/*
         A claim, not a fact: `handleAmendFixedItem` proves membership again
         before anything is written (ADR-0010).
@@ -101,28 +102,46 @@ export function FixedItemForm({
         onChange={setAmount}
       />
 
-      <TextField
-        name="name"
-        label={t("budget.item.name")}
-        maxLength={MAX_BUDGET_ITEM_NAME_LENGTH}
-        defaultValue={initial.name}
-        required
-      />
+      {/*
+        The name and the due day on one row (#105, Option C+): two questions
+        this screen alone asks together, both answered by a 44px control, so
+        laying them out sideways costs nothing either did not already spend.
+        `styles` here is `fixed-form.module.css`, not the shared
+        `form.module.css` every other question on this form still reads its
+        rules from -- the row is this screen's own shape and nobody else's.
+      */}
+      <div className={styles.row}>
+        <div className={styles.name}>
+          <TextField
+            name="name"
+            label={t("budget.item.name")}
+            maxLength={MAX_BUDGET_ITEM_NAME_LENGTH}
+            defaultValue={initial.name}
+            required
+          />
+        </div>
 
-      <SelectField
-        name="dueDay"
-        label={t("budget.fixed.dueDay")}
-        // Exactly the days this month has, out of the one place that knows
-        // February is shorter -- the same list the plan's entry screen offers.
-        choices={daysOf(month)}
-        // Nothing chosen to begin with, so `required` has teeth: a picker
-        // that starts on the 1st answers for whoever does not look, and it
-        // would answer with a due date they never chose. A correction opens on
-        // the day the item already has, which is an answer somebody did give.
-        placeholder="—"
-        defaultValue={initial.dueDay === null ? "" : String(initial.dueDay)}
-        required
-      />
+        <div className={styles.day}>
+          <SelectField
+            name="dueDay"
+            label={t("budget.fixed.dueDay")}
+            // Exactly the days this month has, out of the one place that
+            // knows February is shorter -- the same list the plan's entry
+            // screen offers.
+            choices={daysOf(month)}
+            // Nothing chosen to begin with, so `required` has teeth: a
+            // picker that starts on the 1st answers for whoever does not
+            // look, and it would answer with a due date they never chose. A
+            // correction opens on the day the item already has, which is an
+            // answer somebody did give.
+            placeholder="—"
+            defaultValue={
+              initial.dueDay === null ? "" : String(initial.dueDay)
+            }
+            required
+          />
+        </div>
+      </div>
 
       <BranchingChipField
         name="categoryId"
@@ -135,12 +154,12 @@ export function FixedItemForm({
       />
 
       {state.error ? (
-        <p role="alert" className={styles.error}>
+        <p role="alert" className={formStyles.error}>
           {state.error}
         </p>
       ) : null}
 
-      <div className={styles.save}>
+      <div className={formStyles.save}>
         <Button type="submit" disabled={pending || amount === 0}>
           {pending ? working : submit}
         </Button>

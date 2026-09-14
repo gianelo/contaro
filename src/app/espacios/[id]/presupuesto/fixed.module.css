@@ -64,6 +64,11 @@
  * The recap: which Space the money lands in, who is recording it and whose it
  * will be. A description list, because that is what three labels and their
  * three values are — and it is what a screen reader reads as pairs.
+ *
+ * `--color-fill-on-surface` and not `--color-fill`, because this tray is on a
+ * sheet and that one is a step off the page (ADR-0057, #123). This is the tray
+ * the other two sheets are drawn to match; `recap-tray.source.test.ts` is what
+ * says so when one of them moves.
  */
 .recap {
   display: flex;
@@ -71,7 +76,7 @@
   gap: var(--space-5);
   margin: 0;
   padding: var(--space-6) var(--space-7);
-  background: var(--color-fill);
+  background: var(--color-fill-on-surface);
   border-radius: var(--radius-lg);
 }
 

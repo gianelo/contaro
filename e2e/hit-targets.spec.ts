@@ -40,6 +40,8 @@ test("every interactive element on the screen a Member lands on is at least 44px
   const { undersized, count } = await undersizedTargets(page);
 
   // The list belongs to no Space, so it carries no tab bar (#5).
+  // The way out is the hamburger now (ADR-0059): still one control, and the
+  // menu behind it is what has to clear 44px once opened.
   expect(count).toBe(2); // the way out, and the empty-state button
   expect(undersized).toEqual([]);
 });

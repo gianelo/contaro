@@ -27,6 +27,11 @@ const named = [
   "color-disabled-surface",
   "color-on-disabled",
   "color-segment-thumb",
+  // The quiet ground a tray takes on a surface that is already raised (#123).
+  // Named apart from --color-fill for the reason --color-disabled-surface is
+  // named apart from --color-disabled: one hex cannot be a step off two
+  // different grounds.
+  "color-fill-on-surface",
   "color-member-first-ink",
   "color-member-first-ground",
   "color-member-second-ink",
@@ -60,6 +65,45 @@ describe("the tokens the canvas asks for", () => {
 
     expect(separator?.[1]?.trim()).not.toBe(strong?.[1]?.trim());
     expect(separator?.[2]?.trim()).not.toBe(strong?.[2]?.trim());
+  });
+
+  it.each([
+    ["light", 1],
+    ["dark", 2],
+  ])("keeps --color-fill off the ground it is drawn on, in %s", (_palette, at) => {
+    // #102. --color-fill is the quiet block that sits on the *page*: a keypad
+    // key, the segmented groove, the entry head's pill, the "Hoy · X ·
+    // Cambiar" line, a refusal. Its only boundary is its own ground, so the
+    // day it equals --color-background is the day twelve 44px targets stop
+    // having edges. It equalled it in light, and the screen behind the whole
+    // product was the one it happened on.
+    const value = (name: string) => tokens.match(declaration(name))?.[at]?.trim();
+
+    expect(value("color-fill")).not.toBe(value("color-background"));
+  });
+
+  it.each([
+    ["light", 1],
+    ["dark", 2],
+  ])("keeps a pressed fill apart from an unpressed one, in %s", (_palette, at) => {
+    // #102 moved --color-fill down towards its own pressed state rather than
+    // up away from it, which is what kept --color-segment-thumb working. What
+    // it costs is this margin, so the margin is asserted: a key that looks the
+    // same pressed as unpressed is a key that never answers a thumb.
+    const value = (name: string) => tokens.match(declaration(name))?.[at]?.trim();
+
+    expect(value("color-fill")).not.toBe(value("color-fill-pressed"));
+  });
+
+  it.each([
+    ["light", 1],
+    ["dark", 2],
+  ])("keeps --color-fill-on-surface off the surface it is drawn on, in %s", (_palette, at) => {
+    // #123, the mirror of the above: the tray on a *sheet*, whose ground is
+    // --color-surface. The two were one hex in dark (ADR-0057).
+    const value = (name: string) => tokens.match(declaration(name))?.[at]?.trim();
+
+    expect(value("color-fill-on-surface")).not.toBe(value("color-surface"));
   });
 
   it.each([

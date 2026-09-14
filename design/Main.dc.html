@@ -8,28 +8,78 @@
 <x-dc>
 <helmet>
   <style>
+/* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
+:root {
+  color-scheme: light;
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+/* END generated palette */
+
     body { margin: 0; -webkit-font-smoothing: antialiased; }
-    a { color: #0E7C66; } a:hover { color: #0A5E4D; }
-    .k:active { background: #E3E3E8 !important; }
+    a { color: var(--color-accent); } a:hover { color: var(--color-accent-pressed); }
+    .k:active { background: var(--color-fill-pressed) !important; }
   </style>
 </helmet>
-<div style="width: 390px; height: 844px; background: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: #1C1C1E; display: flex; flex-direction: column; box-sizing: border-box;">
+<div style="width: 390px; height: 844px; background: var(--color-surface); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: var(--color-text); display: flex; flex-direction: column; box-sizing: border-box;">
 
   <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px 16px;">
-    <span style="font-size: 17px; color: #0E7C66;">Cancelar</span>
+    <span style="font-size: 17px; color: var(--color-accent);">Cancelar</span>
     <span style="font-size: 17px; font-weight: 600;">Nuevo movimiento</span>
     <span style="font-size: 17px; color: transparent;">Cancelar</span>
   </div>
 
   <div style="display: flex; justify-content: center; padding-bottom: 10px;">
-    <div style="display: flex; align-items: center; gap: 6px; background: #F2F2F7; border-radius: 999px; padding: 5px 12px;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6C6C70" stroke-width="2" stroke-linecap="round"><path d="M17 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.9"/></svg>
-      <span style="font-size: 13px; color: #6C6C70;">Compartido con Ana</span>
+    <div style="display: flex; align-items: center; gap: 6px; background: var(--color-fill); border-radius: 999px; padding: 5px 12px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke: var(--color-text-secondary);"><path d="M17 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.9"/></svg>
+      <span style="font-size: 13px; color: var(--color-text-secondary);">Compartido con Ana</span>
     </div>
   </div>
 
   <div style="display: flex; padding: 0 16px 14px 16px;">
-    <div style="display: flex; flex: 1; background: #F2F2F7; border-radius: 9px; padding: 2px; gap: 2px;">
+    <div style="display: flex; flex: 1; background: var(--color-fill); border-radius: 9px; padding: 2px; gap: 2px;">
       <sc-for list="{{tipos}}" as="t" hint-placeholder-count="2">
         <div onClick="{{t.pick}}" style="flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; font-size: 14px; font-weight: 600; border-radius: 7px; background: {{t.bg}}; color: {{t.fg}}; box-shadow: {{t.shadow}};">{{t.label}}</div>
       </sc-for>
@@ -40,21 +90,21 @@
     <span style="font-size: 30px; font-weight: 300; color: {{montoColor}};">$</span>
     <span style="font-size: 52px; font-weight: 600; letter-spacing: -1.5px; color: {{montoColor}};">{{montoTexto}}</span>
   </div>
-  <div style="text-align: center; font-size: 12px; color: #8E8E93; padding-bottom: 14px;">COP</div>
+  <div style="text-align: center; font-size: 12px; color: var(--color-text-tertiary); padding-bottom: 14px;">COP</div>
 
   <div style="padding: 0 16px 12px 16px;">
-    <div style="display: flex; align-items: center; gap: 8px; background: #F2F2F7; border-radius: 11px; padding: 10px 12px;">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6C6C70" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    <div style="display: flex; align-items: center; gap: 8px; background: var(--color-fill); border-radius: 11px; padding: 10px 12px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke: var(--color-text-secondary);"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       <span style="font-size: 14px;">Hoy</span>
-      <span style="color: #C6C6C8;">·</span>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6C6C70" stroke-width="2" stroke-linecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span style="color: var(--color-disabled);">·</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke: var(--color-text-secondary);"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span style="font-size: 14px;">Gian</span>
       <span style="flex-grow: 1;"></span>
-      <span style="font-size: 13px; font-weight: 500; color: #0E7C66; padding: 12px 2px; margin: -12px 0;">Cambiar</span>
+      <span style="font-size: 13px; font-weight: 500; color: var(--color-accent); padding: 12px 2px; margin: -12px 0;">Cambiar</span>
     </div>
   </div>
 
-  <div style="padding: 0 0 4px 16px; font-size: 12px; font-weight: 600; color: #8E8E93; letter-spacing: 0.4px;">CATEGORÍA</div>
+  <div style="padding: 0 0 4px 16px; font-size: 12px; font-weight: 600; color: var(--color-text-tertiary); letter-spacing: 0.4px;">CATEGORÍA</div>
   <div style="display: flex; flex-wrap: wrap; gap: 7px; padding: 0 16px 14px 16px;">
     <sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
       <div onClick="{{c.pick}}" style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 0 15px; background: {{c.bg}}; border: 1px solid {{c.border}};">
@@ -67,13 +117,13 @@
 
   <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 12px 10px 12px;">
     <sc-for list="{{teclas}}" as="k" hint-placeholder-count="12">
-      <div class="k" onClick="{{k.press}}" style="height: 50px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px; font-weight: 400;"><sc-if value="{{k.esNumero}}" hint-placeholder-val="{{true}}"><span>{{k.label}}</span></sc-if><sc-if value="{{k.esBorrar}}" hint-placeholder-val="{{false}}"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.8" stroke-linecap="round"><path d="M21 5H9.5L3.5 12l6 7H21a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg></sc-if></div>
+      <div class="k" onClick="{{k.press}}" style="height: 50px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px; font-weight: 400;"><sc-if value="{{k.esNumero}}" hint-placeholder-val="{{true}}"><span>{{k.label}}</span></sc-if><sc-if value="{{k.esBorrar}}" hint-placeholder-val="{{false}}"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" style="stroke: var(--color-text);"><path d="M21 5H9.5L3.5 12l6 7H21a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg></sc-if></div>
     </sc-for>
   </div>
 
   <div style="padding: 4px 16px 22px 16px;">
     <div style="height: 52px; border-radius: 13px; background: {{guardarBg}}; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Guardar</span>
+      <span style="font-size: 17px; font-weight: 600; color: var(--color-on-accent);">Guardar</span>
     </div>
   </div>
 
@@ -93,9 +143,9 @@ class Component extends DCLogic {
       { id: 'ingreso', label: 'Ingreso' }
     ].map((t) => ({
       ...t,
-      bg: s.tipo === t.id ? '#FFFFFF' : 'transparent',
-      fg: s.tipo === t.id ? '#1C1C1E' : '#6C6C70',
-      shadow: s.tipo === t.id ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+      bg: s.tipo === t.id ? 'var(--color-segment-thumb)' : 'transparent',
+      fg: s.tipo === t.id ? 'var(--color-text)' : 'var(--color-text-secondary)',
+      shadow: s.tipo === t.id ? 'var(--shadow-raised)' : 'none',
       pick: () => this.setState({ tipo: t.id })
     }));
     const cats = [
@@ -107,9 +157,9 @@ class Component extends DCLogic {
       { id: 'personal', label: 'Personal' }
     ].map((c) => ({
       ...c,
-      bg: s.cat === c.id ? '#0E7C66' : '#FFFFFF',
-      fg: s.cat === c.id ? '#FFFFFF' : '#1C1C1E',
-      border: s.cat === c.id ? '#0E7C66' : '#D8D8DC',
+      bg: s.cat === c.id ? 'var(--color-accent)' : 'var(--color-surface)',
+      fg: s.cat === c.id ? 'var(--color-on-accent)' : 'var(--color-text)',
+      border: s.cat === c.id ? 'var(--color-accent)' : 'var(--color-border)',
       pick: () => this.setState({ cat: c.id })
     }));
     const teclas = ['1','2','3','4','5','6','7','8','9','000','0','del'].map((k) => ({
@@ -126,8 +176,12 @@ class Component extends DCLogic {
     return {
       tipos, cats, teclas,
       montoTexto: s.monto === '' ? '0' : miles(s.monto),
-      montoColor: s.monto === '' ? '#C6C6C8' : '#1C1C1E',
-      guardarBg: s.monto === '' ? '#C6C6C8' : '#0E7C66'
+      // Nothing there yet is ink, not ground -- tokens.css's own account of
+      // why --color-disabled and --color-disabled-surface are named apart
+      // (#138): the untyped amount takes the ink, the dead button behind it
+      // takes the surface.
+      montoColor: s.monto === '' ? 'var(--color-disabled)' : 'var(--color-text)',
+      guardarBg: s.monto === '' ? 'var(--color-disabled-surface)' : 'var(--color-accent)'
     };
   }
 }

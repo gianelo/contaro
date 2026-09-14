@@ -2,7 +2,9 @@ import { encode } from "next-auth/jwt";
 import type { BrowserContext } from "@playwright/test";
 import { createDatabase, databaseUrl } from "../src/db/connection";
 import { memberFromGoogle } from "../src/db/members";
+import { inviteToSpaceByEmail } from "../src/db/invitations";
 import { createSpaceForMember } from "../src/db/spaces";
+import type { Space } from "../src/domain/space/space";
 import { authSecret } from "./secret";
 
 /**
@@ -79,6 +81,82 @@ export async function joinSpace(spaceId: string, memberId: string) {
   try {
     await sql`
       INSERT INTO space_members (space_id, member_id) VALUES (${spaceId}, ${memberId})
+    `;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * A membership row taken away again, the mirror of `joinSpace`.
+ *
+ * The product has no way to leave a Space, so this is the only way to reach
+ * the state #108's landing has to survive: a `last_opened_at` naming a Space
+ * that is no longer theirs. What it is reaching for is real even though the
+ * path to it is not yet — the row can go, and a landing that trusted the id on
+ * it would send somebody to a 404 on the route they open the app with.
+ */
+export async function leaveSpace(spaceId: string, memberId: string) {
+  const { sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    await sql`
+      DELETE FROM space_members WHERE space_id = ${spaceId} AND member_id = ${memberId}
+    `;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * A seat offered to an address, made the way the product makes one (#9).
+ *
+ * `invitations.spec.ts` drives the whole offer through the screens, form and
+ * all. This is the shortcut for the specs that need an Invitation to already
+ * be waiting and are about something else — #108's landing, which has to yield
+ * to one without ever showing where it came from.
+ */
+export async function inviteToSpace(
+  space: Space,
+  invitedBy: string,
+  email: string,
+) {
+  const { db, sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    return await inviteToSpaceByEmail(db, { space, invitedBy }, email);
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * A month closed, written straight into the table the way `joinSpace` writes
+ * a membership: the shortcut for the specs that need a closed month to
+ * already exist and are about something else. `closeMonth.spec.ts` drives the
+ * real act, sheet and all; this is for a screen that only needs to find the
+ * month already shut when it opens.
+ *
+ * `closedOn` is a whole month after `month` on purpose: the domain refuses a
+ * close on the month still being lived in or the one right after it hasn't
+ * ended, and the check constraint on the row says the same thing back.
+ */
+export async function closeMonth(
+  spaceId: string,
+  month: string,
+  closedBy: string,
+) {
+  const [year, monthNumber] = month.split("-").map(Number) as [
+    number,
+    number,
+  ];
+  const closedOn = new Date(Date.UTC(year, monthNumber, 1))
+    .toISOString()
+    .slice(0, 10);
+
+  const { sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    await sql`
+      INSERT INTO closed_months (space_id, month, closed_by, closed_on)
+      VALUES (${spaceId}, ${month}, ${closedBy}, ${closedOn})
     `;
   } finally {
     await sql.end();

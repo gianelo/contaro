@@ -8,79 +8,129 @@
 <x-dc>
 <helmet>
   <style>
+/* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
+:root {
+  color-scheme: light;
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+/* END generated palette */
+
     body { margin: 0; -webkit-font-smoothing: antialiased; }
-    a { color: #0E7C66; } a:hover { color: #0A5E4D; }
+    a { color: var(--color-accent); } a:hover { color: var(--color-accent-pressed); }
   </style>
 </helmet>
-<div style="width: 390px; height: 844px; background: #F2F2F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: #1C1C1E; display: flex; flex-direction: column; box-sizing: border-box;">
+<div style="width: 390px; height: 844px; background: var(--color-background); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: var(--color-text); display: flex; flex-direction: column; box-sizing: border-box;">
 
   <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 12px 16px;">
-    <span style="font-size: 17px; color: #0E7C66;">Cancelar</span>
+    <span style="font-size: 17px; color: var(--color-accent);">Cancelar</span>
     <span style="font-size: 17px; font-weight: 600;">Nuevo espacio</span>
-    <span style="font-size: 17px; color: #C6C6C8; font-weight: 600;">Crear</span>
+    <span style="font-size: 17px; color: var(--color-disabled); font-weight: 600;">Crear</span>
   </div>
 
-  <div style="padding: 0 16px 6px 16px; font-size: 12px; font-weight: 600; color: #8E8E93; letter-spacing: 0.4px;">NOMBRE</div>
+  <div style="padding: 0 16px 6px 16px; font-size: 12px; font-weight: 600; color: var(--color-text-tertiary); letter-spacing: 0.4px;">NOMBRE</div>
   <div style="padding: 0 16px 20px 16px;">
-    <div style="background: #FFFFFF; border-radius: 12px; padding: 14px;">
-      <span style="font-size: 16px; color: #C6C6C8;">Casa, Personal, Viaje a Cartagena…</span>
+    <div style="background: var(--color-surface); border-radius: 12px; padding: 14px;">
+      <span style="font-size: 16px; color: var(--color-disabled);">Casa, Personal, Viaje a Cartagena…</span>
     </div>
   </div>
 
-  <div style="padding: 0 16px 6px 16px; font-size: 12px; font-weight: 600; color: #8E8E93; letter-spacing: 0.4px;">MONEDA</div>
+  <div style="padding: 0 16px 6px 16px; font-size: 12px; font-weight: 600; color: var(--color-text-tertiary); letter-spacing: 0.4px;">MONEDA</div>
   <div style="padding: 0 16px 10px 16px;">
-    <div style="background: #FFFFFF; border-radius: 12px; overflow: hidden;">
-      <div style="display: flex; align-items: center; padding: 14px; border-bottom: 1px solid #EFEFF2;">
+    <div style="background: var(--color-surface); border-radius: 12px; overflow: hidden;">
+      <div style="display: flex; align-items: center; padding: 14px; border-bottom: 1px solid var(--color-separator);">
         <span style="font-size: 16px; flex-grow: 1;">Peso colombiano</span>
-        <span style="font-size: 15px; color: #8E8E93; margin-right: 9px;">COP</span>
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#0E7C66" stroke-width="2.6" stroke-linecap="round"><path d="M4 12.5l5 5L20 6.5"/></svg>
+        <span style="font-size: 15px; color: var(--color-text-tertiary); margin-right: 9px;">COP</span>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" style="stroke: var(--color-accent);"><path d="M4 12.5l5 5L20 6.5"/></svg>
       </div>
-      <div style="display: flex; align-items: center; padding: 14px; border-bottom: 1px solid #EFEFF2;">
+      <div style="display: flex; align-items: center; padding: 14px; border-bottom: 1px solid var(--color-separator);">
         <span style="font-size: 16px; flex-grow: 1;">Dólar estadounidense</span>
-        <span style="font-size: 15px; color: #8E8E93;">USD</span>
+        <span style="font-size: 15px; color: var(--color-text-tertiary);">USD</span>
       </div>
       <div style="display: flex; align-items: center; padding: 14px;">
         <span style="font-size: 16px; flex-grow: 1;">Euro</span>
-        <span style="font-size: 15px; color: #8E8E93;">EUR</span>
+        <span style="font-size: 15px; color: var(--color-text-tertiary);">EUR</span>
       </div>
     </div>
   </div>
 
   <div style="padding: 0 16px 22px 16px;">
-    <div style="display: flex; gap: 9px; background: #FDF3E7; border-radius: 12px; padding: 12px 13px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C2620A" stroke-width="2" stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/></svg>
-      <span style="font-size: 13px; color: #8A4B0B; line-height: 1.45;"><strong style="font-weight: 600;">La moneda no se puede cambiar después.</strong> Todo lo que cargues en este espacio va a quedar en esta moneda para siempre. Si te equivocás, vas a tener que crear otro espacio.</span>
+    <div style="display: flex; gap: 9px; background: var(--color-warning-soft); border-radius: 12px; padding: 12px 13px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="flex-shrink: 0; margin-top: 1px; stroke: var(--color-warning);"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/></svg>
+      <span style="font-size: 13px; color: var(--color-warning-text); line-height: 1.45;"><strong style="font-weight: 600;">La moneda no se puede cambiar después.</strong> Todo lo que cargues en este espacio va a quedar en esta moneda para siempre. Si te equivocás, vas a tener que crear otro espacio.</span>
     </div>
   </div>
 
-  <div style="padding: 0 16px 6px 16px; font-size: 12px; font-weight: 600; color: #8E8E93; letter-spacing: 0.4px;">COMPARTIR</div>
+  <div style="padding: 0 16px 6px 16px; font-size: 12px; font-weight: 600; color: var(--color-text-tertiary); letter-spacing: 0.4px;">COMPARTIR</div>
   <div style="padding: 0 16px 10px 16px;">
-    <div style="background: #FFFFFF; border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 16px; color: #C6C6C8; flex-grow: 1;">correo@ejemplo.com</span>
-      <span style="font-size: 15px; font-weight: 600; color: #C6C6C8; padding: 13px 4px; margin: -13px 0;">Invitar</span>
+    <div style="background: var(--color-surface); border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 16px; color: var(--color-disabled); flex-grow: 1;">correo@ejemplo.com</span>
+      <span style="font-size: 15px; font-weight: 600; color: var(--color-disabled); padding: 13px 4px; margin: -13px 0;">Invitar</span>
     </div>
   </div>
 
   <div style="padding: 0 16px 10px 16px;">
-    <div style="background: #FFFFFF; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 11px;">
-      <div style="width: 30px; height: 30px; border-radius: 999px; background: #F3E3EE; display: flex; align-items: center; justify-content: center;"><span style="font-size: 12px; font-weight: 700; color: #8F2C6B;">A</span></div>
+    <div style="background: var(--color-surface); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 11px;">
+      <div style="width: 30px; height: 30px; border-radius: 999px; background: var(--color-member-second-ground); display: flex; align-items: center; justify-content: center;"><span style="font-size: 12px; font-weight: 700; color: var(--color-member-second-ink);">A</span></div>
       <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
         <span style="font-size: 15px; font-weight: 500;">ana@ejemplo.com</span>
-        <span style="font-size: 12px; color: #C2620A;">Invitación pendiente</span>
+        <span style="font-size: 12px; color: var(--color-warning);">Invitación pendiente</span>
       </div>
-      <div style="padding: 13px; margin: -13px; display: flex;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+      <div style="padding: 13px; margin: -13px; display: flex;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke: var(--color-text-tertiary);"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
     </div>
   </div>
 
   <div style="padding: 2px 16px 0 16px;">
-    <span style="font-size: 12px; color: #8E8E93; line-height: 1.45;">Ana va a poder entrar con su cuenta de Google, aunque nunca haya usado contaro.</span>
+    <span style="font-size: 12px; color: var(--color-text-tertiary); line-height: 1.45;">Ana va a poder entrar con su cuenta de Google, aunque nunca haya usado contaro.</span>
   </div>
 
   <span style="flex-grow: 1;"></span>
 
   <div style="padding: 0 16px 26px 16px;">
-    <div style="height: 52px; border-radius: 13px; background: #C6C6C8; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Crear espacio</span>
+    <div style="height: 52px; border-radius: 13px; background: var(--color-disabled-surface); display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 17px; font-weight: 600; color: var(--color-on-disabled);">Crear espacio</span>
     </div>
   </div>
 

@@ -10,7 +10,8 @@ import { ButtonLink } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Icon } from "@/ui/icon";
 import { monthOf } from "@/domain/calendar/month";
-import { Account } from "../account";
+import { signOutAction } from "../sign-out";
+import { SpaceMenu } from "../space-menu";
 import { readerOf } from "../reader";
 import { t } from "@/i18n";
 import { AnswerInvitation } from "./answer";
@@ -36,10 +37,15 @@ import styles from "./page.module.css";
  * and the list is not inside one.
  *
  * It is also where an Invitation is answered, and the only screen in the
- * product that shows somebody a Space they are not in (#9). It is the right
- * place for it because it is where everyone lands: whether they have used
- * contaro for a year or signed in for the first time thirty seconds ago, the
- * Space that is waiting is on the first screen they see.
+ * product that shows somebody a Space they are not in (#9). It was the right
+ * place for it because it is where everyone lands -- and since #108 that is no
+ * longer true of everyone: `/` now sends most Members straight into a Space.
+ * What keeps the Space that is waiting on the first screen they see is that
+ * the landing yields to it, so a seat on offer still holds a Member here
+ * (`whereToLand`). That yield is provisional and #133 is what supersedes it:
+ * the bell makes a waiting Invitation visible from every screen rather than
+ * from wherever somebody happens to land, and this screen stops being the only
+ * surface it has.
  */
 export default async function SpacesPage() {
   // The proxy keeps a signed-out request off every page but /ingresar. This is
@@ -70,9 +76,41 @@ export default async function SpacesPage() {
     findMemberById(database(), session.user.id),
   ]);
 
+  const greeted = member?.name ?? session.user.name ?? null;
+
+  /*
+   * Which Space the hamburger's menu is about, on the one screen that is not
+   * inside one (ADR-0059). The Space last opened -- the one the `Activo` badge
+   * on its card already points at -- and it is read off the list rather than
+   * asked for again, `spacesToChooseFrom` having already worked it out.
+   *
+   * Nothing, for a Member who has never opened a Space. The menu then offers
+   * none of the rows that are a Space's, and still offers the way out: this is
+   * the one shell screen with no tab bar under it to reach Ajustes from, so it
+   * cannot be the screen where signing out is unreachable either.
+   */
+  const current = spaces.find((space) => space.lastOpened) ?? null;
+
   return (
-    <AppShell account={<Account />}>
-      <Greeting name={member?.name ?? session.user.name ?? null} />
+    <AppShell>
+      <Greeting
+        name={greeted}
+        beside={
+          <SpaceMenu
+            member={greeted}
+            space={
+              current
+                ? {
+                    id: current.id,
+                    name: current.name,
+                    currency: current.currency,
+                  }
+                : null
+            }
+            signOut={signOutAction}
+          />
+        }
+      />
 
       {waiting.length > 0 ? (
         <section

@@ -18,19 +18,19 @@ const canvas = read("design/Presupuesto.dc.html");
  * pattern that matched one of those would pin the bar to a number that is not
  * the bar's.
  */
-const at = canvas.indexOf("border-top: 1px solid #DCDCE0");
+const at = canvas.indexOf("border-top: 1px solid var(--color-separator-strong)");
 const block = at === -1 ? "" : canvas.slice(at);
 
 /** The bar's own inline style. */
 const bar = /^([^"]*)"/.exec(block)?.[1];
 
 /** The raised button: the only 999px circle on the artboard's accent. */
-const button = /style="([^"]*border-radius: 999px[^"]*background: #0E7C66[^"]*)"/.exec(
+const button = /style="([^"]*border-radius: 999px[^"]*background: var\(--color-accent\)[^"]*)"/.exec(
   block,
 )?.[1];
 
 /** An asleep tab's label, which is the one the canvas leaves unweighted. */
-const asleep = /style="(font-size: [^"]*color: #8E8E93;)"/.exec(block)?.[1];
+const asleep = /style="(font-size: [^"]*color: var\(--color-text-tertiary\);)"/.exec(block)?.[1];
 
 /**
  * Four numbers the tab bar reads off the canvas and keeps as literals, because

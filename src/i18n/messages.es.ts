@@ -315,7 +315,13 @@ export const es = {
   // the way in are "Agregar al plan", which name the plan rather than either
   // kind, and the kind is decided by "budget.item.due" rather than by which
   // button was pressed.
-  "budget.fixed.dueDay": "Qu\u00e9 d\u00eda del mes vence",
+  //
+  // Shortened from "Qu\u00e9 d\u00eda del mes vence" (#105, Option C+): the correction
+  // screen sits this label beside the name field rather than above it on a
+  // row of its own, and the long form does not fit a column narrow enough to
+  // leave the name room to grow. Used nowhere else, so the value changes
+  // rather than a second key standing beside it for the same question.
+  "budget.fixed.dueDay": "Vence el d\u00eda",
   "budget.fixed.amount": "Cu\u00e1nto es",
   // The badge at the end of a row. Two words, and never a colour on its own:
   // the state has to survive somebody who cannot tell the two grounds apart.
@@ -703,8 +709,21 @@ export const es = {
   "appearance.light": "Claro",
   "appearance.dark": "Oscuro",
 
-  "account.label": "Tu sesión",
-  "account.signOut": "Salir",
+  // The header, and the Space menu the hamburger opens (ADR-0059). "Cerrar
+  // sesión" and not the old row's "Salir": the row sat beside a title where
+  // one word had to do, and a row inside a menu has the width to say which
+  // session is being closed rather than which door is being left.
+  "space.menu.open": "Abrir menú del Espacio",
+  // Which Space the menu is about, in the Space's own money -- the same pair
+  // the Space card's line under the name already gives ("Casa · COP"). It
+  // matters most where it is least obvious: opened from the Spaces list, the
+  // menu is about whichever Space was last used.
+  "space.menu.about": "{space} · {currency}",
+  "space.menu.signOut": "Cerrar sesión",
+  // Names the group the way out sits in, for a screen reader walking the
+  // sheet. Off the screen, because the canvas draws the gap above it instead
+  // and a heading over a single red row would be a label louder than the row.
+  "space.menu.session": "Tu sesión",
 
   "action.cancel": "Cancelar",
   "action.done": "Listo",

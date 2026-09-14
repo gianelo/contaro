@@ -193,8 +193,9 @@ export type MovementAmendment = {
 
 /**
  * The Space a Movement is being recorded or corrected in, as the rules need to
- * see it: everything they decide over arrives here rather than being looked
- * up, so they run in milliseconds with no database (ADR-0005).
+ * see it. ADR-0005 says "Everything the domain needs from the outside arrives
+ * as an argument", and this is that argument: nothing here is looked up, so
+ * the rules run in milliseconds with no database.
  */
 export type Recorder = {
   space: Space;

@@ -83,12 +83,10 @@
  * which is more surface than thirty lines of the same CSS costs -- and the day
  * a third sheet wants a tray is the day it becomes the ui's.
  *
- * `--color-fill` is what the twin uses and what this matches on purpose, and
- * it is worth naming what that costs: on the sheet's `--color-surface` the two
- * are the same #1c1c1e in dark, so the tray reads as plain text there rather
- * than as a tray (the trap `--color-segment-thumb` exists for in
- * `tokens.css`). Matched anyway, because two sheets in one app drawing the
- * same tray two colours is worse than one that degrades quietly in both.
+ * The ground is `--color-fill-on-surface`, which is what the twin uses and
+ * what this matches on purpose. This comment used to price what matching
+ * `--color-fill` cost in dark and accept it anyway. Matching was right; the
+ * value being matched was not, and ADR-0057 split it (#123).
  */
 .recap {
   display: flex;
@@ -96,7 +94,7 @@
   gap: var(--space-5);
   margin: var(--space-6) 0 0;
   padding: var(--space-6) var(--space-7);
-  background: var(--color-fill);
+  background: var(--color-fill-on-surface);
   border-radius: var(--radius-lg);
 }
 

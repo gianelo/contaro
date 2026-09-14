@@ -23,7 +23,7 @@
       "x": 470,
       "y": 0,
       "w": 390,
-      "h": 1080,
+      "h": 1132,
       "title": "Presupuesto del mes"
     },
     {
@@ -31,7 +31,7 @@
       "x": 940,
       "y": 0,
       "w": 390,
-      "h": 844,
+      "h": 896,
       "title": "Movimientos"
     },
     {
@@ -49,6 +49,14 @@
       "w": 390,
       "h": 844,
       "title": "Crear espacio"
+    },
+    {
+      "file": "SheetMenuEspacio.dc.html",
+      "x": 2350,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Sheet · Menú del Espacio"
     },
     {
       "file": "SheetPagar.dc.html",
@@ -95,7 +103,7 @@
       "x": 470,
       "y": 2300,
       "w": 390,
-      "h": 1240,
+      "h": 1292,
       "title": "Presupuesto · una categoría abierta"
     },
     {
@@ -189,6 +197,13 @@
       "y": 2180,
       "w": 700,
       "text": "LAS DOS PANTALLAS DE CORRECCIÓN, Y EL ESTADO QUE NO TIENE FORMULARIO (#68)\nSe llega a las tres desde una fila del Presupuesto, que es el artboard de al lado. Son una sola ruta — /espacios/{id}/presupuesto/{itemId} — que se ramifica en lo que el ítem es. No estaban dibujadas en ningún lado: se diseñaron escribiendo TSX y nadie las había mirado al lado de las pantallas entre las que viven.\n\nA diferencia del resto del lienzo, estas tres NO son un dibujo de cómo debería ser: están calcadas de lo que hay, medidas en el navegador (Playwright, iPhone 13) y dibujadas al alto que midieron. Por eso el alto de cada tabla no es 844: es el alto real del documento.\n\nEL GASTO PREVISTO — 913px de documento contra 664 de pantalla. Guardar termina en 699, 35px abajo del pliegue; Sacar del plan en 759 y Cancelar en 819.\nEL GASTO FIJO — 987 contra 664. Una pregunta más («Qué día del mes vence»), y Guardar termina en 773: 109px abajo del pliegue. Es el formulario más alto del producto.\nEL FIJO PAGADO — 664 clavados, sin línea de pliegue porque el borde de la tabla es el pliegue. Sin formulario y sin Sacar del plan, porque mientras el pago está en el libro el plan no lo toca (ADR-0034): la salida es anular el movimiento, y está nombrada como un lugar al que ir.\n\nDos cosas que el dibujo fiel deja a la vista y no son un error del dibujo:\nEl teclado no tiene fondo. --color-fill y --color-background son el mismo #F2F2F7 en claro, así que las doce teclas son cifras sueltas sobre la página. Es #102, ya abierto. La tarjeta gris del fijo pagado es lo mismo y no estaba en esa lista: se apoya directamente en la página, no adentro de una card.\nEstas pantallas conservan la barra de tabs, el nombre de la cuenta y el encabezado del Espacio. presupuesto/form.module.css lo dice al pasar («keeps its tab bar and is taller than this one»), pero ADR-0047 —que se los sacó a la corrección de un movimiento porque lo que protege es lo tipeado y no guardado— nunca las miró. Que sigan adentro del shell no es una decisión escrita: es un hueco."
+    },
+    {
+      "id": "nota-header",
+      "x": 750,
+      "y": -320,
+      "w": 900,
+      "text": "LA FILA DE LA CUENTA SE VUELVE EL ENCABEZADO (#65, ADR-0059)\nNingún artboard dibujaba la fila de cuenta que AppShell rendía arriba de toda pantalla adentro de un Espacio — identidad y «Salir» en verde de acento, un pulgar del título, sin confirmación. Presupuesto, Movimientos y Presupuesto · una categoría abierta ganan ahora el mismo encabezado: identidad (avatar + nombre) a la izquierda, la campana (#133) y el ☰ del menú del Espacio a la derecha — dibujado en Sheet · Menú del Espacio, al lado. El alto de las tres subió exactamente 52px, el mismo que ADR-0047 midió para la fila que reemplaza: no es peso nuevo, es peso que el shell ya cargaba puesto por escrito.\n\nEspacios no lo lleva — no hay Espacio del que abrir un menú ahí — pero conserva la única manera de salir que esa ruta tiene: la fila de «Hola, Gian» ahora también lleva un «Salir» apagado (gris, no verde) a la derecha del saludo.\n\nCargar gasto y las dos de corrección quedan afuera, por ADR-0047/ADR-0028: si tipeás y no guardaste, ninguna barra — ni la de tabs, ni esta — tiene lugar ahí. Ídem Crear espacio, que es su propio formulario. Las tres ideas de «agregar al plan» (AgregarUnFormulario, MasHoja, MasIntacto) documentan una decisión ya tomada y no pantallas vivas, y Arrastre · déficit es un recorte de estado sin barra de tabs — a ninguna de las cinco se les dibujó el encabezado."
     }
   ],
   "launch": {

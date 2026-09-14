@@ -27,16 +27,29 @@ test("the signed-in Member's name is on the screen", async ({
   await startSession(context, baseURL!);
   await page.goto("/");
 
-  await expect(
-    page.getByRole("region", { name: "Tu sesión" }),
-  ).toContainText(signedInMember.name);
+  // The greeting, and no longer a row above it. ADR-0059 took away the account
+  // row that said the name over every screen inside a Space; this screen never
+  // needed it, having always opened by saying who arrived.
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    signedInMember.name.split(" ")[0]!,
+  );
 });
 
-test("signing out ends the session", async ({ page, context, baseURL }) => {
+test("signing out ends the session, two deliberate taps in", async ({
+  page,
+  context,
+  baseURL,
+}) => {
   await startSession(context, baseURL!);
   await page.goto("/");
 
-  await page.getByRole("button", { name: "Salir" }).click();
+  // The way out lives inside the Space menu now (ADR-0059), and the first tap
+  // is the door. That is the whole confirmation the old row never had: it sat
+  // in accent green beside the title and ended a session on one press.
+  await page
+    .getByRole("button", { name: "Abrir menú del Espacio" })
+    .click();
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
 
   await expect(page).toHaveURL(/\/ingresar/);
 

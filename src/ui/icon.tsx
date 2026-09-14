@@ -42,6 +42,17 @@ const icons = {
   list: {
     draw: <path d="M4 6h16M4 12h16M4 18h10" />,
   },
+  /*
+   * The hamburger, and it is not `list` above with rounder numbers. `list`
+   * cuts its third stroke short, because a list is items of unequal length;
+   * a menu's three strokes are one length, because they are not standing for
+   * anything -- they are the button a Member presses to open the Space menu
+   * (ADR-0059). Two icons and not one, so neither has to be drawn at the
+   * other's meaning.
+   */
+  menu: {
+    draw: <path d="M4 7h16M4 12h16M4 17h16" />,
+  },
   users: {
     draw: (
       <>
@@ -153,11 +164,40 @@ const icons = {
       </>
     ),
   },
+  /*
+   * The way out: a door standing open with an arrow leaving through it. Drawn
+   * for the Space menu's last row (ADR-0059), where the label is the only red
+   * thing on the sheet and a glyph beside it is what makes the row read as an
+   * exit before the word is read at all.
+   */
+  leave: {
+    draw: (
+      <>
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <path d="M16 17l5-5-5-5M21 12H9" />
+      </>
+    ),
+  },
   rotate: {
     draw: (
       <>
         <path d="M3 12a9 9 0 1 0 3-6.7" />
         <path d="M3 4v5h5" />
+      </>
+    ),
+  },
+  /*
+   * A bin: the lid and its handle as one path, the body and the two ridges
+   * inside it as another. Thinner than the common weight for the reason
+   * `backspace` is -- the ridges sit close enough together that at weight 2
+   * they close up into a blob rather than reading as two lines.
+   */
+  trash: {
+    strokeWidth: 1.8,
+    draw: (
+      <>
+        <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        <path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6" />
       </>
     ),
   },

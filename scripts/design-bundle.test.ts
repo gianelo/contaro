@@ -11,8 +11,13 @@ import {
   rebuilt,
   sourcesIn,
 } from "./design-bundle.js";
+import { hardcodedColoursIn, helmetPaletteIn, paletteBlockFor, schemeFor } from "./design-palette.js";
 
 const design = path.join(import.meta.dirname, "..", "design");
+const tokensCss = readFileSync(
+  path.join(import.meta.dirname, "..", "src", "ui", "tokens.css"),
+  "utf8",
+);
 
 /** A bundle the size of a fixture: a shell with one payload line inside it. */
 function bundleAround(payload: string): string {
@@ -203,10 +208,99 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the eighteen artboards its manifest lists, and the manifest", () => {
+  it("holds the nineteen artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(19);
+    expect(files).toHaveLength(20);
     expect(files.at(-1)).toBe("canvas.json");
+  });
+});
+
+describe("the header (#65), drawn on the screens that carry it and nowhere else", () => {
+  /**
+   * The header row is marked `data-role="app-header"` and its hamburger is
+   * marked `aria-label="Abrir menú del Espacio"` — what each element *is*,
+   * not the geometry it happens to be drawn with today. A redraw (rounded
+   * caps turning square, the path getting simplified, an added
+   * `aria-hidden`) does not touch either marker, so it cannot silently break
+   * header-presence coverage for a reason that has nothing to do with
+   * whether the header, or the hamburger, is still there.
+   *
+   * The two are no longer the same property: `Espacios.dc.html` carries the
+   * hamburger — it opens the same `SheetMenuEspacio.dc.html` every shell
+   * screen opens — without the identity-plus-bell row around it, so it is
+   * named in `withSpaceMenuTrigger` but not in `withHeader`.
+   */
+  const headerRow = 'data-role="app-header"';
+  const spaceMenuTrigger = 'aria-label="Abrir menú del Espacio"';
+
+  const withHeader = [
+    "Presupuesto.dc.html",
+    "Movimientos.dc.html",
+    "Presupuesto63Desplegado.dc.html",
+  ];
+
+  const withoutHeader = [
+    "Main.dc.html",
+    "CargarGastoOscuro.dc.html",
+    "CrearEspacio.dc.html",
+    "Espacios.dc.html",
+    "AgregarUnFormulario.dc.html",
+    "MasHoja.dc.html",
+    "MasIntacto.dc.html",
+    "ArrastreDeficit.dc.html",
+    "CorregirElGastoPrevisto.dc.html",
+    "CorregirElGastoFijo.dc.html",
+    "CorregirElGastoFijoPagado.dc.html",
+    "SheetPagar.dc.html",
+    "SheetCopiar.dc.html",
+    "SheetArrastre.dc.html",
+    "SheetCerrar.dc.html",
+    "SheetMenuEspacio.dc.html",
+  ];
+
+  // Everything withHeader carries, plus Espacios.dc.html: the one screen
+  // that carries the hamburger without the row around it.
+  const withSpaceMenuTrigger = [...withHeader, "Espacios.dc.html"];
+
+  const withoutSpaceMenuTrigger = withoutHeader.filter((file) => file !== "Espacios.dc.html");
+
+  it.each(withHeader)("draws the header row on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).toContain(headerRow);
+  });
+
+  it.each(withoutHeader)("draws no header row on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).not.toContain(headerRow);
+  });
+
+  it("accounts for every artboard the manifest lists, for the header row", () => {
+    const manifestFiles = Object.keys(sourcesIn(design)).filter((f) => f !== "canvas.json");
+    expect([...withHeader, ...withoutHeader].sort()).toEqual([...manifestFiles].sort());
+  });
+
+  it.each(withSpaceMenuTrigger)("draws the Space-menu hamburger on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).toContain(spaceMenuTrigger);
+  });
+
+  it.each(withoutSpaceMenuTrigger)("draws no Space-menu hamburger on %s", (file) => {
+    const source = readFileSync(path.join(design, file), "utf8");
+    expect(source).not.toContain(spaceMenuTrigger);
+  });
+
+  it("accounts for every artboard the manifest lists, for the Space-menu hamburger", () => {
+    const manifestFiles = Object.keys(sourcesIn(design)).filter((f) => f !== "canvas.json");
+    expect([...withSpaceMenuTrigger, ...withoutSpaceMenuTrigger].sort()).toEqual(
+      [...manifestFiles].sort(),
+    );
+  });
+
+  it("opens the Space menu sheet with Ajustes, the multi-month balance and Cerrar sesión", () => {
+    const sheet = readFileSync(path.join(design, "SheetMenuEspacio.dc.html"), "utf8");
+    expect(sheet).toContain("Ajustes");
+    expect(sheet).toContain("Balance de varios meses");
+    expect(sheet).toContain("Cerrar sesión");
   });
 });
 
@@ -215,5 +309,155 @@ describe("the exported bundle in this repo", () => {
 
   it("round-trips byte for byte, which is what makes rewriting it safe", () => {
     expect(bundleWith(bundle, documentIn(bundle))).toBe(bundle);
+  });
+});
+
+/**
+ * An artboard names a token, not a colour (#138, ADR-0057). This is the
+ * fidelity check for that rule, in the `*.source.test.ts` idiom this file
+ * already established for header/hamburger presence (ADR-0059): read every
+ * artboard as text, and pin what `src/ui/tokens.css` says it should draw.
+ *
+ * This class of drift has been found by hand six times before this was filed
+ * against the root (#37, #62, #64, #67, #68, #95). Each was fixed on its own,
+ * and each time the artboards drifted again the moment nobody was looking at
+ * that particular one — because nothing here read colour, only structure.
+ * These tests are why the eighth instance gets caught by CI instead of by a
+ * person redrawing a neighbouring screen and copying the stale hex forward
+ * (see the brief's own account of how #105 found this bug).
+ */
+describe("an artboard names a token, not a colour (#138)", () => {
+  const artboardFiles = Object.keys(sourcesIn(design)).filter((file) => file !== "canvas.json");
+
+  const readArtboard = (file: string) => readFileSync(path.join(design, file), "utf8");
+
+  it.each(artboardFiles)("%s carries the palette block generated from tokens.css today", (file) => {
+    const expected = paletteBlockFor(tokensCss, schemeFor(file));
+    expect(helmetPaletteIn(readArtboard(file))).toBe(expected);
+  });
+
+  it.each(artboardFiles)("%s hardcodes no colour outside a --canvas-* declaration", (file) => {
+    expect(hardcodedColoursIn(readArtboard(file))).toEqual([]);
+  });
+
+  describe("the ten correct #F2F2F7 page grounds (the acceptance criterion #138 names explicitly)", () => {
+    // Measured directly off design/ (see the brief and this issue's own
+    // measurement): the root <div> of exactly these ten artboards is drawn at
+    // #F2F2F7, and it is drawn there *correctly* — it is the page itself,
+    // which --color-background names and which still holds this value in
+    // tokens.css. A pass that "fixed" colour by repointing every #F2F2F7 at
+    // --color-fill (the token #102 actually moved) would make these ten
+    // wrong while looking, to a diff, like the same kind of edit as the 36
+    // keypad keys that are genuinely wrong. This is the test that tells the
+    // two apart: it fails the moment a future pass touches one of these ten.
+    const tenCorrectBackgrounds = [
+      "ArrastreDeficit.dc.html",
+      "CorregirElGastoFijo.dc.html",
+      "CorregirElGastoFijoPagado.dc.html",
+      "CorregirElGastoPrevisto.dc.html",
+      "CrearEspacio.dc.html",
+      "Espacios.dc.html",
+      "MasIntacto.dc.html",
+      "Movimientos.dc.html",
+      "Presupuesto.dc.html",
+      "Presupuesto63Desplegado.dc.html",
+    ];
+
+    it("is still #F2F2F7 in tokens.css's light palette — the value this whole test pins", () => {
+      // If this ever fails, the ten tests below are pinning the wrong hex,
+      // not confirming the right one: --color-background itself moved, and
+      // that is a decision for tokens.css and ADR-0057's family, not for the
+      // artboards to react to on their own.
+      const declaration = tokensCss.match(/--color-background:\s*light-dark\(\s*([^,]+),/);
+      expect(declaration?.[1]?.trim()).toBe("#f2f2f7");
+    });
+
+    it.each(tenCorrectBackgrounds)(
+      "%s's page ground names --color-background, and only --color-background",
+      (file) => {
+        const source = readArtboard(file);
+        const ground = source.match(/width: 390px; height: \d+px; background: ([^;]+);/);
+        expect(ground?.[1]).toBe("var(--color-background)");
+      },
+    );
+
+    it("accounts for every #F2F2F7 page ground the manifest lists, no more and no fewer", () => {
+      // Guards the list above itself: an artboard drawn on #F2F2F7 that this
+      // list forgot would pass every test in this file by never being asked
+      // about, which is exactly the silent-pass failure mode #138 exists to
+      // close off.
+      //
+      // Naming --color-background is not the same claim as resolving to
+      // #F2F2F7: the token's dark half is #000000, and CargarGastoOscuro.dc.html
+      // draws its page ground with that same token — correctly, per #138's own
+      // classification table — without ever being one of the ten pages this
+      // hex actually reaches. Counting it here on token-name alone would be
+      // exactly the kind of false positive this test exists to rule out, so a
+      // `var(--color-background)` match only counts in the light scheme it
+      // resolves to this hex in.
+      const stillOnF2F2F7 = artboardFiles.filter((file) => {
+        const ground = readArtboard(file).match(/width: 390px; height: \d+px; background: ([^;]+);/);
+        if (ground?.[1] === "#F2F2F7") return true;
+        return ground?.[1] === "var(--color-background)" && schemeFor(file) === "light";
+      });
+      expect(stillOnF2F2F7.sort()).toEqual([...tenCorrectBackgrounds].sort());
+    });
+  });
+
+  describe("canvas staging: the six sheets flattening --color-scrim over the page", () => {
+    // #6E6E73 is not a product colour: it is the six bottom-sheet artboards'
+    // flattened approximation of --color-scrim composited over the page,
+    // which a static artboard cannot actually composite. It is named apart
+    // rather than banned, in a --canvas-* custom property, so it stays
+    // countable and self-documenting instead of either an unexplained hex or
+    // a rule so blunt it cannot tell staging from drift.
+    const sheetsOverScrim = [
+      "SheetCerrar.dc.html",
+      "SheetPagar.dc.html",
+      "SheetMenuEspacio.dc.html",
+      "SheetCopiar.dc.html",
+      "SheetArrastre.dc.html",
+      "MasHoja.dc.html",
+    ];
+
+    it.each(sheetsOverScrim)("%s declares two --canvas-* hexes, each with a comment saying why", (file) => {
+      // Two, because the illusion has two halves and both are staging: the
+      // page's flattened ground, and the ink of the heading showing through
+      // it. The second was drawn `var(--color-surface)` at first, which passed
+      // every check in this file -- it is a `var()`, and the token resolves to
+      // the right white -- while naming a *ground* token for *ink*. That is
+      // the rule satisfied and the meaning lost, and no automated colour check
+      // can see it, which is why the count is pinned here rather than left to
+      // `hardcodedColoursIn`.
+      const source = readArtboard(file);
+      const declarations = [...source.matchAll(/--canvas-[\w-]+\s*:\s*(#[0-9A-Fa-f]{6})\s*;/g)];
+
+      expect(declarations).toHaveLength(2);
+
+      // Each one earns its place in prose, immediately above itself.
+      for (const declaration of declarations) {
+        const start = declaration.index ?? 0;
+        const nearby = source.slice(Math.max(0, start - 700), start);
+        expect(nearby.toLowerCase()).toContain("scrim");
+      }
+    });
+
+    it.each(sheetsOverScrim)("%s does not name a ground token for the ink showing through", (file) => {
+      // The specific regression the hunk above generalises. `--color-surface`
+      // is what a sheet is drawn *on*; the heading behind the scrim is not a
+      // surface, and the two agreeing on #ffffff in light is a coincidence of
+      // value rather than of meaning -- the same argument tokens.css already
+      // makes for the Member and Category colours.
+      const heading = /font-size: 30px[^"]*color: ([^;]+);/.exec(readArtboard(file));
+
+      expect(heading?.[1]).toBe("var(--canvas-page-ink-behind-scrim)");
+    });
+
+    it("is the whole set — no other artboard declares a --canvas-* property", () => {
+      const others = artboardFiles.filter((file) => !sheetsOverScrim.includes(file));
+      for (const file of others) {
+        expect(readArtboard(file)).not.toMatch(/--canvas-/);
+      }
+    });
   });
 });

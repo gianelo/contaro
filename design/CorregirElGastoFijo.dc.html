@@ -8,134 +8,186 @@
 <x-dc>
 <helmet>
   <style>
+/* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
+:root {
+  color-scheme: light;
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+/* END generated palette */
+
     body { margin: 0; -webkit-font-smoothing: antialiased; }
-    a { color: #0E7C66; } a:hover { color: #0A5E4D; }
+    a { color: var(--color-accent); } a:hover { color: var(--color-accent-pressed); }
   </style>
 </helmet>
-<div style="position: relative; width: 390px; height: 987px; background: #F2F2F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: #1C1C1E; display: flex; flex-direction: column; box-sizing: border-box;">
+<div style="position: relative; width: 390px; height: 664px; background: var(--color-background); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; color: var(--color-text); display: flex; flex-direction: column; box-sizing: border-box;">
 
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 16px 0 16px;">
-    <span style="font-size: 15px; font-weight: 600; color: #6C6C70;">Gian</span>
-    <div style="display: flex; align-items: center; min-height: 44px;">
-      <span style="font-size: 17px; font-weight: 600; color: #0E7C66;">Salir</span>
+  <!--
+    The head #105 gives this screen instead of the account row and the Space
+    heading (ADR-0047 amended): Cancelar, the title, and -- since Option C+ --
+    taking the item off the plan altogether, in the slot that used to hold
+    nothing but an invisible copy of Cancelar. No pill underneath -- this form
+    asks for no attribution, the same refusal ADR-0046 already gave the plan's
+    entry screen.
+  -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 16px; min-height: 44px;">
+    <span style="font-size: 17px; color: var(--color-accent);">Cancelar</span>
+    <span style="font-size: 17px; font-weight: 600;">Corregir el gasto fijo</span>
+    <div style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" style="stroke: var(--color-destructive);">
+        <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        <path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/>
+      </svg>
     </div>
   </div>
-
-  <div style="display: flex; flex-direction: column; gap: 4px; padding: 8px 16px 24px 16px;">
-    <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.6px; line-height: 1.2;">Casa</span>
-    <span style="font-size: 13px; color: #6C6C70;">COP</span>
-  </div>
-
-  <div style="padding: 16px 16px 29px 16px;">
-    <span style="font-size: 19px; font-weight: 600; line-height: 1.15;">Corregir el gasto fijo</span>
-  </div>
+  <div style="height: 10px;"></div>
 
   <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 16px;">
     <div style="height: 60px; display: flex; align-items: baseline; justify-content: center; gap: 4px;">
       <span style="font-size: 30px; font-weight: 300; line-height: 1.1;">$</span>
       <span style="font-size: 52px; font-weight: 600; letter-spacing: -1.5px; line-height: 1.1;">1.800.000</span>
     </div>
-    <span style="text-align: center; font-size: 12px; line-height: 1.25; color: #8E8E93;">COP</span>
+    <span style="text-align: center; font-size: 12px; line-height: 1.25; color: var(--color-text-tertiary);">COP</span>
   </div>
 
+  <!--
+    #138, #102: this is the invisible-key bug, drawn as the product's official
+    picture until this fix. A key drawn at the page ground's own token would
+    vanish against it the moment the two agreed, which is exactly what
+    ADR-0057 split --color-fill off --color-background to stop.
+  -->
   <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px 0 16px;">
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">1</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">2</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">3</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">4</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">5</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">6</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">7</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">8</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">9</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">000</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px; font-size: 25px;">0</div>
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: #F2F2F7; border-radius: 10px;">
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" stroke-width="1.8" stroke-linecap="round"><path d="M21 5H9.5L3.5 12l6 7H21a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">1</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">2</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">3</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">4</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">5</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">6</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">7</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">8</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">9</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">000</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px; font-size: 25px;">0</div>
+    <div style="height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-fill); border-radius: 10px;">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" style="stroke: var(--color-text);"><path d="M21 5H9.5L3.5 12l6 7H21a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg>
     </div>
   </div>
 
-  <div style="display: flex; flex-direction: column; gap: 6px; padding: 8px 16px 0 16px;">
-    <span style="font-size: 13px; line-height: 1.25; font-weight: 600; letter-spacing: 0.4px; color: #8E8E93;">CÓMO SE LLAMA</span>
-    <div style="display: flex; align-items: center; min-height: 44px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #D8D8DC; border-radius: 13px; padding: 0 14px;">
-      <span style="font-size: 17px;">Arriendo</span>
-    </div>
-  </div>
+  <div style="height: 4px;"></div>
 
-  <div style="display: flex; flex-direction: column; gap: 6px; padding: 8px 16px 0 16px;">
-    <span style="font-size: 13px; line-height: 16px; font-weight: 600; letter-spacing: 0.4px; color: #8E8E93;">QUÉ DÍA DEL MES VENCE</span>
-    <div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #D8D8DC; border-radius: 13px; padding: 0 14px;">
-      <span style="font-size: 17px;">1</span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6C6C70" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
-    </div>
-  </div>
-
-  <div style="padding: 8px 16px 0 16px;">
-    <div style="font-size: 12px; line-height: 1.25; font-weight: 600; letter-spacing: 0.4px; color: #8E8E93; padding-bottom: 8px;">CATEGORÍA</div>
-    <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
-      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: #0E7C66; box-shadow: inset 0 0 0 1px #0E7C66; flex-shrink: 0;">
-        <span style="font-size: 14px; font-weight: 500; color: #FFFFFF;">Vivienda</span>
+  <!--
+    The name and the due day on one row instead of stacked (#105, Option C+,
+    ADR-0047 amended): both fields keep the 44px they always stood at, and
+    laying them out sideways gives the screen back the whole row the day
+    question used to cost it. The day column is a fixed 120px, just wide
+    enough for the shortened label below not to wrap; the name column takes
+    what is left.
+  -->
+  <div style="display: flex; gap: 8px; padding: 0 16px;">
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 13px; line-height: 1.25; font-weight: 600; letter-spacing: 0.4px; color: var(--color-text-tertiary);">CÓMO SE LLAMA</span>
+      <div style="display: flex; align-items: center; min-height: 44px; box-sizing: border-box; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 13px; padding: 0 14px;">
+        <span style="font-size: 17px;">Arriendo</span>
       </div>
-      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #D8D8DC; flex-shrink: 0;">
+    </div>
+
+    <!--
+      Shortened from "QUÉ DÍA DEL MES VENCE" (budget.fixed.dueDay): the long
+      form does not fit a column this narrow, and the value changed rather
+      than a second key standing beside it for the same question.
+    -->
+    <div style="flex: 0 0 120px; display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 13px; line-height: 1.25; font-weight: 600; letter-spacing: 0.4px; color: var(--color-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">VENCE EL DÍA</span>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; box-sizing: border-box; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 13px; padding: 0 14px;">
+        <span style="font-size: 17px;">1</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke: var(--color-text-secondary);"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 4px;"></div>
+
+  <div style="padding: 0 16px;">
+    <div style="font-size: 12px; line-height: 1.25; font-weight: 600; letter-spacing: 0.4px; color: var(--color-text-tertiary); padding-bottom: 8px;">CATEGORÍA</div>
+    <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: var(--color-accent); box-shadow: inset 0 0 0 1px var(--color-accent); flex-shrink: 0;">
+        <span style="font-size: 14px; font-weight: 500; color: var(--color-on-accent);">Vivienda</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: var(--color-surface); box-shadow: inset 0 0 0 1px var(--color-border); flex-shrink: 0;">
         <span style="font-size: 14px; font-weight: 500;">Comida</span>
       </div>
-      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #D8D8DC; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: var(--color-surface); box-shadow: inset 0 0 0 1px var(--color-border); flex-shrink: 0;">
         <span style="font-size: 14px; font-weight: 500;">Suscripciones</span>
       </div>
-      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #D8D8DC; flex-shrink: 0;">
+      <div style="display: flex; align-items: center; justify-content: center; min-height: 44px; box-sizing: border-box; border-radius: 999px; padding: 6px 16px; background: var(--color-surface); box-shadow: inset 0 0 0 1px var(--color-border); flex-shrink: 0;">
         <span style="font-size: 14px; font-weight: 500;">Salud</span>
       </div>
     </div>
   </div>
 
-  <div style="padding: 8px 16px 0 16px;">
-    <div style="height: 44px; border-radius: 13px; background: #0E7C66; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Guardar</span>
+  <div style="height: 4px;"></div>
+
+  <div style="padding: 0 16px;">
+    <div style="height: 44px; border-radius: 13px; background: var(--color-accent); display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 17px; font-weight: 600; color: var(--color-on-accent);">Guardar</span>
     </div>
   </div>
 
-  <div style="padding: 16px 16px 0 16px;">
-    <div style="height: 44px; border-radius: 13px; background: #D6342C; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 17px; font-weight: 600; color: #FFFFFF;">Sacar del plan</span>
-    </div>
-  </div>
+  <!-- What is left of the viewport once this form's fixed-height blocks are
+       drawn: 123px, the same on the Variable form beside this one -- the
+       merged row above means the two forms are the same shape as far as the
+       fold can tell (#105, Option C+, ADR-0047 amended). CI measured this
+       screen at 721 against 664 before this; AppShell's own
+       `min-height: 100dvh` is what actually fills the rest now. -->
+  <span style="flex-grow: 1;"></span>
 
-  <div style="padding: 16px 16px 16px 16px;">
-    <div style="height: 44px; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 17px; font-weight: 600; color: #0E7C66;">Cancelar</span>
-    </div>
-  </div>
-
-  <div style="display: flex; align-items: center; background: #FFFFFF; border-top: 1px solid #DCDCE0; padding: 9px 0 24px 0;">
-    <div style="flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0E7C66" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18M8 15h3"/></svg>
-      <span style="font-size: 10px; font-weight: 600; color: #0E7C66;">Presupuesto</span>
-    </div>
-    <div style="flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-      <span style="font-size: 10px; color: #8E8E93;">Movimientos</span>
-    </div>
-    <div style="width: 50px; height: 50px; border-radius: 999px; background: #0E7C66; display: flex; align-items: center; justify-content: center; margin-top: -18px;">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-    </div>
-    <div style="flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"><path d="M17 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.9"/></svg>
-      <span style="font-size: 10px; color: #8E8E93;">Espacios</span>
-    </div>
-    <div style="flex: 1; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
-      <span style="font-size: 10px; color: #8E8E93;">Ajustes</span>
-    </div>
-  </div>
-
-  <div style="position: absolute; left: 0; right: 0; top: 664px; border-top: 2px dashed #D6342C;"></div>
-  <div style="position: absolute; right: 10px; top: 670px; background: #D6342C; border-radius: 5px; padding: 3px 7px;">
-    <span style="font-size: 11px; font-weight: 600; color: #FFFFFF;">el fondo del iPhone 13 · 664px</span>
-  </div>
+  <div style="height: 16px;"></div>
 
 </div>
 </x-dc>
-<script data-dc-script data-props='{"$preview":{"width":390,"height":987}}'>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":664}}'>
 class Component extends DCLogic {}
 </script>
 </body>

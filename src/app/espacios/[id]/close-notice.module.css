@@ -76,10 +76,11 @@
 /*
  * The tray counting what the month holds, drawn as the copy offer's tray and
  * the payment recap's are drawn — see `way-in.module.css` on why these thirty
- * lines are written a third time rather than shared. The same note applies:
- * `--color-fill` and `--color-surface` are the same #1c1c1e in dark, so on a
- * sheet this reads as plain text there rather than as a tray. Matched anyway,
- * because three sheets drawing one tray three colours is worse.
+ * lines are written a third time rather than shared.
+ *
+ * The note that used to be here said this tray disappeared into the sheet in
+ * dark and was matched anyway. It no longer does: ADR-0057 gave a tray on a
+ * sheet its own ground (#123).
  */
 .recap {
   display: flex;
@@ -87,7 +88,7 @@
   gap: var(--space-5);
   margin: var(--space-6) 0 0;
   padding: var(--space-6) var(--space-7);
-  background: var(--color-fill);
+  background: var(--color-fill-on-surface);
   border-radius: var(--radius-lg);
 }
 
