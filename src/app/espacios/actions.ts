@@ -11,6 +11,7 @@ import {
 } from "@/db/invitations";
 import { findSpaceForMember } from "@/db/spaces";
 import { answer } from "@/app/form";
+import { inAppPath } from "@/app/in-app-path";
 import { report } from "@/app/report";
 import {
   handleAcceptInvitation,
@@ -131,8 +132,13 @@ export async function declineInvitationAction(
   report("Turning an invitation down", outcome);
 
   if (outcome.kind === "declined") {
-    // The list, which no longer has it on it.
-    redirect("/espacios");
+    // Back to the screen it was answered from, and not into anything. Saying
+    // no is not a destination the way saying yes is: it is a thing you finish
+    // and then carry on with what you were doing (#152, ADR-0066). The screen
+    // comes from the form, so it is checked before it decides anything; the
+    // list is where every answer came from until the bell, and stays the
+    // fallback.
+    redirect(inAppPath(answer(form, "from"), "/espacios"));
   }
 
   return { error: invitationRefusalMessage(outcome) };

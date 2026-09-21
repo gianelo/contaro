@@ -90,6 +90,8 @@ test("a Member who was invited can turn it down, and the seat is free again", as
   await danis.getByRole("button", { name: "Rechazar" }).click();
 
   await expect(danis.getByText("Te invitaron")).toHaveCount(0);
+  // Back where it was answered from, which here is the list (ADR-0066).
+  await expect(danis).toHaveURL(/\/espacios$/);
 
   // The Space can offer the seat again, which is the whole point of the row
   // being answered rather than left waiting forever (ADR-0017).
