@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the nineteen artboards its manifest lists, and the manifest", () => {
+  it("holds the twenty artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(20);
+    expect(files).toHaveLength(21);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -256,6 +256,7 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
     "SheetArrastre.dc.html",
     "SheetCerrar.dc.html",
     "SheetMenuEspacio.dc.html",
+    "SheetAvisos.dc.html",
   ];
 
   // Everything withHeader carries, plus Espacios.dc.html: the one screen
@@ -412,14 +413,15 @@ describe("an artboard names a token, not a colour (#138)", () => {
     });
   });
 
-  describe("canvas staging: the six sheets flattening --color-scrim over the page", () => {
-    // #6E6E73 is not a product colour: it is the six bottom-sheet artboards'
+  describe("canvas staging: the seven sheets flattening --color-scrim over the page", () => {
+    // #6E6E73 is not a product colour: it is the seven bottom-sheet artboards'
     // flattened approximation of --color-scrim composited over the page,
     // which a static artboard cannot actually composite. It is named apart
     // rather than banned, in a --canvas-* custom property, so it stays
     // countable and self-documenting instead of either an unexplained hex or
     // a rule so blunt it cannot tell staging from drift.
     const sheetsOverScrim = [
+      "SheetAvisos.dc.html",
       "SheetCerrar.dc.html",
       "SheetPagar.dc.html",
       "SheetMenuEspacio.dc.html",
