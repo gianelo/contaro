@@ -12,3 +12,18 @@
   font-size: var(--text-base);
   text-align: left;
 }
+
+/*
+ * The one control that creates the Space, standing in the head's trailing slot
+ * where an invisible copy of Cancelar used to hold the room open. 17px at 600
+ * and accent-coloured, the way the canvas draws it (#142).
+ *
+ * Only what this control means. The shape a trailing control has -- plain, no
+ * ground, no border, and grey when refused -- is `trailingControl`, and 44x44
+ * is `hitTarget`; `form.tsx` composes all three.
+ */
+.create {
+  color: var(--color-accent);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}

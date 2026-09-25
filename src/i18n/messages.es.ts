@@ -66,7 +66,7 @@ export const es = {
   "space.new.currency.forever":
     "La moneda no se puede cambiar nunca. Si te equivocás vas a tener que crear otro espacio y empezar de cero.",
   "space.new.currency.none": "Elegí una moneda",
-  "space.new.submit": "Crear el espacio",
+  "space.new.submit": "Crear",
   "space.new.working": "Creando\u2026",
   "space.new.error.name": "Ponele un nombre al espacio.",
   "space.new.error.currency": "Elegí una moneda de la lista.",

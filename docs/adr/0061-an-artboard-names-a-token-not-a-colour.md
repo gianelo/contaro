@@ -225,6 +225,11 @@ first place — "the hex was right and the context was not". Renaming those grou
 draws the right thing. Repainting them is a redraw, not a rename, and a redraw
 riding on a colour fix is how a review stops being able to see either.
 
+**Answered by #143.** Both roots are `--color-background` now, and the list of
+page grounds this file's last section describes is twelve rather than ten.
+ADR-0064 is the redraw this paragraph held back, done on its own where a review
+can see it.
+
 ## Where it is held
 
 - `scripts/design-palette.js` — the palette read out of `tokens.css`, the block

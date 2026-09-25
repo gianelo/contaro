@@ -203,7 +203,9 @@ test("not one link in the app is underlined", async ({
     // belongs to no Space (#5), and the way out is a button rather than a
     // link everywhere it appears.
     "/espacios": 2,
-    // Cancelar, back to the list. A form of one field has nowhere else to go.
+    // Cancelar, back to the list, in the head rather than under the form
+    // since #142. It is still the one link on the screen: the way in beside
+    // it is the form's submit and a button, not a link.
     "/espacios/nuevo": 1,
     // The tab bar's four tabs and the raised button between them, the Fixed
     // item's row, the one way into the plan (#80) and the row to who shares
