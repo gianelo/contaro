@@ -27,7 +27,7 @@ Design artifact and ADR only; no runtime implementation, issue mutation, push, o
 ## Tasks
 - [x] AVISOS-1 — Create the Avisos sheet artboard and register it in the design bundle. Route: delegated writer, because the artboard and registration touch multiple non-trivial design files. Estimated authored changes: 180 lines.
 - [x] AVISOS-2 — Write ADR documenting the row affordance decision and implementation boundary. Route: delegated writer, paired with AVISOS-1. Estimated authored changes: 90 lines.
-- [ ] AVISOS-3 — Register the new artboard in the exhaustive header/menu test lists, run the required checks, and commit the design work on `feat/133-avisos-sheet-design`. Route: inline for the one-file mechanical test registration, delegated verifier for checks. Existing failing test is RED evidence: `pnpm exec vitest run scripts/design-bundle.test.ts` (132 passed, 2 failed). TDD: on, from issue #1's strict-TDD testing decision; focused runner: `pnpm exec vitest run scripts/design-bundle.test.ts`.
+- [x] AVISOS-3 — Register the new artboard in the exhaustive header/menu test lists, run the required checks, and commit the design work on `feat/133-avisos-sheet-design`. Route: inline for the one-file mechanical test registration, delegated verifier for checks. Existing failing test is RED evidence: `pnpm exec vitest run scripts/design-bundle.test.ts` (132 passed, 2 failed). TDD: on, from issue #1's strict-TDD testing decision; focused runner: `pnpm exec vitest run scripts/design-bundle.test.ts`.
 
 ## Acceptance criteria
 - The canvas contains one Avisos sheet matching the selected interaction model.
@@ -43,7 +43,7 @@ Design artifact and ADR only; no runtime implementation, issue mutation, push, o
 - `pnpm lint`
 
 ## Progress
-- Status: in progress; AVISOS-1/2 produced the design and ADR, but AVISOS-3 is not verified or committed.
+- Status: complete; AVISOS-1/2 produced the design and ADR, and AVISOS-3 is verified and committed.
 - Verification evidence: RED was observed before the test-list correction (132 passed, 2 failed). After adding `SheetAvisos.dc.html` to `withoutHeader`, focused Vitest passed (136/136); `pnpm build:design` rebuilt the bundle from 21 sources with no content change; `pnpm check:design` passed (20 artboards, 0 hardcoded colours); `pnpm verify` passed (typecheck, lint, migrations, design, 97 test files / 1,351 tests); `git diff --check` passed. Node 22.23.3 resolved the earlier Node 20.5.1 tooling blocker. Database integration and E2E were not run for this design-only change. Native risk assessment was unassessable because of untracked files; RDD is off, and an independent verifier ran the applicable full suite.
-- Delivery evidence: commit pending. Branch: `feat/133-avisos-sheet-design` from synchronized `dev` at `9208841`.
-- Next step: commit this verified design-only work and record its identity. Issue #133 runtime behavior remains separate.
+- Delivery evidence: work-unit commit `44c3297125bfec813e5738a94668ce7a101a3ae1` on `feat/133-avisos-sheet-design`, based on synchronized `dev` at `9208841`.
+- Next step: decide whether to publish this branch for review; issue #133 runtime behavior remains separate.
