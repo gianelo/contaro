@@ -40,6 +40,7 @@ const READS: Record<(typeof STORES)[number], readonly string[]> = {
   "budget-items.ts": [
     "findBudgetItemInSpace",
     "budgetItemsInMonth",
+    "countUnpaidFixedItemsInMonth",
     "latestPlannedMonthBefore",
     "budgetItemsInMonthForSpaces",
   ],
