@@ -3,7 +3,8 @@ import { t } from "@/i18n";
 import { AppShell } from "@/ui/app-shell";
 import { EntryHead } from "@/ui/entry-head";
 import { numberLocalesFor, todayFor } from "@/app/reader";
-import { currentSpace } from "../../space";
+import { openSpaceScreen } from "../../space";
+import { CloseNotice } from "../../close-notice";
 import { categoryChips, monthInView } from "../../movimientos/month";
 import { BudgetItemForm } from "../form";
 import { planBudgetItemAction } from "../actions";
@@ -40,7 +41,7 @@ export default async function NewBudgetItemPage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const [{ id }, { mes }] = await Promise.all([params, searchParams]);
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
   const asked = await headers();
 
   const [categories, locales] = await Promise.all([
@@ -57,6 +58,7 @@ export default async function NewBudgetItemPage({
 
   return (
     <AppShell>
+      {announcement ? <CloseNotice spaceId={space.id} waiting={announcement} showRow={false} /> : null}
       {/*
         Back to the month this was opened on, and never to "this month": a
         person planning October in September changed their mind about one item
