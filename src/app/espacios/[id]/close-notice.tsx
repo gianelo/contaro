@@ -26,6 +26,8 @@ export type CloseNoticeProps = {
   spaceId: string;
   /** The close this Space is waiting on. Never drawn where there is none. */
   waiting: AnnouncedClose;
+  /** Outside Budget, announce without duplicating its standing row. */
+  showRow?: boolean;
 };
 
 /**
@@ -55,7 +57,7 @@ export type CloseNoticeProps = {
  * greying out a button, because a disabled control is a thing a person keeps
  * pressing to find out why.
  */
-export function CloseNotice({ spaceId, waiting }: CloseNoticeProps) {
+export function CloseNotice({ spaceId, waiting, showRow = true }: CloseNoticeProps) {
   /*
    * The one sheet in the product that opens without being asked, and the server
    * is what decides it does. `useState`'s initial value and not an effect: an
@@ -73,48 +75,46 @@ export function CloseNotice({ spaceId, waiting }: CloseNoticeProps) {
   const mine = waiting.waitingOn === null;
 
   return (
-    <div className={styles.card}>
-      <GroupedList label={t("close.waiting.title")} labelHidden>
-        <GroupedListItem>
-          <span className={styles.sentence}>
-            {mine
-              ? t("close.waiting.mine", { month: waiting.name })
-              : t("close.waiting.theirs", {
-                  month: waiting.name,
-                  member: waiting.waitingOn ?? "",
-                })}
-          </span>
-        </GroupedListItem>
-
-        {/*
-          A button and not a link, for the reason the copy offer one card below
-          is one: this row goes nowhere. It opens a confirmation over the screen
-          somebody is already on, and the act behind it is the one act in
-          contaro that nothing undoes.
-
-          Drawn only for the creator. Not disabled for the other Member —
-          disabled is a control that answers "why not" with nothing, and the
-          sentence above already answered it by name.
-        */}
-        {mine ? (
-          <GroupedListItem
-            leading={
-              <span className={styles.mark}>
-                <Icon
-                  name="calendar-day"
-                  size={MARK}
-                  weight={MARK_WEIGHT}
-                />
-              </span>
-            }
-            onClick={() => setAsking(true)}
-          >
-            <span className={styles.word}>
-              {t("close.waiting.act", { month: waiting.name })}
+    <div className={showRow ? styles.card : undefined}>
+      {showRow ? (
+        <GroupedList label={t("close.waiting.title")} labelHidden>
+          <GroupedListItem>
+            <span className={styles.sentence}>
+              {mine
+                ? t("close.waiting.mine", { month: waiting.name })
+                : t("close.waiting.theirs", {
+                    month: waiting.name,
+                    member: waiting.waitingOn ?? "",
+                  })}
             </span>
           </GroupedListItem>
-        ) : null}
-      </GroupedList>
+
+          {/*
+            A button and not a link, for the reason the copy offer one card below
+            is one: this row goes nowhere. It opens a confirmation over the screen
+            somebody is already on, and the act behind it is the one act in
+            contaro that nothing undoes.
+
+            Drawn only for the creator. Not disabled for the other Member —
+            disabled is a control that answers "why not" with nothing, and the
+            sentence above already answered it by name.
+          */}
+          {mine ? (
+            <GroupedListItem
+              leading={
+                <span className={styles.mark}>
+                  <Icon name="calendar-day" size={MARK} weight={MARK_WEIGHT} />
+                </span>
+              }
+              onClick={() => setAsking(true)}
+            >
+              <span className={styles.word}>
+                {t("close.waiting.act", { month: waiting.name })}
+              </span>
+            </GroupedListItem>
+          ) : null}
+        </GroupedList>
+      ) : null}
 
       {/* The same shape a refused copy takes one card below: the sheet closes
           on a redirect, so a refusal has to be readable on the screen the
