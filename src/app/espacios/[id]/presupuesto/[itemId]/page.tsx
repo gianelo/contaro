@@ -6,7 +6,8 @@ import { EntryHead } from "@/ui/entry-head";
 import { Refusal } from "@/ui/refusal";
 import { t } from "@/i18n";
 import { numberLocalesFor, readerOf } from "@/app/reader";
-import { currentSpace } from "../../space";
+import { openSpaceScreen } from "../../space";
+import { CloseNotice } from "../../close-notice";
 import { categoryChips } from "../../movimientos/month";
 import { readableBudgetItem } from "../budget";
 import { BudgetItemForm } from "../form";
@@ -62,7 +63,8 @@ export default async function BudgetItemPage({
   params: Promise<{ id: string; itemId: string }>;
 }) {
   const { id, itemId } = await params;
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
+  const closeNotice = announcement ? <CloseNotice spaceId={space.id} waiting={announcement} showRow={false} /> : null;
   const asked = await headers();
   const reader = readerOf(asked);
 
@@ -103,6 +105,7 @@ export default async function BudgetItemPage({
   if (closed) {
     return (
       <AppShell>
+        {closeNotice}
         <EntryHead back={back} cancel={t("action.cancel")} title={item.name} />
 
         <Refusal
@@ -124,6 +127,7 @@ export default async function BudgetItemPage({
     if (item.paidBy !== null) {
       return (
         <AppShell>
+          {closeNotice}
           <EntryHead back={back} cancel={t("action.cancel")} title={item.name} />
 
           <Refusal
@@ -143,6 +147,7 @@ export default async function BudgetItemPage({
 
     return (
       <AppShell>
+        {closeNotice}
         <BudgetItemCorrectionHead
           back={back}
           title={t("budget.fixed.edit.title")}
@@ -174,6 +179,7 @@ export default async function BudgetItemPage({
 
   return (
     <AppShell>
+      {closeNotice}
       <BudgetItemCorrectionHead
         back={back}
         title={t("budget.item.edit.title")}
