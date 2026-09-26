@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { AvisosSheet } from "./avisos-sheet";
 import type { AnnouncedClose } from "./waiting";
 import type { WaitingInvitation } from "@/domain/space/invitation";

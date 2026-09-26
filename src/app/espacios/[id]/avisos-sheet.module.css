@@ -2,7 +2,7 @@
 .subtitle { color: var(--color-text-secondary); font-size: 14px; margin: 0 0 18px; }
 .list { list-style: none; padding: 0; margin: 0; background: var(--color-fill-on-surface); border-radius: 13px; overflow: hidden; }
 .list li + li { border-top: 1px solid var(--color-separator); }
-.row { display: flex; align-items: flex-start; gap: 12px; padding: 14px; color: var(--color-text); text-decoration: none; }
+.row { display: flex; align-items: flex-start; gap: 12px; padding: 14px; color: var(--color-text); }
 .row:focus-visible, .trigger:focus-visible, .closeAction:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 16px; }
 .detail { color: var(--color-text-secondary); font-size: 14px; line-height: 1.35; }
@@ -11,5 +11,5 @@
 .closeMark { background: var(--color-destructive-soft); color: var(--color-destructive); }
 .fixedMark { background: var(--color-warning-soft); color: var(--color-warning); }
 .answers { display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
-.closeAction { border: 0; padding: 4px 0; align-self: flex-start; background: none; color: var(--color-destructive); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.closeAction { border: 0; padding: 4px 0; min-height: 44px; align-self: flex-start; background: none; color: var(--color-destructive); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .empty { color: var(--color-text-secondary); text-align: center; padding: 24px 0; }
