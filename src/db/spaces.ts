@@ -153,6 +153,29 @@ export async function listSpacesForMember(
   return spacesVisibleTo(memberId, listed);
 }
 
+/** Read this Member's membership history without recording an opening. */
+export async function readSpaceMembershipHistory(
+  db: Database,
+  spaceId: string,
+  memberId: string,
+): Promise<SpaceOpening | null> {
+  if (!UUID.test(spaceId)) return null;
+
+  const [history] = await db
+    .select({
+      joinedAt: spaceMembers.joinedAt,
+      lastOpenedAt: spaceMembers.lastOpenedAt,
+    })
+    .from(spaceMembers)
+    .where(and(
+      eq(spaceMembers.spaceId, spaceId),
+      eq(spaceMembers.memberId, memberId),
+    ))
+    .limit(1);
+
+  return history ?? null;
+}
+
 /**
  * Writes down that this Member has just opened this Space (#38), and answers
  * with the moment it had before this one.
@@ -222,17 +245,12 @@ export async function markSpaceOpened(
 }
 
 /**
- * What this Member's membership row said the instant before it was opened.
- *
- * Two moments and not one, because the announcement of a waiting close turns
- * on both: whether they have been here since the month ended, and whether they
- * were here while it was running (#118).
+ * This Member's membership timestamps: read passively, or captured immediately
+ * before `markSpaceOpened` replaces the last-opened moment. The close notice
+ * needs both the join boundary and the prior opening (#118).
  */
 export type SpaceOpening = {
-  /**
-   * When they last opened it, before this opening replaced it, or nothing at
-   * all if this is the first time.
-   */
+  /** The previous opening, or nothing if this Space has never been opened. */
   lastOpenedAt: Date | null;
   /** When the Space became theirs. */
   joinedAt: Date;

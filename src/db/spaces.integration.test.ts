@@ -10,6 +10,7 @@ import {
   lastOpenedSpace,
   listSpacesForMember,
   markSpaceOpened,
+  readSpaceMembershipHistory,
 } from "./spaces";
 
 // Run with `pnpm test:db`, which starts Postgres first.
@@ -318,6 +319,36 @@ it("refuses an identifier that is not one, rather than erroring on it", async ()
   await expect(
     markSpaceOpened(db, "not-a-uuid", vera.id),
   ).resolves.toBeNull();
+});
+
+it("reads only this Member's membership history without opening the Space", async () => {
+  const owner = await aMember("HistoryOwner");
+  const other = await aMember("HistoryOther");
+  const space = await createSpaceForMember(db, owner.id, {
+    name: "History", currency: "ARS",
+  });
+  const joinedAt = new Date("2025-01-03T12:00:00.000Z");
+  const lastOpenedAt = new Date("2025-02-04T12:00:00.000Z");
+  await sql`
+    UPDATE space_members SET joined_at = ${joinedAt.toISOString()}, last_opened_at = ${lastOpenedAt.toISOString()}
+    WHERE space_id = ${space.id} AND member_id = ${owner.id}
+  `;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await expect(readSpaceMembershipHistory(db, space.id, owner.id)).resolves.toEqual({
+      joinedAt, lastOpenedAt,
+    });
+  }
+  await expect(readSpaceMembershipHistory(db, space.id, other.id)).resolves.toBeNull();
+  await expect(readSpaceMembershipHistory(db, "not-a-uuid", owner.id)).resolves.toBeNull();
+  const [row] = await sql`
+    SELECT last_opened_at FROM space_members
+    WHERE space_id = ${space.id} AND member_id = ${owner.id}
+  `;
+  expect(new Date(row?.last_opened_at as string)).toEqual(lastOpenedAt);
+  await expect(markSpaceOpened(db, space.id, owner.id)).resolves.toEqual({
+    joinedAt, lastOpenedAt,
+  });
 });
 
 /*
