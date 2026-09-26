@@ -2,7 +2,8 @@ import { budgetItemsInMonth } from "@/db/budget-items";
 import { database } from "@/db/client";
 import { closedMonthsFrom } from "@/db/closed-months";
 import { movementsInMonth } from "@/db/movements";
-import type { SpaceOpening } from "@/db/spaces";
+import { readSpaceMembershipHistory, type SpaceOpening } from "@/db/spaces";
+import type { Queries } from "@/db/connection";
 import {
   monthOf,
   previousMonth,
@@ -128,6 +129,22 @@ export function closeWaitingOn(asked: {
       mine &&
       firstOpeningSince(previousMonth(thisMonth), asked.history.lastOpened),
   };
+}
+
+/** Read only the oldest ended month awaiting close for this membership. */
+export async function theWaitingMonth(
+  db: Queries,
+  memberId: string,
+  spaceId: string,
+  reader: Reader,
+  headers: Headers,
+): Promise<Month | null> {
+  const history = await readSpaceMembershipHistory(db, spaceId, memberId);
+  if (history === null) return null;
+
+  const joined = dayForReader(headers, history.joinedAt);
+  const closed = await closedMonthsFrom(db, spaceId, monthOf(joined));
+  return theMonthWaitingToBeClosed({ joined, today: reader.today }, closed);
 }
 
 /**
