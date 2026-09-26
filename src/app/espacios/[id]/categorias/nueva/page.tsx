@@ -2,7 +2,7 @@ import { ButtonLink } from "@/ui/button";
 import { t } from "@/i18n";
 import { readableCatalogueFor } from "../catalogue";
 import { SpaceScreen } from "../../screen";
-import { currentSpace } from "../../space";
+import { openSpaceScreen } from "../../space";
 import { NewCategoryForm } from "./form";
 import styles from "./page.module.css";
 
@@ -19,11 +19,11 @@ export default async function NewCategoryPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
   const catalogue = await readableCatalogueFor(space.id);
 
   return (
-    <SpaceScreen space={space} tab="settings">
+    <SpaceScreen space={space} tab="settings" announcement={announcement}>
       <h2 className={styles.title}>{t("categories.new.title")}</h2>
 
       <NewCategoryForm

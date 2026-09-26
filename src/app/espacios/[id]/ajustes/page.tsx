@@ -1,6 +1,6 @@
 import { Settings } from "./settings";
 import { SpaceScreen } from "../screen";
-import { currentSpace } from "../space";
+import { openSpaceScreen } from "../space";
 
 /**
  * Everything about a Space that is not its money.
@@ -15,10 +15,10 @@ export default async function SpaceSettingsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
 
   return (
-    <SpaceScreen space={space} tab="settings">
+    <SpaceScreen space={space} tab="settings" announcement={announcement}>
       <Settings spaceId={space.id} />
     </SpaceScreen>
   );

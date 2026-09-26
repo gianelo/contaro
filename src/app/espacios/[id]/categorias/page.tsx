@@ -3,7 +3,7 @@ import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { t } from "@/i18n";
 import { readableCatalogueFor } from "./catalogue";
 import { SpaceScreen } from "../screen";
-import { currentSpace } from "../space";
+import { openSpaceScreen } from "../space";
 import styles from "./page.module.css";
 
 /**
@@ -22,14 +22,14 @@ export default async function SpaceCategoriesPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
   const catalogue = await readableCatalogueFor(space.id);
 
   const withChildren = catalogue.filter((entry) => entry.children.length > 0);
   const alone = catalogue.filter((entry) => entry.children.length === 0);
 
   return (
-    <SpaceScreen space={space} tab="settings">
+    <SpaceScreen space={space} tab="settings" announcement={announcement}>
       <p className={styles.subtitle}>{t("categories.subtitle")}</p>
 
       {withChildren.map((entry) => (

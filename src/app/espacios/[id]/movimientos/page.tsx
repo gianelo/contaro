@@ -5,7 +5,7 @@ import { Notice } from "@/ui/notice";
 import { readerOf } from "@/app/reader";
 import { MonthPill } from "../month-pill";
 import { SpaceScreen } from "../screen";
-import { currentSpace } from "../space";
+import { openSpaceScreen } from "../space";
 import { monthInView, readableMonth } from "./month";
 import { MovementRow } from "./row";
 import { MonthTotals } from "./totals";
@@ -27,7 +27,7 @@ export default async function SpaceMovementsPage({
   searchParams: Promise<{ mes?: string }>;
 }) {
   const [{ id }, { mes }] = await Promise.all([params, searchParams]);
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
   // Whoever opened this: every figure below is written with their separators
   // (ADR-0014) and every day named against theirs (ADR-0018). The currency
   // stays the Space's for both of them.
@@ -43,6 +43,7 @@ export default async function SpaceMovementsPage({
   return (
     <SpaceScreen
       space={space}
+      announcement={announcement}
       tab="movements"
       /*
         The screen names itself and the Space becomes the quiet line under it

@@ -22,11 +22,12 @@ import type { Reader } from "@/app/reader";
 
 /**
  * The close a Space is waiting on, and how it reaches the person standing on
- * the Budget screen (#118, decisions 3, 12, 13 and 14 of #109).
+ * the Budget's standing row or the first Space route's announcement (#118,
+ * decisions 3, 12, 13 and 14 of #109).
  *
  * Here and not under `presupuesto/`, beside `close.ts` and for its reason: the
  * close freezes a month's Movements as much as its plan, and the Budget screen
- * is where a thumb happens to be rather than what the act belongs to.
+ * is where the standing row happens to be rather than what the act belongs to.
  */
 
 /** How a Member's membership row reads as days, where they are standing. */
@@ -173,6 +174,7 @@ export async function theCloseWaiting(asked: {
   /** The request's own headers, to read a moment as the Reader's day. */
   headers: Headers;
   opening: SpaceOpening | null;
+  onlyAnnouncement?: boolean;
 }): Promise<AnnouncedClose | null> {
   const history = asked.opening && {
     joined: dayForReader(asked.headers, asked.opening.joinedAt),
@@ -201,7 +203,7 @@ export async function theCloseWaiting(asked: {
     history,
   });
 
-  if (waiting === null) return null;
+  if (waiting === null || (asked.onlyAnnouncement && !waiting.announces)) return null;
 
   // Counted only for whoever can open the sheet it is drawn in, which is the
   // creator alone. The invited Member's row states that the month is waiting
@@ -230,6 +232,20 @@ export async function theCloseWaiting(asked: {
  * them. Nothing is summed: the tray counts rows, and the figures the month came
  * to are on the screen the sheet opened over.
  */
+export async function theCloseAnnouncement(asked: {
+  space: Space;
+  memberId: string;
+  reader: Reader;
+  headers: Headers;
+  opening: SpaceOpening | null;
+}): Promise<AnnouncedClose | null> {
+  // The non-Creator never receives an automatic sheet, so avoid even reading
+  // the months and tally on their routes outside Budget.
+  if (!mayCloseTheMonth(asked.memberId, asked.space)) return null;
+  const waiting = await theCloseWaiting({ ...asked, creatorName: "", onlyAnnouncement: true });
+  return waiting?.announces ? waiting : null;
+}
+
 async function tallyOf(space: Space, month: Month): Promise<ClosingTally> {
   const db = database();
 

@@ -6,7 +6,7 @@ import { Card } from "@/ui/card";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { t } from "@/i18n";
 import { SpaceScreen } from "../screen";
-import { currentSpace, viewingMember } from "../space";
+import { openSpaceScreen, viewingMember } from "../space";
 import { AnswerInvitation } from "../../answer";
 import { revokeInvitationAction } from "../../actions";
 import { InviteForm } from "./form";
@@ -26,7 +26,7 @@ export default async function MembersPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
 
   const [members, pending, reader] = await Promise.all([
     membersOfSpace(database(), space.id),
@@ -47,7 +47,7 @@ export default async function MembersPage({
     // The Budget tab, because that is the screen this hangs off and the tab
     // bar names sections rather than screens -- the same reason `nueva/` under
     // Categories lights the Categories tab.
-    <SpaceScreen space={space} tab="budget">
+    <SpaceScreen space={space} tab="budget" announcement={announcement}>
       <h2 className={styles.title}>{t("members.title")}</h2>
 
       <GroupedList label={t("members.title")} labelHidden>
