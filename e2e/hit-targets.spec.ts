@@ -67,7 +67,7 @@ test("every interactive element inside a Space is at least 44px", async ({
   await page.goto(`/espacios/${space.id}`);
   const inside = await undersizedTargets(page);
 
-  // The way out, the four tabs and the raised button between them, the month
+  // The way out, the header Avisos button, the four tabs and the raised button between them, the month
   // pill at the top (#40), the one way into the plan (#80) and the row to who
   // shares this Space (#9). The pill is one target where the `‹ Septiembre ›`
   // walker it replaced was two. There were two ways into the plan until #80 --
@@ -83,7 +83,7 @@ test("every interactive element inside a Space is at least 44px", async ({
   // thumb travels to it, which is a distance and not a target. The empty
   // sentence that rides in the same card is still words rather than something
   // to tap, wherever it is drawn.
-  expect(inside.count).toBe(9);
+  expect(inside.count).toBe(10);
   expect(inside.undersized).toEqual([]);
 });
 
@@ -99,18 +99,18 @@ test("every interactive element on a Space's catalogue is at least 44px", async 
   await page.goto(`/espacios/${space.id}/categorias`);
   const catalogue = await undersizedTargets(page);
 
-  // The way out, the four tabs and the raised button, and the way to a new
+  // The way out, the header Avisos button, the four tabs and the raised button, and the way to a new
   // Category. The rows themselves are not links yet: #7 gives a Category
   // somewhere to lead.
-  expect(catalogue.count).toBe(7);
+  expect(catalogue.count).toBe(8);
   expect(catalogue.undersized).toEqual([]);
 
   await page.goto(`/espacios/${space.id}/categorias/nueva`);
   const form = await undersizedTargets(page);
 
-  // The same seven, plus the name field, the picker and the submit -- a form
+  // The same eight, plus the name field, the picker and the submit -- a form
   // filled with one hand at a till has to be reachable with one thumb.
-  expect(form.count).toBe(10);
+  expect(form.count).toBe(11);
   expect(form.undersized).toEqual([]);
 });
 
@@ -163,9 +163,9 @@ test("every target on the screen that shares a Space is at least 44px", async ({
   await page.goto(`/espacios/${space.id}/miembros`);
   const offering = await undersizedTargets(page);
 
-  // The way out, the four tabs and the raised button, and the address field
+  // The way out, the header Avisos button, the four tabs and the raised button, and the address field
   // with the button under it.
-  expect(offering.count).toBe(8);
+  expect(offering.count).toBe(9);
   expect(offering.undersized).toEqual([]);
 
   // The seat held: the form is gone and the way to free it is there instead.
@@ -173,8 +173,8 @@ test("every target on the screen that shares a Space is at least 44px", async ({
   await page.reload();
   const holding = await undersizedTargets(page);
 
-  // The way out, the four tabs and the raised button, and Cancelar.
-  expect(holding.count).toBe(7);
+  // The way out, the header Avisos button, the four tabs and the raised button, and Cancelar.
+  expect(holding.count).toBe(8);
   expect(holding.undersized).toEqual([]);
 });
 

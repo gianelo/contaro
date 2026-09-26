@@ -263,7 +263,7 @@ export async function theCloseAnnouncement(asked: {
   return waiting?.announces ? waiting : null;
 }
 
-async function tallyOf(space: Space, month: Month): Promise<ClosingTally> {
+export async function tallyOf(space: Space, month: Month): Promise<ClosingTally> {
   const db = database();
 
   const [movements, items] = await Promise.all([
