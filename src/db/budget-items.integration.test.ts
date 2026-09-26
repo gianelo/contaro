@@ -19,6 +19,7 @@ import {
   amendFixedItemInSpace,
   budgetItemsInMonth,
   budgetItemsInMonthForSpaces,
+  countUnpaidFixedItemsInMonth,
   copyPlanIntoMonth,
   findBudgetItemInSpace,
   latestPlannedMonthBefore,
@@ -216,6 +217,35 @@ const aFixedItem = async (
     name: changes.name ?? "Arriendo",
     dueDay: changes.dueDay ?? 1,
   });
+
+it("counts unpaid Fixed items only in the requested Space and month, including future dues and voided payments", async () => {
+  const { member, space, categoryId } = await aSpaceWithACategory("Avisos");
+  const other = await aSpaceWithACategory("Other avisos");
+  const pending = await aFixedItem(space, categoryId, { dueDay: 30 });
+  const paid = await aFixedItem(space, categoryId, { name: "Paid" });
+  const voided = await aFixedItem(space, categoryId, { name: "Voided" });
+  await planBudgetItemInSpace(db, space, {
+    spaceId: space.id, month: SEPTEMBER, categoryId, amount: 100_00, name: "Variable",
+  });
+  await aFixedItem(other.space, other.categoryId);
+  await planFixedItemInSpace(db, space, {
+    spaceId: space.id, month: OCTOBER, categoryId, amount: 100_00,
+    name: "October", dueDay: 1,
+  });
+
+  const recorder = { space, recordedBy: member.id, today: TODAY };
+  await payFixedItemInSpace(db, recorder, paid.id);
+  const movement = await payFixedItemInSpace(db, recorder, voided.id);
+  if (!movement) throw new Error("The Fixed item was not paid.");
+  expect(await countUnpaidFixedItemsInMonth(db, space, SEPTEMBER)).toBe(1);
+
+  await strikeMovementInSpace(db, space.id, movement.id, member.id);
+  expect(await countUnpaidFixedItemsInMonth(db, space, SEPTEMBER)).toBe(2);
+  expect(await countUnpaidFixedItemsInMonth(db, space, OCTOBER)).toBe(1);
+  expect(await countUnpaidFixedItemsInMonth(db, other.space, SEPTEMBER)).toBe(1);
+  expect(await countUnpaidFixedItemsInMonth(db, other.space, OCTOBER)).toBe(0);
+  expect(pending.dueOn).toBe("2026-09-30");
+});
 
 it("plans a Fixed item and reads it back as one", async () => {
   const { space, categoryId } = await aSpaceWithACategory("Fijo");
