@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the twenty artboards its manifest lists, and the manifest", () => {
+  it("holds the twenty-three artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(21);
+    expect(files).toHaveLength(24);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -257,6 +257,9 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
     "SheetCerrar.dc.html",
     "SheetMenuEspacio.dc.html",
     "SheetAvisos.dc.html",
+    "RetirarDetalle.dc.html",
+    "RetirarMenu.dc.html",
+    "RetirarSeleccion.dc.html",
   ];
 
   // Everything withHeader carries, plus Espacios.dc.html: the one screen
@@ -305,6 +308,20 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
   });
 });
 
+describe("removal flow comparison (#137)", () => {
+  it("registers three distinct option sources and exports their exact drawings", () => {
+    const names = ["RetirarDetalle.dc.html", "RetirarMenu.dc.html", "RetirarSeleccion.dc.html"];
+    const manifest = JSON.parse(readFileSync(path.join(design, "canvas.json"), "utf8"));
+    const exported = documentIn(readFileSync(path.join(design, "contaro-app.html"), "utf8"));
+    expect(manifest.artboards.filter((board: { file: string }) => names.includes(board.file))
+      .map((board: { file: string }) => board.file)).toEqual(names);
+    for (const name of names) {
+      expect(exported.content.files[name]).toBe(readFileSync(path.join(design, name), "utf8"));
+    }
+    expect(exported.content.files["canvas.json"]).toBe(readFileSync(path.join(design, "canvas.json"), "utf8"));
+  });
+});
+
 describe("the exported bundle in this repo", () => {
   const bundle = readFileSync(path.join(design, "contaro-app.html"), "utf8");
 
@@ -341,7 +358,7 @@ describe("an artboard names a token, not a colour (#138)", () => {
     expect(hardcodedColoursIn(readArtboard(file))).toEqual([]);
   });
 
-  describe("the twelve correct #F2F2F7 page grounds (the acceptance criterion #138 names explicitly)", () => {
+  describe("the fifteen correct #F2F2F7 page grounds (the acceptance criterion #138 names explicitly)", () => {
     // Measured directly off design/ (see the brief and this issue's own
     // measurement): the root <div> of exactly these twelve artboards is drawn
     // at #F2F2F7, and it is drawn there *correctly* — it is the page itself,
@@ -358,6 +375,9 @@ describe("an artboard names a token, not a colour (#138)", () => {
     // than a rename. They are page grounds now, and belong here for the same
     // reason the other ten do (ADR-0064).
     const correctPageGrounds = [
+      "RetirarDetalle.dc.html",
+      "RetirarMenu.dc.html",
+      "RetirarSeleccion.dc.html",
       "AgregarUnFormulario.dc.html",
       "ArrastreDeficit.dc.html",
       "CorregirElGastoFijo.dc.html",
