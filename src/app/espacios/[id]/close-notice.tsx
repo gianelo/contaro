@@ -28,6 +28,9 @@ export type CloseNoticeProps = {
   waiting: AnnouncedClose;
   /** Outside Budget, announce without duplicating its standing row. */
   showRow?: boolean;
+  /** External trigger for the same confirmation, never a second close flow. */
+  requestClose?: boolean;
+  onRequestHandled?: () => void;
 };
 
 /**
@@ -57,7 +60,7 @@ export type CloseNoticeProps = {
  * greying out a button, because a disabled control is a thing a person keeps
  * pressing to find out why.
  */
-export function CloseNotice({ spaceId, waiting, showRow = true }: CloseNoticeProps) {
+export function CloseNotice({ spaceId, waiting, showRow = true, requestClose = false, onRequestHandled }: CloseNoticeProps) {
   /*
    * The one sheet in the product that opens without being asked, and the server
    * is what decides it does. `useState`'s initial value and not an effect: an
@@ -73,6 +76,11 @@ export function CloseNotice({ spaceId, waiting, showRow = true }: CloseNoticePro
   );
 
   const mine = waiting.waitingOn === null;
+  const open = mine && (asking || requestClose);
+  const dismiss = () => {
+    setAsking(false);
+    onRequestHandled?.();
+  };
 
   return (
     <div className={showRow ? styles.card : undefined}>
@@ -127,9 +135,9 @@ export function CloseNotice({ spaceId, waiting, showRow = true }: CloseNoticePro
 
       {mine ? (
         <BottomSheet
-          open={asking}
+          open={open}
           title={t("close.sheet.confirm", { month: waiting.name })}
-          onClose={() => setAsking(false)}
+          onClose={dismiss}
           actions={
             <form action={send} className={styles.confirm}>
               <input type="hidden" name="spaceId" value={spaceId} />
@@ -146,7 +154,7 @@ export function CloseNotice({ spaceId, waiting, showRow = true }: CloseNoticePro
                   ? t("close.sheet.working")
                   : t("close.sheet.confirm", { month: waiting.name })}
               </Button>
-              <Button variant="plain" onClick={() => setAsking(false)}>
+              <Button variant="plain" onClick={dismiss}>
                 {t("close.sheet.notYet")}
               </Button>
             </form>
