@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/ui/app-shell";
 import { t } from "@/i18n";
 import { readerOf } from "@/app/reader";
-import { currentSpace } from "../../space";
+import { openSpaceScreen } from "../../space";
+import { CloseNotice } from "../../close-notice";
 import { monthOf } from "@/domain/calendar/month";
 import { MovementForm } from "../form";
 import {
@@ -41,7 +42,8 @@ export default async function MovementPage({
   params: Promise<{ id: string; movementId: string }>;
 }) {
   const { id, movementId } = await params;
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
+  const closeNotice = announcement ? <CloseNotice spaceId={space.id} waiting={announcement} showRow={false} /> : null;
   // The `serverDay` below is deliberately not the Reader's: it is what the
   // form falls back to before the browser has answered, and the bound on how
   // late a day may be stays on the server's clock (ADR-0018).
@@ -92,6 +94,7 @@ export default async function MovementPage({
   if (closed) {
     return (
       <AppShell>
+        {closeNotice}
         <MovementCorrectionHead
           back={`/espacios/${space.id}/movimientos`}
           recordedBy={recorder?.name ?? null}
@@ -123,6 +126,7 @@ export default async function MovementPage({
   if (movement.carriedFrom !== null) {
     return (
       <AppShell>
+        {closeNotice}
         <MovementCorrectionHead
           back={`/espacios/${space.id}/movimientos`}
           recordedBy={recorder?.name ?? null}
@@ -160,6 +164,7 @@ export default async function MovementPage({
 
   return (
     <AppShell>
+      {closeNotice}
       {/*
         Who typed it in is said in the head, under the title, where the entry
         screen says which Space is being spent from. It is the half of story 22

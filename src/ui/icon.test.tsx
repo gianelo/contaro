@@ -179,9 +179,8 @@ describe("Icon", () => {
   });
 
   /*
-   * The set is the canvas's, and `lock` is the one exception in it -- named
-   * here so that adding a second one is a line somebody had to write on
-   * purpose rather than a list quietly drifting away from the artboards.
+   * The set includes the canvas and the deliberate additions for closed
+   * months and Avisos. New icons belong here explicitly, not by accident.
    *
    * #119 draws the screen the canvas never had: what a closed month looks like
    * when somebody goes back to it. Its month picker marks a closed row with a
@@ -212,6 +211,8 @@ describe("Icon", () => {
       "rotate",
       "lock",
       "trash",
+      "bell",
+      "hourglass",
     ];
 
     expect([...iconNames].sort()).toEqual([...canvas].sort());

@@ -4,6 +4,7 @@ import {
   amendItem,
   copyOfPlan,
   FixedItemAlreadyPaidError,
+  isPaid,
   paymentFor,
   planFixedItem,
   planItem,
@@ -486,6 +487,16 @@ export async function budgetItemsInMonth(
     .orderBy(asc(budgetItems.createdAt));
 
   return rows.map((row) => asBudgetItem(row, space));
+}
+
+/** Count unpaid Fixed items in the explicit Space and month, regardless of due day. */
+export async function countUnpaidFixedItemsInMonth(
+  db: Database,
+  space: Space,
+  month: Month,
+): Promise<number> {
+  const items = await budgetItemsInMonth(db, space, month);
+  return items.filter((item) => item.kind === "fixed" && !isPaid(item)).length;
 }
 
 /**

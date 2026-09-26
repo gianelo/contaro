@@ -634,6 +634,17 @@ export const es = {
   "members.error.failed": "Algo se rompió de nuestro lado. Probá de nuevo.",
 
   // What waits for the person who was invited, on the list they land on.
+  "avisos.title": "Avisos",
+  "avisos.subtitle": "Lo que requiere tu atención en {space}",
+  "avisos.empty": "No tenés avisos pendientes.",
+  "avisos.invitation": "Invitación de {member}",
+  "avisos.invitation.space": "Te invitó a compartir «{space}»",
+  "avisos.accept": "Aceptar",
+  "avisos.close": "Revisar y cerrar",
+  "avisos.waiting": "El mes todavía no está cerrado",
+  "avisos.fixed": "Fijos impagos",
+  "avisos.fixed.one": "1 gasto de {month}",
+  "avisos.fixed.many": "{count} gastos de {month}",
   "invitations.title": "Te invitaron",
   "invitations.from": "Te invitó {member}",
   "invitations.accept": "Entrar",

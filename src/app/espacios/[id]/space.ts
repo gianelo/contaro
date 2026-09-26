@@ -1,4 +1,7 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { readerOf } from "@/app/reader";
+import { theCloseAnnouncement } from "./waiting";
 import { auth } from "@/auth";
 import { database } from "@/db/client";
 import {
@@ -25,11 +28,10 @@ export async function currentSpace(id: string): Promise<Space> {
  * The same Space, with what this Member's membership row said the instant
  * before this request touched it.
  *
- * The Budget screen asks for this one and every other route asks for the Space
- * alone, because only the Budget screen has anything to say about a month that
- * ended (#118). They are the same act either way: opening a Space is what makes
- * it the one being used, and the history it replaces is only readable here,
- * from inside the act that replaces it.
+ * The Budget screen uses this opening for its standing close row; shared Space
+ * screens use it to announce the close on the first route visited (#118).
+ * Opening a Space is what makes it the one being used, and the history it
+ * replaces is only readable here, from inside the act that replaces it.
  */
 export async function openSpace(
   id: string,
@@ -73,6 +75,20 @@ export async function openSpace(
  * the person too, to fill "Es plata de" in with them — and `auth()` is
  * deduplicated within a request, so asking twice costs nothing.
  */
+export async function openSpaceScreen(id: string) {
+  const { space, opening } = await openSpace(id);
+  const memberId = await viewingMember();
+  const requestHeaders = await headers();
+  const announcement = await theCloseAnnouncement({
+    space,
+    opening,
+    memberId,
+    headers: requestHeaders,
+    reader: readerOf(requestHeaders),
+  });
+  return { space, announcement };
+}
+
 export async function viewingMember(): Promise<string> {
   const session = await auth();
   if (!session) notFound();

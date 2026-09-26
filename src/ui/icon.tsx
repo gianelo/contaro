@@ -17,6 +17,12 @@ type Drawing = {
  * will eventually differ.
  */
 const icons = {
+  bell: {
+    draw: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 9h18c0-1-3-2-3-9" /><path d="M10 21h4" /></>,
+  },
+  hourglass: {
+    draw: <><path d="M6 3h12M6 21h12M8 3c0 4 8 4 8 9s-8 5-8 9" /></>,
+  },
   calendar: {
     draw: (
       <>

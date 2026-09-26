@@ -4,6 +4,8 @@ import type { Space } from "@/domain/space/space";
 import { SpaceNavigation, type TabId } from "../../navigation";
 import { AppHeader } from "../../header";
 import { SpaceHead } from "./head";
+import { CloseNotice } from "./close-notice";
+import type { AnnouncedClose } from "./waiting";
 
 /**
  * Every screen inside a Space: the shell, the tabs that stay within it, and
@@ -28,6 +30,7 @@ export function SpaceScreen({
   tab,
   title,
   beside,
+  announcement,
   children,
 }: {
   space: Space;
@@ -36,6 +39,7 @@ export function SpaceScreen({
   title?: string;
   /** What shares the title's row: the month pill, where a screen has one. */
   beside?: ReactNode;
+  announcement?: AnnouncedClose | null;
   children: ReactNode;
 }) {
   return (
@@ -52,7 +56,7 @@ export function SpaceScreen({
       }
     >
       <SpaceHead space={space} title={title} beside={beside} />
-
+      {announcement ? <CloseNotice spaceId={space.id} waiting={announcement} showRow={false} /> : null}
       {children}
     </AppShell>
   );

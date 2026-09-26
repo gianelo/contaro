@@ -76,6 +76,26 @@ let nextAccount = 0;
  * else: spending two sessions and four page loads to arrive at a fixture is
  * time paid on every run to prove something another spec already proves.
  */
+export async function setSpaceJoinedAt(spaceId: string, memberId: string, joinedAt: string) {
+  const { sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    await sql`UPDATE space_members SET joined_at = ${joinedAt} WHERE space_id = ${spaceId} AND member_id = ${memberId}`;
+  } finally {
+    await sql.end();
+  }
+}
+
+export async function addUnpaidFixed(spaceId: string, month: string) {
+  const { sql } = createDatabase(databaseUrl(), { max: 1 });
+  try {
+    const [category] = await sql`INSERT INTO categories (space_id, name) VALUES (${spaceId}, 'Rent') RETURNING id`;
+    await sql`INSERT INTO budget_items (space_id, category_id, month, amount, kind, name, due_on)
+      VALUES (${spaceId}, ${category?.id}, ${month}, 100, 'fixed', 'Rent', ${month + '-28'})`;
+  } finally {
+    await sql.end();
+  }
+}
+
 export async function joinSpace(spaceId: string, memberId: string) {
   const { sql } = createDatabase(databaseUrl(), { max: 1 });
   try {

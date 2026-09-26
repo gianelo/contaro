@@ -3,7 +3,8 @@ import { monthOf } from "@/domain/calendar/month";
 import { t } from "@/i18n";
 import { AppShell } from "@/ui/app-shell";
 import { numberLocalesFor } from "@/app/reader";
-import { currentSpace, viewingMember } from "../../space";
+import { openSpaceScreen, viewingMember } from "../../space";
+import { CloseNotice } from "../../close-notice";
 import { MovementForm } from "../form";
 import { categoryChips, spaceMembers, todayOnTheServer } from "../month";
 import { recordMovementAction } from "../actions";
@@ -34,7 +35,7 @@ export default async function NewMovementPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const space = await currentSpace(id);
+  const { space, announcement } = await openSpaceScreen(id);
 
   const today = todayOnTheServer();
 
@@ -63,6 +64,7 @@ export default async function NewMovementPage({
 
   return (
     <AppShell>
+      {announcement ? <CloseNotice spaceId={space.id} waiting={announcement} showRow={false} /> : null}
       <MovementEntryHead
         back={`/espacios/${space.id}/movimientos`}
         sharedWith={other?.name ?? null}
