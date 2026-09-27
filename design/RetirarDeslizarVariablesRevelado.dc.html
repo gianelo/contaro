@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><style>
+/* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
+:root {
+  color-scheme: light;
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+/* END generated palette */
+
+body { margin: 0; font-family: system-ui, sans-serif; color: var(--color-text); }
+.screen { width: 390px; height: 664px; background: var(--color-background); position: relative; overflow: hidden; box-sizing: border-box; }
+.header { padding: 12px 16px; display: flex; justify-content: space-between; }
+.heading { padding: 12px 16px; font-size: 26px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+.month { font-size: 13px; font-weight: 400; background: var(--color-surface); border-radius: 20px; padding: 10px; }
+.card { margin: 8px 16px; background: var(--color-surface); border-radius: 14px; overflow: hidden; }
+.row { min-height: 53px; box-sizing: border-box; border-bottom: 1px solid var(--color-separator); display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; gap: 6px; }
+.row small { color: var(--color-text-secondary); display: block; }
+.figure { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.options { width: 44px; height: 44px; border: 0; background: transparent; color: var(--color-text-secondary); font-size: 24px; padding: 0; flex: none; cursor: pointer; }
+.options:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; border-radius: 8px; }
+.action { border: 0; border-radius: 8px; background: var(--color-destructive-soft); color: var(--color-destructive-text); min-height: 44px; padding: 4px 8px; font-size: 12px; font-weight: 700; max-width: 110px; }
+.hint { font-size: 12px; color: var(--color-accent); padding: 5px 16px; }
+.group { font-size: 12px; font-weight: 700; color: var(--color-text-secondary); padding: 9px 16px 0; }
+.nav { position: absolute; bottom: 0; height: 60px; width: 100%; background: var(--color-surface); display: flex; align-items: center; justify-content: space-around; font-size: 12px; }
+.note { padding: 12px; font-size: 13px; line-height: 1.4; }
+</style></helmet>
+<div class="screen">
+  <div class="header"><span>Gian</span><span>♧　☰</span></div>
+  <div class="heading">Presupuesto <span class="month">Septiembre ⌄</span></div>
+  <div class="hint">Casa · COP</div>
+  <div class="card row"><span>Gastado<br><b>$ 3.994.900</b></span><span>Presupuestado<br><b>$ 4.603.900</b></span></div>
+  <div class="card row">＋ Agregar al plan</div>
+  <div class="group">VARIABLES</div>
+  <div class="card">
+    <div class="row">Comida · Súper <span>$ 850.000 / $ 900.000　⌄</span></div>
+    <div class="group">EL PLAN DE ESTA CATEGORÍA</div>
+    <div class="row"><span>Mercado<small>Previsto</small></span><span class="figure"><button class="action">Sacar del plan</button><button class="options" aria-label="Opciones de Mercado semanal">⋯</button></span></div>
+    <div class="row"><span>Verdulería<small>Gasto previsto</small></span><span class="figure">$ 85.000 <button class="options" aria-label="Opciones de Verdulería">⋯</button></span></div>
+  </div>
+  <div class="nav">Inicio　 <b>Presupuesto</b>　 Movimientos　 +</div>
+</div>
+<div class="note">REVELADO · Espacio → Presupuesto → categoría desplegada. Swipe solo revela en el ítem; no retira al completar. Sacar del plan hoy no confirma, sin deshacer ni lote. Botón ⋯: clic/tap o Tab → Enter; Escape cierra. Fijo pagado: enlace al Movimiento; allí confirma y registra actor. #107 Safari no probado.</div>
+</x-dc><script data-dc-script data-props='{"$preview":{"width":390,"height":830}}'>class Component extends DCLogic {}</script></body></html>

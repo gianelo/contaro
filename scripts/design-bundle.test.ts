@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the twenty-seven artboards its manifest lists, and the manifest", () => {
+  it("holds the twenty-nine artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(28);
+    expect(files).toHaveLength(30);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -261,9 +261,11 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
     "RetirarMenu.dc.html",
     "RetirarSeleccion.dc.html",
     "RetirarDeslizarMovimientos.dc.html",
-    "RetirarDeslizarMovimientosRevelado.dc.html",
     "RetirarDeslizarFijos.dc.html",
+    "RetirarDeslizarVariables.dc.html",
+    "RetirarDeslizarMovimientosRevelado.dc.html",
     "RetirarDeslizarFijosRevelado.dc.html",
+    "RetirarDeslizarVariablesRevelado.dc.html",
   ];
 
   // Everything withHeader carries, plus Espacios.dc.html: the one screen
@@ -327,8 +329,12 @@ describe("removal flow comparison (#137)", () => {
 });
 
 describe("provisional swipe comparison (#137)", () => {
-  it("registers the Movement and Fixed before/revealed states and exports their exact sources", () => {
-    const names = ["RetirarDeslizarMovimientos.dc.html", "RetirarDeslizarMovimientosRevelado.dc.html", "RetirarDeslizarFijos.dc.html", "RetirarDeslizarFijosRevelado.dc.html"];
+  it("registers six separate 390-wide route states and exports exact sources", () => {
+    const names = [
+      "RetirarDeslizarMovimientos.dc.html", "RetirarDeslizarMovimientosRevelado.dc.html",
+      "RetirarDeslizarFijos.dc.html", "RetirarDeslizarFijosRevelado.dc.html",
+      "RetirarDeslizarVariables.dc.html", "RetirarDeslizarVariablesRevelado.dc.html",
+    ];
     const manifest = JSON.parse(readFileSync(path.join(design, "canvas.json"), "utf8"));
     const exported = documentIn(readFileSync(path.join(design, "contaro-app.html"), "utf8"));
     expect(manifest.artboards.filter((board: { file: string }) => names.includes(board.file))
@@ -433,6 +439,8 @@ describe("an artboard names a token, not a colour (#138)", () => {
       "RetirarDeslizarMovimientosRevelado.dc.html",
       "RetirarDeslizarFijos.dc.html",
       "RetirarDeslizarFijosRevelado.dc.html",
+      "RetirarDeslizarVariables.dc.html",
+      "RetirarDeslizarVariablesRevelado.dc.html",
       "AgregarUnFormulario.dc.html",
       "ArrastreDeficit.dc.html",
       "CorregirElGastoFijo.dc.html",
