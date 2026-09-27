@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the twenty-three artboards its manifest lists, and the manifest", () => {
+  it("holds the twenty-five artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(24);
+    expect(files).toHaveLength(26);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -260,6 +260,8 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
     "RetirarDetalle.dc.html",
     "RetirarMenu.dc.html",
     "RetirarSeleccion.dc.html",
+    "RetirarDeslizarMovimientos.dc.html",
+    "RetirarDeslizarMovimientosRevelado.dc.html",
   ];
 
   // Everything withHeader carries, plus Espacios.dc.html: the one screen
@@ -322,6 +324,38 @@ describe("removal flow comparison (#137)", () => {
   });
 });
 
+describe("provisional swipe comparison (#137)", () => {
+  it("registers the Movement before/revealed states and exports their exact sources", () => {
+    const names = ["RetirarDeslizarMovimientos.dc.html", "RetirarDeslizarMovimientosRevelado.dc.html"];
+    const manifest = JSON.parse(readFileSync(path.join(design, "canvas.json"), "utf8"));
+    const exported = documentIn(readFileSync(path.join(design, "contaro-app.html"), "utf8"));
+    expect(manifest.artboards.filter((board: { file: string }) => names.includes(board.file))
+      .map((board: { file: string }) => board.file)).toEqual(names);
+    for (const name of names) {
+      expect(manifest.artboards.find((board: { file: string }) => board.file === name)?.w).toBe(390);
+      const source = readFileSync(path.join(design, name), "utf8");
+      expect(source).toContain(name.includes("Revelado") ? "REVELADO" : "ANTES");
+      expect(source).toContain("width: 390px; height: 664px; background: var(--color-background)");
+      expect(source).toMatch(/<button[^>]*class="options"[^>]*aria-label="Opciones de [^"]+"[^>]*>⋯<\/button>/);
+      expect(source).toMatch(/\.options\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*background:\s*transparent/);
+      expect(source).toContain(".options:focus-visible");
+      expect(source).not.toContain(">Opciones</button>");
+      expect(source).not.toContain("tocá Opciones");
+      if (name === "RetirarDeslizarMovimientos.dc.html") {
+        expect(source).toContain('class="coachmark"');
+        expect(source).toContain("También podés deslizar ←");
+        expect(source).toContain(".coachmark::after");
+      } else {
+        expect(source).not.toContain('class="coachmark"');
+        expect(source).not.toContain(".coachmark");
+      }
+      if (name.includes("Revelado")) expect(source).toMatch(/<button[^>]*>\s*(Anular movimiento|Sacar del plan)\s*<\/button>/);
+      expect(exported.content.files[name]).toBe(source);
+    }
+    expect(exported.content.files["canvas.json"]).toBe(readFileSync(path.join(design, "canvas.json"), "utf8"));
+  });
+});
+
 describe("the exported bundle in this repo", () => {
   const bundle = readFileSync(path.join(design, "contaro-app.html"), "utf8");
 
@@ -378,6 +412,8 @@ describe("an artboard names a token, not a colour (#138)", () => {
       "RetirarDetalle.dc.html",
       "RetirarMenu.dc.html",
       "RetirarSeleccion.dc.html",
+      "RetirarDeslizarMovimientos.dc.html",
+      "RetirarDeslizarMovimientosRevelado.dc.html",
       "AgregarUnFormulario.dc.html",
       "ArrastreDeficit.dc.html",
       "CorregirElGastoFijo.dc.html",
