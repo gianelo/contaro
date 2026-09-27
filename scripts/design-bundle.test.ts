@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the twenty-three artboards its manifest lists, and the manifest", () => {
+  it("holds the twenty-nine artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(24);
+    expect(files).toHaveLength(30);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -260,6 +260,12 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
     "RetirarDetalle.dc.html",
     "RetirarMenu.dc.html",
     "RetirarSeleccion.dc.html",
+    "RetirarDeslizarMovimientos.dc.html",
+    "RetirarDeslizarFijos.dc.html",
+    "RetirarDeslizarVariables.dc.html",
+    "RetirarDeslizarMovimientosRevelado.dc.html",
+    "RetirarDeslizarFijosRevelado.dc.html",
+    "RetirarDeslizarVariablesRevelado.dc.html",
   ];
 
   // Everything withHeader carries, plus Espacios.dc.html: the one screen
@@ -322,6 +328,57 @@ describe("removal flow comparison (#137)", () => {
   });
 });
 
+describe("provisional swipe comparison (#137)", () => {
+  it("registers six separate 390-wide route states and exports exact sources", () => {
+    const names = [
+      "RetirarDeslizarMovimientos.dc.html", "RetirarDeslizarMovimientosRevelado.dc.html",
+      "RetirarDeslizarFijos.dc.html", "RetirarDeslizarFijosRevelado.dc.html",
+      "RetirarDeslizarVariables.dc.html", "RetirarDeslizarVariablesRevelado.dc.html",
+    ];
+    const manifest = JSON.parse(readFileSync(path.join(design, "canvas.json"), "utf8"));
+    const exported = documentIn(readFileSync(path.join(design, "contaro-app.html"), "utf8"));
+    expect(manifest.artboards.filter((board: { file: string }) => names.includes(board.file))
+      .map((board: { file: string }) => board.file)).toEqual(names);
+    for (const name of names) {
+      expect(manifest.artboards.find((board: { file: string }) => board.file === name)?.w).toBe(390);
+      const source = readFileSync(path.join(design, name), "utf8");
+      expect(source).toContain(name.includes("Revelado") ? "REVELADO" : "ANTES");
+      expect(source).toContain("width: 390px; height: 664px; background: var(--color-background)");
+      expect(source).toMatch(/<button[^>]*class="options"[^>]*aria-label="Opciones de [^"]+"[^>]*>⋯<\/button>/);
+      expect(source).toMatch(/\.options\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*background:\s*transparent/);
+      expect(source).toContain(".options:focus-visible");
+      expect(source).not.toContain(">Opciones</button>");
+      expect(source).not.toContain("tocá Opciones");
+      if (name === "RetirarDeslizarMovimientos.dc.html") {
+        expect(source).toContain('class="coachmark"');
+        expect(source).toContain("También podés deslizar ←");
+        expect(source).toContain(".coachmark::after");
+      } else {
+        expect(source).not.toContain('class="coachmark"');
+        expect(source).not.toContain(".coachmark");
+      }
+      if (name.includes("Revelado")) expect(source).toMatch(/<button[^>]*>\s*(Anular movimiento|Sacar del plan)\s*<\/button>/);
+      expect(exported.content.files[name]).toBe(source);
+    }
+    expect(exported.content.files["canvas.json"]).toBe(readFileSync(path.join(design, "canvas.json"), "utf8"));
+  });
+});
+
+describe("paid Fixed rows in the swipe comparison (#137)", () => {
+  for (const name of ["RetirarDeslizarFijos.dc.html", "RetirarDeslizarFijosRevelado.dc.html"]) {
+    it(`${name} keeps paid amounts and badges on links to their items`, () => {
+      const source = readFileSync(path.join(design, name), "utf8");
+      for (const [item, amount] of [["Arriendo", "$ 1.800.000"], ["Netflix", "$ 44.900"]] as const) {
+        const row = source.split('\n').find((line) => line.includes(`<span>${item}<small>`));
+        expect(row).toContain(`<a class="row paid" href="#item-${item.toLowerCase()}">`);
+        expect(row).toContain(`<span class="paid-figure"><span>${amount}</span><span class="paid-badge">Pagado</span></span></a>`);
+      }
+      expect(source).not.toContain("Ver movimiento");
+      expect(source).not.toMatch(/Opciones de (Arriendo|Netflix)/);
+    });
+  }
+});
+
 describe("the exported bundle in this repo", () => {
   const bundle = readFileSync(path.join(design, "contaro-app.html"), "utf8");
 
@@ -378,6 +435,12 @@ describe("an artboard names a token, not a colour (#138)", () => {
       "RetirarDetalle.dc.html",
       "RetirarMenu.dc.html",
       "RetirarSeleccion.dc.html",
+      "RetirarDeslizarMovimientos.dc.html",
+      "RetirarDeslizarMovimientosRevelado.dc.html",
+      "RetirarDeslizarFijos.dc.html",
+      "RetirarDeslizarFijosRevelado.dc.html",
+      "RetirarDeslizarVariables.dc.html",
+      "RetirarDeslizarVariablesRevelado.dc.html",
       "AgregarUnFormulario.dc.html",
       "ArrastreDeficit.dc.html",
       "CorregirElGastoFijo.dc.html",
