@@ -161,9 +161,19 @@
       "w": 390,
       "h": 664,
       "title": "Corregir el gasto fijo · pagado"
-    }
+    },
+    { "file": "RetirarDetalle.dc.html", "x": 0, "y": 4900, "w": 390, "h": 844, "title": "Retirar · A · detalle" },
+    { "file": "RetirarMenu.dc.html", "x": 470, "y": 4900, "w": 390, "h": 900, "title": "Retirar · B · menú por fila" },
+    { "file": "RetirarSeleccion.dc.html", "x": 940, "y": 4900, "w": 390, "h": 844, "title": "Retirar · C · seleccionar" },
+    { "file": "RetirarDeslizarMovimientos.dc.html", "x": 0, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Movimientos · antes" },
+    { "file": "RetirarDeslizarMovimientosRevelado.dc.html", "x": 440, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Movimientos · revelado" },
+    { "file": "RetirarDeslizarFijos.dc.html", "x": 880, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Fijos · antes" },
+    { "file": "RetirarDeslizarFijosRevelado.dc.html", "x": 1320, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Fijos · revelado" },
+    { "file": "RetirarDeslizarVariables.dc.html", "x": 1760, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Variables · antes" },
+    { "file": "RetirarDeslizarVariablesRevelado.dc.html", "x": 2200, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Variables · revelado" }
   ],
   "annotations": [
+    { "id": "nota-retirar", "x": 0, "y": 4770, "w": 1320, "text": "#137 · TRES FORMAS DE RETIRAR, NO UNA DECISIÓN. A conserva el detalle actual: poco ruido, poca visibilidad. B expone ⋯ en cada fila: descubrible, pero recarga las listas. C entra en selección para lotes: eficiente en volumen, complejo para un solo retiro y con fallos parciales por resolver. Cada columna muestra Movimiento y gasto del plan; el fijo pagado no se retira. 390×664 es el viewport de referencia iPhone 13 de ADR-0037, no una prueba en Safari iOS ni una línea marcada en el lienzo. No hay gesto oculto ni deshacer inventado. Comparar antes de elegir; nada de esto cambia el producto." },
     {
       "id": "nota-como-esta-dibujado",
       "x": 0,

@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><script src="./support.js"></script></head><body>
+<x-dc><helmet><style>
+/* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
+:root {
+  color-scheme: light;
+  --color-background: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+  --color-surface-raised: light-dark(#ffffff, #2c2c2e);
+  --color-fill: light-dark(#e9e9ee, #1c1c1e);
+  --color-fill-pressed: light-dark(#e3e3e8, #3a3a3c);
+  --color-fill-on-surface: light-dark(#f2f2f7, #2c2c2e);
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  --color-text-secondary: light-dark(#6c6c70, #98989e);
+  --color-text-tertiary: light-dark(#8e8e93, #6c6c70);
+  --color-separator: light-dark(#efeff2, #2c2c2e);
+  --color-separator-strong: light-dark(#dcdce0, #3a3a3c);
+  --color-border: light-dark(#d8d8dc, #3a3a3c);
+  --color-border-dashed: light-dark(#b8b8be, #48484a);
+  --color-grabber: light-dark(#d8d8dc, #48484a);
+  --color-disabled: light-dark(#c6c6c8, #48484a);
+  --color-disabled-surface: light-dark(#c6c6c8, #2c2c2e);
+  --color-on-disabled: light-dark(#ffffff, #6c6c70);
+  --color-segment-thumb: light-dark(#ffffff, #3a3a3c);
+  --color-meter-track: light-dark(#e9e9ee, #3a3a3c);
+  --color-accent: light-dark(#0e7c66, #2fa98c);
+  --color-accent-pressed: light-dark(#0a5e4d, #46c0a3);
+  --color-accent-soft: light-dark(#e4f2ee, #00201a);
+  --color-on-accent: light-dark(#ffffff, #00201a);
+  --color-destructive: light-dark(#d6342c, #ff453a);
+  --color-destructive-pressed: light-dark(#b02a23, #d6342c);
+  --color-destructive-soft: light-dark(#fbeae8, #2a1210);
+  --color-destructive-text: light-dark(#8a2019, #ff8a80);
+  --color-on-destructive: #ffffff;
+  --color-warning: light-dark(#c2620a, #f0952b);
+  --color-warning-soft: light-dark(#fdf3e7, #2a1c0a);
+  --color-warning-text: light-dark(#8a4b0b, #f7c88a);
+  --color-info: light-dark(#2c5c8f, #6ba3e0);
+  --color-info-soft: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-first-ink: light-dark(#2c5c8f, #6ba3e0);
+  --color-member-first-ground: light-dark(#d9e6f5, #0f1c2a);
+  --color-member-second-ink: light-dark(#8f2c6b, #e16bb9);
+  --color-member-second-ground: light-dark(#f3e3ee, #290f20);
+  --color-category-green-ink: light-dark(#0e7c66, #2fa98c);
+  --color-category-green-ground: light-dark(#e4f2ee, #00201a);
+  --color-category-grey-ink: light-dark(#6c6c70, #98989e);
+  --color-category-grey-ground: light-dark(#efeff2, #2c2c2e);
+  --color-scrim: light-dark(rgb(0 0 0 / 55%), rgb(0 0 0 / 65%));
+  --shadow-raised: 0 1px 3px rgb(0 0 0 / 12%);
+  --shadow-sheet: 0 -8px 30px rgb(0 0 0 / 18%);
+}
+/* END generated palette */
+
+body { margin: 0; -webkit-font-smoothing: antialiased; }
+</style></helmet>
+<div style="width: 390px; height: 844px; background: var(--color-background); color: var(--color-text); font: 15px -apple-system, BlinkMacSystemFont, system-ui, sans-serif; box-sizing: border-box; padding: 16px;">
+  <div style="height: 44px; display: flex; align-items: center; gap: 14px;"><span style="color: var(--color-accent);">‹ Volver</span><strong>A · Abrir detalle</strong></div>
+  <p style="margin: 8px 0 16px; color: var(--color-text-secondary);">Una fila lleva a corregir; sacar queda en el detalle.</p>
+  <section style="background: var(--color-surface); border-radius: 14px; padding: 12px; margin-bottom: 12px;">
+    <strong>Movimientos</strong><div style="padding: 12px 0; border-bottom: 1px solid var(--color-separator);">Supermercado · $ 82.000 <span style="float: right; color: var(--color-accent);">Abrir ›</span></div>
+    <div style="padding-top: 12px;"><small>DETALLE · anotado por Ana</small><div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;"><span>Corregir movimiento</span><span style="color: var(--color-destructive);">Borrar movimiento</span></div></div>
+  </section>
+  <section style="background: var(--color-surface); border-radius: 14px; padding: 12px;">
+    <strong>El plan de Comida</strong><div style="padding: 12px 0; border-bottom: 1px solid var(--color-separator);">Mercado · $ 150.000 <span style="float: right; color: var(--color-accent);">Abrir ›</span></div>
+    <div style="padding-top: 12px;"><small>DETALLE · corregir el gasto previsto</small><div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;"><span>Guardar cambios</span><span style="color: var(--color-destructive);">▢ Sacar del plan</span></div></div>
+    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--color-separator); display: flex; justify-content: space-between; gap: 8px; align-items: center;"><span>Alquiler · Fijo pagado<br><small>Sin acción de sacar en el detalle</small></span><span style="color: var(--color-accent); white-space: nowrap;">Ver movimiento ›</span></div>
+  </section>
+  <div style="margin-top: 16px; background: var(--color-accent-soft); padding: 12px; border-radius: 12px; line-height: 1.4;"><strong>Por qué:</strong> conserva el puente actual (ADR-0047). No recarga las filas, pero exige abrir cada detalle para encontrar la salida.</div>
+  <div style="margin-top: 12px; font-size: 13px; line-height: 1.4; color: var(--color-text-secondary);">Ruta sin tacto: Tab a la fila, Enter al detalle; botón «Borrar movimiento» / «Sacar del plan» con nombre accesible. Movimiento: confirmar, avisar que el actor queda auditado. Plan: sin confirmación hoy. No hay deshacer inmediato ni persistente prometido. Por unidad, sin selección masiva. Cualquier miembro puede actuar; el autor original no cambia. Fijo pagado: no ofrece sacar; ir al movimiento y anularlo primero. Mes cerrado: sin retiro.</div>
+  <div style="margin-top: 12px; font-size: 11px; color: var(--color-text-secondary);">Nota de diseño: desplazate para leer todos los criterios; la altura visible depende del navegador y del dispositivo.</div>
+</div></x-dc><script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>class Component extends DCLogic {}</script></body></html>
