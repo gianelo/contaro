@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a general improvement or new capability.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What outcome would address the problem?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: What observable conditions would show this is complete?
+    validations:
+      required: true
+  - type: textarea
+    id: context-references
+    attributes:
+      label: Context/references
+      description: Add relevant links or background if available.
+    validations:
+      required: false
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: How could the outcome be checked?
+    validations:
+      required: false
