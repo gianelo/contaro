@@ -240,6 +240,12 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
   ];
 
   const withoutHeader = [
+    "RetirarOpcionesMovimiento.dc.html",
+    "RetirarOpcionesFijo.dc.html",
+    "RetirarOpcionesVariable.dc.html",
+    "RetirarConfirmacionMovimiento.dc.html",
+    "RetirarFijoPagado.dc.html",
+    "RetirarConfirmacionPago.dc.html",
     "Main.dc.html",
     "CargarGastoOscuro.dc.html",
     "CrearEspacio.dc.html",
@@ -349,14 +355,9 @@ describe("provisional swipe comparison (#137)", () => {
       expect(source).toContain(".options:focus-visible");
       expect(source).not.toContain(">Opciones</button>");
       expect(source).not.toContain("tocá Opciones");
-      if (name === "RetirarDeslizarMovimientos.dc.html") {
-        expect(source).toContain('class="coachmark"');
-        expect(source).toContain("También podés deslizar ←");
-        expect(source).toContain(".coachmark::after");
-      } else {
-        expect(source).not.toContain('class="coachmark"');
-        expect(source).not.toContain(".coachmark");
-      }
+      expect(source).not.toContain('class="coachmark"');
+      expect(source).toContain('class="discovery"');
+      expect(source).toContain("Opciones ⋯ o desliza ←");
       if (name.includes("Revelado")) expect(source).toMatch(/<button[^>]*>\s*(Anular movimiento|Sacar del plan)\s*<\/button>/);
       expect(exported.content.files[name]).toBe(source);
     }
@@ -375,6 +376,20 @@ describe("paid Fixed rows in the swipe comparison (#137)", () => {
       }
       expect(source).not.toContain("Ver movimiento");
       expect(source).not.toMatch(/Opciones de (Arriendo|Netflix)/);
+    });
+  }
+});
+
+describe("pending Fixed payment beside removal in the design (#137)", () => {
+  for (const name of ["RetirarDeslizarFijos.dc.html", "RetirarDeslizarFijosRevelado.dc.html"]) {
+    it(`${name} retains the payment target, amount and separate options`, () => {
+      const source = readFileSync(path.join(design, name), "utf8");
+      for (const [item, amount] of [["Plan celular", "$ 89.000"], ["Gimnasio", "$ 120.000"]] as const) {
+        const row = source.split("\n").find((line) => line.includes(`<span>${item}</span>`));
+        expect(row).toContain(`class="pay" aria-label="Marcar ${item} como pagado"`);
+        expect(row).toContain(`<span>${amount}</span><span class="pending-badge">Pendiente</span>`);
+        expect(row).toContain(`aria-label="Opciones de ${item}"`);
+      }
     });
   }
 });
