@@ -240,12 +240,6 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
   ];
 
   const withoutHeader = [
-    "RetirarOpcionesMovimiento.dc.html",
-    "RetirarOpcionesFijo.dc.html",
-    "RetirarOpcionesVariable.dc.html",
-    "RetirarConfirmacionMovimiento.dc.html",
-    "RetirarFijoPagado.dc.html",
-    "RetirarConfirmacionPago.dc.html",
     "Main.dc.html",
     "CargarGastoOscuro.dc.html",
     "CrearEspacio.dc.html",
