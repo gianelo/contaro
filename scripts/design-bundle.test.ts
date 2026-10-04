@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the twenty-nine artboards its manifest lists, and the manifest", () => {
+  it("holds the thirty-one artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(30);
+    expect(files).toHaveLength(32);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -240,6 +240,8 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
   ];
 
   const withoutHeader = [
+    "RetirarOpcionesMovimiento.dc.html",
+    "RetirarConfirmacionMovimiento.dc.html",
     "Main.dc.html",
     "CargarGastoOscuro.dc.html",
     "CrearEspacio.dc.html",
@@ -388,6 +390,18 @@ describe("pending Fixed payment beside removal in the design (#137)", () => {
   }
 });
 
+describe("removal menu and confirmation drawings (#137)", () => {
+  it("registers and exports the menu, paid-item explanation and confirmation states", () => {
+    const names = ["RetirarOpcionesMovimiento.dc.html", "RetirarConfirmacionMovimiento.dc.html"];
+    const manifest = JSON.parse(readFileSync(path.join(design, "canvas.json"), "utf8"));
+    const exported = documentIn(readFileSync(path.join(design, "contaro-app.html"), "utf8"));
+    for (const name of names) {
+      expect(manifest.artboards.some((board: { file: string }) => board.file === name)).toBe(true);
+      expect(exported.content.files[name]).toBe(readFileSync(path.join(design, name), "utf8"));
+    }
+  });
+});
+
 describe("the exported bundle in this repo", () => {
   const bundle = readFileSync(path.join(design, "contaro-app.html"), "utf8");
 
@@ -441,6 +455,8 @@ describe("an artboard names a token, not a colour (#138)", () => {
     // than a rename. They are page grounds now, and belong here for the same
     // reason the other ten do (ADR-0064).
     const correctPageGrounds = [
+      "RetirarOpcionesMovimiento.dc.html",
+      "RetirarConfirmacionMovimiento.dc.html",
       "RetirarDetalle.dc.html",
       "RetirarMenu.dc.html",
       "RetirarSeleccion.dc.html",
