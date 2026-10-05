@@ -83,7 +83,9 @@ test("every interactive element inside a Space is at least 44px", async ({
   // thumb travels to it, which is a distance and not a target. The empty
   // sentence that rides in the same card is still words rather than something
   // to tap, wherever it is drawn.
-  expect(inside.count).toBe(10);
+  // #114 adds the report download button, disabled until a month is closed.
+  // It remains visible and must meet the same minimum touch dimensions.
+  expect(inside.count).toBe(11);
   expect(inside.undersized).toEqual([]);
 });
 
