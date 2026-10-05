@@ -80,6 +80,16 @@ a { color: var(--color-accent); font-size: 12px; }
 .pay { width: 112px; min-height: 44px; flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 3px; border: 0; background: transparent; color: var(--color-text); padding: 0; font: inherit; font-weight: 600; }
 .pending-badge { font-size: 11px; font-weight: 400; background: var(--color-fill-on-surface); color: var(--color-text-secondary); border-radius: 5px; padding: 2px 6px; }
 .pay:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; }
+
+.scrim { position: absolute; inset: 0; background: var(--color-scrim); }
+.sheet { position: absolute; bottom: 0; left: 0; width: 100%; box-sizing: border-box; background: var(--color-surface); border-radius: 20px 20px 0 0; padding: 20px 16px 16px; }
+.sheet h2 { margin: 0 0 8px; font-size: 20px; }
+.sheet p { color: var(--color-text-secondary); font-size: 14px; line-height: 1.5; }
+.sheet .recap { padding: 12px; background: var(--color-fill-on-surface); border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.sheet button { width: 100%; min-height: 48px; border: 0; border-radius: 12px; margin-top: 8px; padding: 10px; background: var(--color-fill-on-surface); color: var(--color-text); font-size: 15px; }
+.sheet .destructive { background: var(--color-destructive-soft); color: var(--color-destructive-text); }
+.sheet .primary { background: var(--color-accent); color: var(--color-on-accent); }
+.sheet .cancel { background: transparent; color: var(--color-accent); }
 .card.row { min-height: 58px; }
 </style></helmet>
 <div class="screen">
@@ -90,12 +100,13 @@ a { color: var(--color-accent); font-size: 12px; }
   <div class="card row">＋ Agregar al plan</div>
   <div class="group">FIJOS</div>
   <div class="card">
-    <div class="swipe"><div class="row pending"><span class="item"><span>Plan celular</span><small>Suscripciones</small></span><button class="pay" aria-label="Marcar Plan celular como pagado"><span>$ 89.000</span><span class="pending-badge">Pendiente</span></button><button class="options" aria-label="Opciones de Plan celular">⋯</button></div><button class="action">Sacar del plan</button></div>
+    <div class="row pending"><span class="item"><span>Plan celular</span><small>Suscripciones</small></span><button class="pay" aria-label="Marcar Plan celular como pagado"><span>$ 89.000</span><span class="pending-badge">Pendiente</span></button><button class="options" aria-label="Opciones de Plan celular">⋯</button></div>
     <a class="row paid" href="#item-arriendo"><span>Arriendo<small>Vivienda · 1 sep</small></span><span class="paid-figure"><span>$ 1.800.000</span><span class="paid-badge">Pagado</span></span></a>
     <a class="row paid" href="#item-netflix"><span>Netflix<small>Suscripciones · 5 sep</small></span><span class="paid-figure"><span>$ 44.900</span><span class="paid-badge">Pagado</span></span></a>
     <div class="row pending"><span class="item"><span>Gimnasio</span><small>Salud</small></span><button class="pay" aria-label="Marcar Gimnasio como pagado"><span>$ 120.000</span><span class="pending-badge">Pendiente</span></button><button class="options" aria-label="Opciones de Gimnasio">⋯</button></div>
   </div>
   <div class="nav">Inicio　 <b>Presupuesto</b>　 Movimientos　 +</div>
+  <div class="scrim"></div><div class="sheet"><h2>Plan celular</h2><p>$ 89.000 · Suscripciones · Pendiente</p><button class="">Editar</button><button class="destructive">Sacar del plan</button><button class="cancel">Cancelar</button></div>
 </div>
-<div class="note">REVELADO · La fila se desplaza a la izquierda: la acción aparece en el extremo DERECHO, nunca debajo del nombre. El alto no cambia. El gesto, incluso completo, solo revela; tocar la acción ejecuta el siguiente paso. ⋯ ofrece editar y la misma acción mediante una hoja. La fila se compacta al desplazarse para conservar el nombre y el importe; la hoja identifica el gasto completo. Movimiento confirma y audita; retirar un gasto previsto conserva los Movimientos y las otras previsiones. Sin deshacer ni lote. Safari físico pendiente. El control de pago sigue separado del retiro. Fijo pagado: sin retiro; abrir la fila explica cómo consultar su Movimiento de pago.</div>
+<div class="note">⋯ · Fijo pendiente · opciones · Estado dibujado, no aplicación real. La hoja tiene una salida Cancelar/Entendido; teclado, foco y Escape se prueban en el prototipo. El plan nunca anula el pago automáticamente. Safari físico y lector real pendientes.</div>
 </x-dc><script data-dc-script data-props='{"$preview":{"width":390,"height":830}}'>class Component extends DCLogic {}</script></body></html>
