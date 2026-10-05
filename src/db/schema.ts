@@ -73,6 +73,7 @@ export const spaces = pgTable("spaces", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   currency: text("currency").notNull(),
+  locale: text("locale").notNull().default("es-CO"),
   createdBy: uuid("created_by").references(() => members.id),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

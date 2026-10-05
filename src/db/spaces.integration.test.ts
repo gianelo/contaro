@@ -41,6 +41,14 @@ it("creates a Space with the name and currency it was given", async () => {
   expect(space.id).toEqual(expect.any(String));
 });
 
+it("keeps its report locale immutable even outside the domain", async () => {
+  const member = await aMember("Locale");
+  const space = await createSpaceForMember(db, member.id, { name: "Locale", currency: "COP" });
+  expect(space.locale).toBe("es-CO");
+  await expect(sql`UPDATE spaces SET locale = 'es-MX' WHERE id = ${space.id}`).rejects.toThrow("locale can never be changed");
+  await expect(findSpaceForMember(db, space.id, member.id)).resolves.toMatchObject({ locale: "es-CO" });
+});
+
 it("puts the creator inside the Space it just made", async () => {
   const beto = await aMember("Beto");
 
@@ -223,8 +231,8 @@ it("keeps two Spaces of the same Member apart, down to the currency", async () =
   const listed = await listSpacesForMember(db, sofi.id);
 
   expect(listed.map((row) => row.space)).toEqual([
-    { id: pesos.id, name: "Casa", currency: "ARS", createdBy: sofi.id },
-    { id: dolares.id, name: "Viaje", currency: "USD", createdBy: sofi.id },
+    { id: pesos.id, name: "Casa", currency: "ARS", createdBy: sofi.id, locale: "es-CO" as const },
+    { id: dolares.id, name: "Viaje", currency: "USD", createdBy: sofi.id, locale: "es-CO" as const },
   ]);
 });
 
@@ -385,7 +393,7 @@ it("gives both Members the same answer about who created it", async () => {
   // Read by the invited Member, so the trigger that fills an empty column
   // cannot be promoting whoever asks last.
   await expect(findSpaceForMember(db, space.id, uma.id)).resolves.toMatchObject(
-    { createdBy: tino.id },
+    { createdBy: tino.id, locale: "es-CO" as const },
   );
 });
 
@@ -405,7 +413,7 @@ it("recovers the creator of a Space written without one", async () => {
   `;
 
   await expect(findSpaceForMember(db, spaceId, vero.id)).resolves.toMatchObject(
-    { createdBy: vero.id },
+    { createdBy: vero.id, locale: "es-CO" as const },
   );
 });
 
@@ -423,7 +431,7 @@ it("does not hand the creation over to the Member seated second", async () => {
 
   await expect(
     findSpaceForMember(db, space.id, walt.id),
-  ).resolves.toMatchObject({ createdBy: walt.id });
+  ).resolves.toMatchObject({ createdBy: walt.id, locale: "es-CO" as const });
 });
 
 it("refuses to change who created a Space, even from outside the domain", async () => {
@@ -440,7 +448,7 @@ it("refuses to change who created a Space, even from outside the domain", async 
 
   await expect(
     findSpaceForMember(db, space.id, yani.id),
-  ).resolves.toMatchObject({ createdBy: yani.id });
+  ).resolves.toMatchObject({ createdBy: yani.id, locale: "es-CO" as const });
 });
 
 it("guards the creator without freezing the rest of the Space", async () => {
@@ -456,7 +464,7 @@ it("guards the creator without freezing the rest of the Space", async () => {
 
   await expect(
     findSpaceForMember(db, space.id, abel.id),
-  ).resolves.toMatchObject({ name: "Casa nueva", createdBy: abel.id });
+  ).resolves.toMatchObject({ name: "Casa nueva", createdBy: abel.id, locale: "es-CO" as const });
 });
 
 /**

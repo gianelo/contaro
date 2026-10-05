@@ -11,6 +11,7 @@ const CASA: Space = {
   name: "Casa",
   currency: "ARS",
   createdBy: ana,
+  locale: "es-CO" as const,
 };
 
 /** Standing in October, so the month that just ended is September. */

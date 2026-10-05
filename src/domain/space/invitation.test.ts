@@ -18,6 +18,7 @@ const CASA: Space = {
   name: "Casa",
   currency: "ARS",
   createdBy: "3f2b0c1e-0000-4000-8000-000000000001",
+  locale: "es-CO" as const,
 };
 
 const GIAN = "3f2b0c1e-0000-4000-8000-000000000001";

@@ -9,6 +9,7 @@ const casa: Space = {
   name: "Casa",
   currency: "ARS",
   createdBy: ana.memberId,
+  locale: "es-CO" as const,
 };
 
 const mate: Category = {

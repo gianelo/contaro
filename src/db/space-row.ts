@@ -14,8 +14,12 @@ export function asSpace(row: {
   id: string;
   name: string;
   currency: string;
+  locale: string;
   createdBy: string | null;
 }): Space {
+  if (row.locale !== "es-CO") {
+    throw new Error(`Space ${row.id} has an unsupported report locale.`);
+  }
   // The currency column is text, because the set of codes belongs to the domain
   // and not to a database type. A row holding something outside that set can
   // only come from a write that went round the domain, and rendering it would
@@ -42,6 +46,7 @@ export function asSpace(row: {
     id: row.id,
     name: row.name,
     currency: row.currency,
+    locale: row.locale,
     createdBy: row.createdBy,
   };
 }

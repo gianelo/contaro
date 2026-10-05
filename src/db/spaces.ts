@@ -17,6 +17,7 @@ const spaceColumns = {
   id: spaces.id,
   name: spaces.name,
   currency: spaces.currency,
+  locale: spaces.locale,
   createdBy: spaces.createdBy,
 };
 

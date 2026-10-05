@@ -163,6 +163,7 @@ export async function invitationsWaitingFor(
       invitedByName: members.name,
       spaceName: spaces.name,
       spaceCurrency: spaces.currency,
+      spaceLocale: spaces.locale,
       spaceCreatedBy: spaces.createdBy,
     })
     .from(spaceInvitations)
@@ -182,6 +183,7 @@ export async function invitationsWaitingFor(
       id: row.spaceId,
       name: row.spaceName,
       currency: row.spaceCurrency,
+      locale: row.spaceLocale,
       createdBy: row.spaceCreatedBy,
     }),
   }));
@@ -233,6 +235,7 @@ export async function acceptInvitationAsMember(
       id: spaces.id,
       name: spaces.name,
       currency: spaces.currency,
+      locale: spaces.locale,
       createdBy: spaces.createdBy,
     })
     .from(spaces)

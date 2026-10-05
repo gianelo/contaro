@@ -1,5 +1,21 @@
 # An amount is written the way its reader reads numbers
 
+## Exception: a closed-month report has no permanent Reader
+
+Issue #114's report uses the Space's immutable `locale`, not the request's
+`Accept-Language`. A downloaded file can outlive its requester and be read by
+someone else, so it cannot permanently inherit that requester's conventions.
+This exception changes no live screen. For the current single-language scope,
+existing and new Spaces use `es-CO`; the PDF's prose remains the shipped Spanish
+catalogue. Additional languages and requester-language selection are deferred.
+
+Reports are regenerated on every request rather than stored as PDF files, by
+the maintainer's implementation decision for #114. The Space retains access to
+the report, not its bytes. A later template may change its appearance without
+changing the closed month's figures.
+
+## Live screens
+
 `numberLocale` was one constant, `"es-AR"`, and it decided the separators of every figure contaro showed to everybody. That held while the Members were Argentine and stopped holding the moment they were not, and the failure it produces is silent: `es-AR` writes 1234.50 Mexican pesos as `MXN 1.234,50`, and a person reading under Mexican conventions takes that away as one peso twenty-three. The number on the screen is right and the amount in their head is wrong by three orders of magnitude, with nothing to notice.
 
 ADR-0007 had already settled half of it — "formatting takes the locale as an argument and the currency from the `Money`" — so the rule was written and only the value passed as that argument had never been made to vary. The open question was not *which* locale but **whose**: the app's, the Space's, or the reader's.

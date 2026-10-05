@@ -21,6 +21,7 @@ const CASA: Space = {
   name: "Casa",
   currency: "ARS",
   createdBy: "member-gian",
+  locale: "es-CO" as const,
 };
 const GIAN = "member-gian";
 const TODAY = calendarDate("2026-09-03");

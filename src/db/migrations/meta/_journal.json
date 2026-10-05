@@ -127,6 +127,13 @@
       "when": 1788833066745,
       "tag": "0017_a_surplus_comes_back_as_income",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791135073480,
+      "tag": "0018_a_space_keeps_its_report_locale",
+      "breakpoints": true
     }
   ]
 }

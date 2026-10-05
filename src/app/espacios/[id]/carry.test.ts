@@ -19,6 +19,7 @@ const CASA: Space = {
   name: "Casa",
   currency: "ARS",
   createdBy: ANA,
+  locale: "es-CO" as const,
 };
 
 const SEPTEMBER = month("2026-09");

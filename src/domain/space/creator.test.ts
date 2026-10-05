@@ -14,6 +14,7 @@ const CASA: Space = {
   name: "Casa",
   currency: "ARS",
   createdBy: ana,
+  locale: "es-CO" as const,
 };
 
 describe("who created a Space", () => {

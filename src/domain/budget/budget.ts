@@ -766,7 +766,7 @@ export function comparedToPlan(
  * One step up and no further, because the catalogue is two levels and no more.
  * Income never gets here: it carries no Category at all (ADR-0016).
  */
-function countsAgainst(
+export function countsAgainst(
   movement: Movement,
   categoryId: string,
   headings: ReadonlyMap<string, string | null>,

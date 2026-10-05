@@ -14,13 +14,17 @@ const casa = {
   name: "Casa",
   currency: "ARS",
   createdBy: ana,
+  locale: "es-CO" as const,
 } as const;
 
 describe("creating a Space", () => {
+  it("keeps the current Spanish Colombian report locale at creation", () => {
+    expect(createSpace({ name: "Casa", currency: "ARS" }, ana).space.locale).toBe("es-CO");
+  });
   it("gives it the name and the currency it was asked for", () => {
     const { space } = createSpace({ name: "Casa", currency: "ARS" }, ana);
 
-    expect(space).toEqual({ name: "Casa", currency: "ARS", createdBy: ana });
+    expect(space).toEqual({ name: "Casa", currency: "ARS", createdBy: ana, locale: "es-CO" as const });
   });
 
   // #116: the creator used to be taken, used once to seed the membership, and
@@ -88,6 +92,10 @@ describe("creating a Space", () => {
 });
 
 describe("amending a Space", () => {
+  it("refuses a different report locale rather than silently changing historical formatting", () => {
+    expect(() => amendSpace(casa, { locale: "es-MX" })).toThrow("locale can never be changed");
+    expect(amendSpace(casa, { locale: "es-CO" })).toEqual(casa);
+  });
   it("changes the name", () => {
     expect(amendSpace(casa, { name: "Casa nueva" })).toEqual({
       ...casa,
