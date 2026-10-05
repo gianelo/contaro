@@ -165,14 +165,21 @@
     { "file": "RetirarDetalle.dc.html", "x": 0, "y": 4900, "w": 390, "h": 844, "title": "Retirar · A · detalle" },
     { "file": "RetirarMenu.dc.html", "x": 470, "y": 4900, "w": 390, "h": 900, "title": "Retirar · B · menú por fila" },
     { "file": "RetirarSeleccion.dc.html", "x": 940, "y": 4900, "w": 390, "h": 844, "title": "Retirar · C · seleccionar" },
-    { "file": "RetirarDeslizarMovimientos.dc.html", "x": 0, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Movimientos · antes" },
-    { "file": "RetirarDeslizarMovimientosRevelado.dc.html", "x": 440, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Movimientos · revelado" },
-    { "file": "RetirarDeslizarFijos.dc.html", "x": 880, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Fijos · antes" },
-    { "file": "RetirarDeslizarFijosRevelado.dc.html", "x": 1320, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Fijos · revelado" },
-    { "file": "RetirarDeslizarVariables.dc.html", "x": 1760, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Variables · antes" },
-    { "file": "RetirarDeslizarVariablesRevelado.dc.html", "x": 2200, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Variables · revelado" }
+    { "file": "RetirarDeslizarMovimientos.dc.html", "x": 0, "y": 5900, "w": 390, "h": 830, "title": "Revisión #137 · Movimientos · antes" },
+    { "file": "RetirarDeslizarMovimientosRevelado.dc.html", "x": 440, "y": 5900, "w": 390, "h": 830, "title": "Revisión #137 · Movimientos · revelado" },
+    { "file": "RetirarDeslizarFijos.dc.html", "x": 880, "y": 5900, "w": 390, "h": 830, "title": "Revisión #137 · Fijos · antes" },
+    { "file": "RetirarDeslizarFijosRevelado.dc.html", "x": 1320, "y": 5900, "w": 390, "h": 830, "title": "Revisión #137 · Fijos · revelado" },
+    { "file": "RetirarDeslizarVariables.dc.html", "x": 1760, "y": 5900, "w": 390, "h": 830, "title": "Revisión #137 · Variables · antes" },
+    { "file": "RetirarDeslizarVariablesRevelado.dc.html", "x": 2200, "y": 5900, "w": 390, "h": 830, "title": "Revisión #137 · Variables · revelado" },
+    {"file": "RetirarOpcionesMovimiento.dc.html", "x": 0, "y": 6850, "w": 390, "h": 830, "title": "⋯ · Movimiento · opciones"},
+    {"file": "RetirarOpcionesFijo.dc.html", "x": 440, "y": 6850, "w": 390, "h": 830, "title": "⋯ · Fijo pendiente · opciones"},
+    {"file": "RetirarOpcionesVariable.dc.html", "x": 880, "y": 6850, "w": 390, "h": 830, "title": "⋯ · Variable · opciones"},
+    {"file": "RetirarConfirmacionMovimiento.dc.html", "x": 1320, "y": 6850, "w": 390, "h": 830, "title": "Movimiento · confirmar anulación"},
+    {"file": "RetirarFijoPagado.dc.html", "x": 1760, "y": 6850, "w": 390, "h": 830, "title": "Fijo pagado · explicación"},
+    {"file": "RetirarConfirmacionPago.dc.html", "x": 2200, "y": 6850, "w": 390, "h": 830, "title": "Pago · confirmar anulación"}
   ],
   "annotations": [
+    {"id": "nota-retirar-revision-137", "x": 0, "y": 5750, "w": 2590, "text": "#137 · REVISIÓN INTERACTIVA. Se rechazó la acción debajo del nombre: ahora la fila se desplaza a la izquierda y revela el botón a la derecha, sin variar el alto ni destruir por gesto completo. Tocar la fila abre edición; ⋯ abre una hoja con editar y retiro. La primera fila elegible muestra un pequeño desplazamiento y vuelve una vez por visita del prototipo; Presupuesto primero funciona y movimiento reducido no anima. Menús y confirmaciones están dibujados debajo. Plan elimina solo el gasto previsto elegido, nunca otros ni Movimientos. Fijo pagado: explicación y acceso al Movimiento; anularlo confirma y lo deja Pendiente, no lo saca del plan. Sin undo ni lotes. Persistencia real, Safari físico y lector real pendientes."},
     { "id": "nota-retirar", "x": 0, "y": 4770, "w": 1320, "text": "#137 · TRES FORMAS DE RETIRAR, NO UNA DECISIÓN. A conserva el detalle actual: poco ruido, poca visibilidad. B expone ⋯ en cada fila: descubrible, pero recarga las listas. C entra en selección para lotes: eficiente en volumen, complejo para un solo retiro y con fallos parciales por resolver. Cada columna muestra Movimiento y gasto del plan; el fijo pagado no se retira. 390×664 es el viewport de referencia iPhone 13 de ADR-0037, no una prueba en Safari iOS ni una línea marcada en el lienzo. No hay gesto oculto ni deshacer inventado. Comparar antes de elegir; nada de esto cambia el producto." },
     {
       "id": "nota-como-esta-dibujado",
