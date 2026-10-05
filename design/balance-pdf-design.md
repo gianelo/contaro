@@ -14,15 +14,15 @@ The earlier local multi-month PDF draft is obsolete and excluded from this publi
 
 **Screen A → Download PDF → choose month and year → download that month's complete report.** The report period is explicit and independent of the chart's multi-month range. The screen is neither removed nor replaced by the PDF.
 
-The selector mockup offers other periods for visual review, but disables its static-example download for anything except September 2026. This avoids downloading a September file while claiming another month. The real agent must use available periods and its existing generation contract, not these synthetic choices.
+The selector mockup offers other periods for visual review, but disables its static-example download for anything except September 2026. This avoids downloading a September file while claiming another month. Production offers only available closed periods through the existing generation contract, not these synthetic choices.
 
 ## Report composition
 
 | Page | Content |
 | --- | --- |
-| 1 · Monthly overview | Space, month/year, currency and month status; income, registered expenses and net balance; planned budget, spending and remaining planned amount; income-vs-expense bars; expense breakdown by category. |
+| 1 · Monthly overview | Space, month/year, currency and closed-month status; income, registered expenses and net balance; planned budget, spending and remaining planned amount; income-vs-expense bars; expense breakdown by category, final-month pace, and Budget surplus/deficit. |
 | 2 · Complete budget | Every category's planned vs recorded expense and difference; all planned fixed/variable expense items, amount, category, and payment status where applicable. |
-| 3 · Complete movements | Every example movement: record date, name, category where applicable, recorder, direction and full amount. Income/expense/net totals reconcile to the overview. |
+| 3 · Complete movements | Every example movement: movement date (the day the money moved), name, category where applicable, recorder, direction and full amount. Income/expense/net totals reconcile to the overview. |
 
 The pages share document identity, generation time and page numbering. Their white background, typography and colors follow screen A's existing light semantic palette. The report has no app menu, filters, avatar, bell or back button.
 
@@ -41,11 +41,11 @@ This task does not modify routes, export APIs, budgets, recorded movements, proj
 
 For the functional integration, preserve the actual existing export contract:
 
-- Include the selected month only. Label an open month as provisional and record the actual generation time; do not present it as closed.
+- Include the selected month only. Offer closed months only and record the actual generation time. An open month is refused; generating a report never closes it.
 - Show all available budget items and movements, including their real statuses and optional fields. This sample does not define treatment of annulled movements or unsupported historical states; follow the existing domain/export rules rather than inventing them.
 - No budget, no movements, larger amounts, long descriptions and more rows require clear states or continuation pages. Never truncate the report to fit this fixture.
 - Repeat table headers on continuation pages, keep rows intact, preserve month identity, and reconcile totals once for the complete month.
-- Fixed payment dates, pending/overdue states or additional supported movement metadata must follow the actual data model. This fixture illustrates all-fixed-paid, not every possible state.
+- Fixed payment states must follow the actual data model: in a closed month an unpaid Fixed says “Nunca se pagó”, without ongoing due notices (ADR 0054). This fixture illustrates all-fixed-paid, not every possible state. Additional movement metadata is included only when supported by the actual report model.
 - The generated PDF is not tagged or accessibility-certified. Text extraction does not establish accessibility.
 
 ## Observed design checks
@@ -54,4 +54,8 @@ Three A4 pages generated with embedded Arial fonts. Every page was rendered thro
 
 ## Next step
 
-Review this monthly layout and the selector, then give the functional agent these design artifacts. Do not publish the previously prepared screen-only implementation tasks: they do not represent this monthly PDF request.
+The functional renderer follows this layout, adding final-month pace and the Budget surplus/deficit required by #114. Production uses the movement date, not its registration timestamp. The static design fixture remains a visual reference, not runtime output. Do not publish the previously prepared screen-only implementation tasks: they do not represent this monthly PDF request.
+
+## Production integration for #114
+
+The Space Budget offers Download PDF with an independent month/year selector. It lists all closed months, including periods outside the screen picker window, so a lost file can be regenerated. Screen A remains a separate screen-design target; this monthly-report implementation does not replace the Budget with a balance prototype. The download is authorized for either Member, privately uncached, generated anew, and never stored.

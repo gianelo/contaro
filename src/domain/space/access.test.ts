@@ -9,6 +9,7 @@ const casa = {
   name: "Casa",
   currency: "ARS",
   createdBy: ana,
+  locale: "es-CO" as const,
 } as const;
 
 const viaje = {
@@ -16,6 +17,7 @@ const viaje = {
   name: "Viaje",
   currency: "USD",
   createdBy: ana,
+  locale: "es-CO" as const,
 } as const;
 
 const anaEnCasa = { id: ana, name: "Ana Gómez" };

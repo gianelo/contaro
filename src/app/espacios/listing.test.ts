@@ -21,7 +21,7 @@ const listed = (
   currency: CurrencyCode,
   members: readonly { id: string; name: string }[] = [gian],
 ): SpaceWithMembers => ({
-  space: { id, name, currency, createdBy: members[0]?.id ?? gian.id },
+  space: { id, name, currency, createdBy: members[0]?.id ?? gian.id, locale: "es-CO" as const },
   members,
 });
 

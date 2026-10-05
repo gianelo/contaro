@@ -56,6 +56,9 @@ _Avoid_: Source, Kind, Type
 The single currency a Space is denominated in, chosen when the Space is created and never changed afterwards. Every Movement and every report in that Space uses it. It is written to a person as its code — "ARS" — everywhere except where a currency is being chosen, and the only moment that happens is a Space being created. A currency's name explains it to somebody who does not know it, which is what a picker owes them and what nobody needs again afterwards (ADR-0056).
 _Avoid_: Base currency, Default currency
 
+**Space locale**:
+The number and date conventions a closed-month report uses, fixed when the Space is created and never inherited from the Member requesting it. Existing and new Spaces currently use Spanish Colombian conventions (`es-CO`); reports use the shipped Spanish language. Live screens still use their Reader's conventions (ADR-0014's report exception).
+
 **Last opened**:
 The moment a Member last went into one of their Spaces, and by it the one Space of theirs the list marks as the one being used — "Activo" on its card (ADR-0029). It belongs to a Member and a Space together and never to the Space alone: two Members of one shared Space each came back to it at their own moment. A Member who has joined a Space and never opened it has no such moment, and a Member who has opened none has no Space being used. It answers a second question without holding a second fact: the moment being *replaced* as a Space is opened says whether a month has ended since that Member last looked, which is what makes the Monthly close announce itself exactly once and needs nothing that has to be unset afterwards (ADR-0053).
 _Avoid_: Active, Current, Selected, Default space

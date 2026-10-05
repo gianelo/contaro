@@ -14,6 +14,8 @@ export type Space = {
   id: string;
   name: string;
   currency: CurrencyCode;
+  /** Fixed at creation; reports have no Reader to inherit number conventions from. */
+  readonly locale: "es-CO";
   /**
    * The Member who made it (#116). Recovered rather than invented for the
    * Spaces that predate the column, and never changed afterwards.
@@ -40,6 +42,8 @@ export type SpaceAmendment = {
   name?: string;
   /** Accepted only to be refused: see `amendSpace`. */
   currency?: string;
+  /** Accepted only to refuse changing a report's permanent number conventions. */
+  locale?: string;
 };
 
 /** Long enough for "Casa de la playa", short enough to fit a row. */
@@ -86,6 +90,7 @@ export function createSpace(
     space: {
       name: spaceName(draft.name),
       currency: currency(draft.currency),
+      locale: "es-CO",
       createdBy: creatorId,
     },
     // The creator is a Member from the first instant: a Space nobody belongs to
@@ -95,6 +100,9 @@ export function createSpace(
 }
 
 export function amendSpace(space: Space, changes: SpaceAmendment): Space {
+  if (changes.locale !== undefined && changes.locale !== space.locale) {
+    throw new Error("A Space's locale can never be changed.");
+  }
   // Checked before anything is applied, so a refused amendment changes nothing
   // at all rather than landing its acceptable half.
   if (changes.currency !== undefined && changes.currency !== space.currency) {

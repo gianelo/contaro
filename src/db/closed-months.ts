@@ -133,13 +133,32 @@ async function isClosed(
   spaceId: string,
   of: Month,
 ): Promise<boolean> {
+  return (await findClosedMonth(db, spaceId, of)) !== null;
+}
+
+/** The persisted close a report needs, or null before the month is closed. */
+export async function findClosedMonth(
+  db: Database,
+  spaceId: string,
+  of: Month,
+): Promise<ClosedMonth | null> {
   const [closed] = await db
-    .select({ month: closedMonths.month })
+    .select({
+      spaceId: closedMonths.spaceId,
+      month: closedMonths.month,
+      closedBy: closedMonths.closedBy,
+      closedOn: closedMonths.closedOn,
+    })
     .from(closedMonths)
     .where(and(eq(closedMonths.spaceId, spaceId), eq(closedMonths.month, of)))
     .limit(1);
 
-  return closed !== undefined;
+  return closed ? {
+    spaceId: closed.spaceId,
+    month: asMonth(closed.month),
+    closedBy: closed.closedBy,
+    closedOn: calendarDate(closed.closedOn),
+  } : null;
 }
 
 /**

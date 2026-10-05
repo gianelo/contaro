@@ -33,6 +33,7 @@ const CASA: Space = {
   name: "Casa",
   currency: "ARS",
   createdBy: "member-gian",
+  locale: "es-CO" as const,
 };
 
 const COMIDA: Category = {
