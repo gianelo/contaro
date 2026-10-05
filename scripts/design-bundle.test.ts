@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the thirty-four artboards its manifest lists, and the manifest", () => {
+  it("holds the forty artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(35);
+    expect(files).toHaveLength(41);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -245,6 +245,12 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
   ];
 
   const withoutHeader = [
+    "RetirarOpcionesMovimiento.dc.html",
+    "RetirarOpcionesFijo.dc.html",
+    "RetirarOpcionesVariable.dc.html",
+    "RetirarConfirmacionMovimiento.dc.html",
+    "RetirarFijoPagado.dc.html",
+    "RetirarConfirmacionPago.dc.html",
     "Main.dc.html",
     "CargarGastoOscuro.dc.html",
     "CrearEspacio.dc.html",
@@ -354,14 +360,9 @@ describe("provisional swipe comparison (#137)", () => {
       expect(source).toContain(".options:focus-visible");
       expect(source).not.toContain(">Opciones</button>");
       expect(source).not.toContain("tocá Opciones");
-      if (name === "RetirarDeslizarMovimientos.dc.html") {
-        expect(source).toContain('class="coachmark"');
-        expect(source).toContain("También podés deslizar ←");
-        expect(source).toContain(".coachmark::after");
-      } else {
-        expect(source).not.toContain('class="coachmark"');
-        expect(source).not.toContain(".coachmark");
-      }
+      expect(source).not.toContain('class="coachmark"');
+      expect(source).toContain('class="discovery"');
+      expect(source).toContain("Opciones ⋯ o desliza ←");
       if (name.includes("Revelado")) expect(source).toMatch(/<button[^>]*>\s*(Anular movimiento|Sacar del plan)\s*<\/button>/);
       expect(exported.content.files[name]).toBe(source);
     }
@@ -382,6 +383,32 @@ describe("paid Fixed rows in the swipe comparison (#137)", () => {
       expect(source).not.toMatch(/Opciones de (Arriendo|Netflix)/);
     });
   }
+});
+
+describe("pending Fixed payment beside removal in the design (#137)", () => {
+  for (const name of ["RetirarDeslizarFijos.dc.html", "RetirarDeslizarFijosRevelado.dc.html"]) {
+    it(`${name} retains the payment target, amount and separate options`, () => {
+      const source = readFileSync(path.join(design, name), "utf8");
+      for (const [item, amount] of [["Plan celular", "$ 89.000"], ["Gimnasio", "$ 120.000"]] as const) {
+        const row = source.split("\n").find((line) => line.includes(`<span>${item}</span>`));
+        expect(row).toContain(`class="pay" aria-label="Marcar ${item} como pagado"`);
+        expect(row).toContain(`<span>${amount}</span><span class="pending-badge">Pendiente</span>`);
+        expect(row).toContain(`aria-label="Opciones de ${item}"`);
+      }
+    });
+  }
+});
+
+describe("removal menu and confirmation drawings (#137)", () => {
+  it("registers and exports the menu, paid-item explanation and confirmation states", () => {
+    const names = ["RetirarOpcionesMovimiento.dc.html", "RetirarOpcionesFijo.dc.html", "RetirarOpcionesVariable.dc.html", "RetirarConfirmacionMovimiento.dc.html", "RetirarFijoPagado.dc.html", "RetirarConfirmacionPago.dc.html"];
+    const manifest = JSON.parse(readFileSync(path.join(design, "canvas.json"), "utf8"));
+    const exported = documentIn(readFileSync(path.join(design, "contaro-app.html"), "utf8"));
+    for (const name of names) {
+      expect(manifest.artboards.some((board: { file: string }) => board.file === name)).toBe(true);
+      expect(exported.content.files[name]).toBe(readFileSync(path.join(design, name), "utf8"));
+    }
+  });
 });
 
 describe("the exported bundle in this repo", () => {
@@ -437,6 +464,12 @@ describe("an artboard names a token, not a colour (#138)", () => {
     // than a rename. They are page grounds now, and belong here for the same
     // reason the other ten do (ADR-0064).
     const correctPageGrounds = [
+      "RetirarOpcionesMovimiento.dc.html",
+      "RetirarOpcionesFijo.dc.html",
+      "RetirarOpcionesVariable.dc.html",
+      "RetirarConfirmacionMovimiento.dc.html",
+      "RetirarFijoPagado.dc.html",
+      "RetirarConfirmacionPago.dc.html",
       "RetirarDetalle.dc.html",
       "RetirarMenu.dc.html",
       "RetirarSeleccion.dc.html",

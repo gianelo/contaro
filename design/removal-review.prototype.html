@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#137 · Prototipo de retiro desde la lista</title>
+<style>
+:root { color-scheme: light; --bg: #f2f2f7; --surface: #fff; --ink: #1c1c1e; --muted: #6c6c70; --accent: #0e7c66; --soft: #e4f2ee; --red: #d6342c; --line: #efeff2; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; color: var(--ink); background: var(--bg); font: 15px system-ui, sans-serif; }
+main { max-width: 940px; margin: auto; }
+h1 { font-size: 24px; margin: 0 0 8px; } p { line-height: 1.5; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+button, input { font: inherit; } button { cursor: pointer; }
+.controls button { min-height: 44px; border: 1px solid #d8d8dc; border-radius: 12px; padding: 8px 14px; background: var(--surface); color: var(--ink); }
+.controls button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+button:focus-visible, input:focus-visible { outline: 3px solid #2c5c8f; outline-offset: -3px; }
+.workspace { display: flex; align-items: flex-start; gap: 28px; flex-wrap: wrap; }
+.phone { width: 390px; height: 664px; max-width: 100%; position: relative; background: var(--bg); border-radius: 22px; overflow: hidden; box-shadow: 0 8px 32px #00000012; }
+.account { height: 44px; padding: 12px 16px; display: flex; justify-content: space-between; }
+.heading { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+.heading h2 { font-size: 26px; margin: 0; letter-spacing: -.6px; }
+.month { font-size: 12px; padding: 12px; border-radius: 22px; background: var(--surface); }
+.content { height: 482px; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
+.context { padding: 0 16px; color: var(--accent); font-size: 12px; }
+.summary { margin: 14px 16px; background: var(--surface); border-radius: 14px; padding: 12px; display: flex; justify-content: space-between; }
+.summary small { display: block; } .summary b { font-size: 17px; }
+.group { margin: 16px 16px 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.hint { font-size: 12px; color: var(--muted); margin: 8px 16px; }
+.card { margin: 8px 16px; border-radius: 14px; overflow: hidden; background: var(--surface); }
+.swipe-row { height: 72px; position: relative; overflow: hidden; border-bottom: 1px solid var(--line); touch-action: pan-y; }
+.swipe-row:last-child { border-bottom: 0; }
+.rail { position: absolute; inset: 0 0 0 auto; width: 104px; display: flex; align-items: stretch; background: var(--red); }
+.rail button { width: 100%; border: 0; padding: 8px; color: white; background: transparent; font-size: 13px; font-weight: 600; }
+.front { position: relative; height: 100%; display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 12px; background: var(--surface); transform: translateX(0); transition: transform 240ms cubic-bezier(.2,.8,.2,1), width 240ms cubic-bezier(.2,.8,.2,1); width: 100%; }
+.front.dragging { transition: none; }
+.item { flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; color: var(--ink); padding: 6px 0; min-height: 44px; display: flex; flex-direction: column; justify-content: center; }
+.item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.item small { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.figure { font-weight: 600; white-space: nowrap; font-size: 15px; }
+.pay, .paid-figure { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 3px; min-height: 44px; }
+.pay { border: 0; background: transparent; color: var(--ink); padding: 0 4px; }
+.badge { font-size: 11px; border-radius: 5px; padding: 2px 6px; color: var(--muted); background: var(--bg); }
+.badge.paid { color: var(--accent); background: var(--soft); }
+.options { width: 44px; height: 44px; flex: none; font-size: 24px; background: transparent; border: 0; color: var(--muted); }
+.phone-nav { position: absolute; bottom: 0; height: 60px; width: 100%; display: flex; align-items: center; justify-content: space-around; background: var(--surface); font-size: 12px; }
+.notes { flex: 1; min-width: 230px; max-width: 420px; }
+.notes h2 { font-size: 18px; }
+.notes li { line-height: 1.5; margin-bottom: 8px; }
+#state { font-size: 13px; background: var(--surface); padding: 12px; border-radius: 12px; line-height: 1.6; }
+.toast { position: absolute; bottom: 72px; left: 16px; right: 16px; z-index: 2; background: var(--ink); color: white; border-radius: 12px; padding: 12px; font-size: 13px; }
+dialog { position: absolute; inset: auto 0 0; width: 100%; max-width: 100%; max-height: 580px; border: 0; margin: 0; padding: 20px 16px 16px; border-radius: 22px 22px 0 0; color: var(--ink); background: var(--surface); box-shadow: 0 -8px 30px #00000020; }
+dialog::backdrop { background: #00000066; }
+dialog h3 { margin: 0 0 8px; font-size: 20px; } dialog p { font-size: 14px; color: var(--muted); }
+dialog .recap { padding: 12px; border-radius: 12px; background: var(--bg); font-size: 14px; line-height: 1.6; }
+dialog button { display: block; width: 100%; min-height: 48px; border: 0; border-radius: 12px; margin-top: 8px; padding: 10px; text-align: center; background: var(--bg); color: var(--ink); }
+dialog button.primary { background: var(--accent); color: white; }
+dialog button.destructive { background: #fbeae8; color: #8a2019; }
+dialog button.cancel { background: transparent; color: var(--accent); }
+label { display: block; font-size: 13px; margin-top: 12px; }
+input { width: 100%; min-height: 44px; margin: 4px 0; padding: 8px; border: 1px solid #d8d8dc; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { .front { transition: none; } }
+@media (max-width: 430px) { body { padding: 12px 0; } main > h1, main > p, .controls, .notes { margin-left: 12px; margin-right: 12px; } .workspace { justify-content: center; } .phone { border-radius: 0; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Quitar desde la lista · #137</h1>
+<p><strong>Prototipo interactivo, datos simulados.</strong> Prueba el gesto, el menú y sus consecuencias sin modificar la app.</p>
+<nav class="controls" aria-label="Contexto del prototipo">
+<button data-context="Movimientos" aria-pressed="true">Movimientos</button>
+<button data-context="Fijos" aria-pressed="false">Fijos</button>
+<button data-context="Variables" aria-pressed="false">Variables</button>
+<button id="reveal">Probar deslizamiento</button>
+<button id="reset">Reiniciar primera visita</button>
+<button id="closed" aria-pressed="false">Simular mes cerrado</button>
+</nav>
+<div class="workspace">
+<div class="phone" id="phone">
+<div class="account"><span>Gian</span><span>♧　☰</span></div>
+<div class="heading"><h2 id="title">Movimientos</h2><span class="month">Septiembre ⌄</span></div>
+<div id="content" class="content"></div>
+<div class="phone-nav">Inicio　 Presupuesto　 Movimientos　 +</div>
+<dialog id="sheet" aria-labelledby="sheet-title"></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+</div>
+<aside class="notes">
+<h2>Qué puedes probar</h2>
+<ol>
+<li>Toca el nombre de un Movimiento: abre edición, sin pasar por ⋯.</li>
+<li>Arrastra una fila a la izquierda: revela la acción a la derecha. Ninguna distancia del gesto elimina.</li>
+<li>Toca ⋯: abre una hoja con editar y retirar. Movimiento confirma; plan se retira directamente.</li>
+<li>En Fijos, importe + Pendiente abre el pago. Una fila pagada no ofrece retiro; tocarla explica cómo llegar al Movimiento de pago.</li>
+<li>En Variables, quitar Mercado semanal conserva Verdulería y todos los Movimientos reales.</li>
+</ol>
+<p>Una sola demostración en la primera fila elegible, aunque entres primero por Presupuesto. No vuelve al cambiar de lista. Con movimiento reducido, solo hay indicación estática.</p>
+<p><strong>No verificado:</strong> Safari físico, lector de pantalla real y persistencia entre sesiones. La demostración se recuerda solo mientras este prototipo está abierto. No hay deshacer ni retiro masivo.</p>
+<div id="state" role="status" aria-live="polite"></div>
+</aside>
+</div>
+</main>
+<script>
+// Throwaway UI prototype: in-memory data only, no backend or storage.
+const initial = () => ({
+ movements: [
+  { id: 'shop', name: 'Éxito', amount: 128400, category: 'Comida · Súper', active: true },
+  { id: 'bread', name: 'Panadería La 70', amount: 18000, category: 'Comida · Panadería', active: true },
+  { id: 'taxi', name: 'Uber', amount: 24500, category: 'Transporte', active: true },
+  { id: 'rent-payment', name: 'Pago de Arriendo', amount: 1800000, category: 'Vivienda', active: true },
+  { id: 'netflix-payment', name: 'Pago de Netflix', amount: 44900, category: 'Suscripciones', active: true }
+ ],
+ fixed: [
+  { id: 'phone', name: 'Plan celular', amount: 89000, category: 'Suscripciones', payment: null },
+  { id: 'rent', name: 'Arriendo', amount: 1800000, category: 'Vivienda', payment: 'rent-payment' },
+  { id: 'netflix', name: 'Netflix', amount: 44900, category: 'Suscripciones', payment: 'netflix-payment' },
+  { id: 'gym', name: 'Gimnasio', amount: 120000, category: 'Salud', payment: null }
+ ],
+ variable: [
+  { id: 'weekly', name: 'Mercado semanal', amount: 150000, category: 'Comida · Súper' },
+  { id: 'vegetables', name: 'Verdulería', amount: 85000, category: 'Comida · Súper' }
+ ]
+});
+let data = initial();
+let context = new URLSearchParams(location.search).get('context') || 'Movimientos';
+if (!['Movimientos', 'Fijos', 'Variables'].includes(context)) context = 'Movimientos';
+let closed = false;
+let discoverySeen = false;
+let discoveryTimer;
+let lastTrigger;
+let lastAction = 'Datos iniciales';
+const phone = document.querySelector('#phone');
+const content = document.querySelector('#content');
+const sheet = document.querySelector('#sheet');
+const currency = n => '$ ' + n.toLocaleString('es-CO');
+const paid = item => item.payment && data.movements.some(m => m.id === item.payment && m.active);
+const items = () => context === 'Movimientos' ? data.movements.filter(m => m.active) : context === 'Fijos' ? data.fixed : data.variable;
+const escapeHtml = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function status() {
+ const spending = data.movements.filter(m => m.active).reduce((sum, m) => sum + m.amount, 0);
+ const plan = [...data.fixed, ...data.variable].reduce((sum, item) => sum + item.amount, 0);
+ document.querySelector('#state').innerHTML = `<strong>Estado simulado</strong><br>${escapeHtml(lastAction)}<br>Gastado: ${currency(spending)}<br>Presupuestado: ${currency(plan)}<br>Movimientos vigentes: ${data.movements.filter(m => m.active).length}<br>Gastos previstos Variables: ${data.variable.length}<br>Historial anulado: ${data.movements.filter(m => !m.active).map(m => escapeHtml(m.name) + ' · ' + escapeHtml(m.struckBy || 'Gian')).join('; ') || 'ninguno'}<br>Demostración: ${discoverySeen ? 'ya mostrada en esta visita' : 'pendiente'}<br>Mes: ${closed ? 'cerrado' : 'abierto'}`;
+}
+function setReveal(row, open) {
+ if (!row || closed || row.dataset.eligible !== 'true') return;
+ cancelDiscovery();
+ for (const other of content.querySelectorAll('.swipe-row')) {
+  const active = other === row && open;
+  other.dataset.open = String(active);
+  other.querySelector('.front').style.transform = active ? 'translateX(-8px)' : '';
+  other.querySelector('.front').style.width = active ? 'calc(100% - 96px)' : '';
+  const rail = other.querySelector('.rail');
+  if (rail) { rail.inert = !active; rail.setAttribute('aria-hidden', String(!active)); }
+ }
+ lastAction = open ? 'Acción revelada; nada eliminado' : 'Fila cerrada'; status();
+}
+function cancelDiscovery() {
+ clearTimeout(discoveryTimer);
+ for (const front of content.querySelectorAll('.front')) for (const animation of front.getAnimations()) animation.cancel();
+}
+function discover() {
+ if (discoverySeen || closed) return;
+ const row = content.querySelector('[data-eligible="true"]');
+ if (!row) return;
+ discoverySeen = true; status();
+ if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+ discoveryTimer = setTimeout(() => {
+  if (!row.isConnected || sheet.open) return;
+  row.querySelector('.front').animate([
+   { transform: 'translateX(0)' }, { transform: 'translateX(-36px)', offset: .35 },
+   { transform: 'translateX(-36px)', offset: .65 }, { transform: 'translateX(0)' }
+  ], { duration: 1050, easing: 'ease-in-out' });
+ }, 500);
+}
+function render() {
+ cancelDiscovery();
+ document.querySelector('#title').textContent = context === 'Movimientos' ? context : 'Presupuesto';
+ for (const button of document.querySelectorAll('[data-context]')) button.setAttribute('aria-pressed', String(button.dataset.context === context));
+ document.querySelector('#closed').setAttribute('aria-pressed', String(closed));
+ const spending = data.movements.filter(m => m.active).reduce((sum, m) => sum + m.amount, 0);
+ const plan = [...data.fixed, ...data.variable].reduce((sum, item) => sum + item.amount, 0);
+ content.innerHTML = `<div class="context">Casa · COP${closed ? ' · Mes cerrado' : ''}</div><div class="summary"><span><small>Gastado</small><b>${currency(spending)}</b></span><span><small>Presupuestado</small><b>${currency(plan)}</b></span></div><div class="group">${context === 'Movimientos' ? 'MOVIMIENTOS' : context === 'Fijos' ? 'FIJOS' : 'COMIDA · SÚPER — EL PLAN'}</div>${!closed && items().some(item => context !== 'Fijos' || !paid(item)) ? '<p class="hint">Toca ⋯ o desliza una fila hacia la izquierda.</p>' : ''}<div class="card" id="list"></div>`;
+ const list = document.querySelector('#list');
+ for (const item of items()) {
+  const isPaid = context === 'Fijos' && paid(item);
+  const eligible = !closed && !isPaid;
+  const row = document.createElement('div');
+  row.className = 'swipe-row'; row.dataset.id = item.id; row.dataset.eligible = String(eligible); row.dataset.open = 'false';
+  const action = context === 'Movimientos' ? 'Anular movimiento' : 'Sacar del plan';
+  row.innerHTML = `${eligible ? `<div class="rail" aria-hidden="true" inert><button aria-label="${action}: ${escapeHtml(item.name)}">${action}</button></div>` : ''}<div class="front"><button class="item" aria-label="${closed || isPaid ? 'Ver' : 'Editar'} ${escapeHtml(item.name)}"><span>${escapeHtml(item.name)}</span><small>${escapeHtml(item.category)}</small></button>${context === 'Fijos' ? isPaid ? `<span class="paid-figure"><span class="figure">${currency(item.amount)}</span><span class="badge paid">Pagado</span></span>` : closed ? `<span class="paid-figure"><span class="figure">${currency(item.amount)}</span><span class="badge">Nunca se pagó</span></span>` : `<button class="pay" aria-label="Marcar ${escapeHtml(item.name)} como pagado"><span class="figure">${currency(item.amount)}</span><span class="badge">Pendiente</span></button>` : `<span class="figure">${currency(item.amount)}</span>`}${eligible ? `<button class="options" aria-label="Opciones de ${escapeHtml(item.name)}">⋯</button>` : ''}</div>`;
+  list.append(row);
+  row.querySelector('.item').onclick = event => {
+   if (row.suppressClick) return;
+   if (row.dataset.open === 'true') { setReveal(row, false); return; }
+   cancelDiscovery(); lastTrigger = event.currentTarget;
+   if (closed) showReadOnly(item);
+   else if (isPaid) showPaid(item);
+   else showEdit(item);
+  };
+  row.querySelector('.front').addEventListener('click', event => {
+   if (!row.suppressClick && !event.target.closest('button')) row.querySelector('.item').click();
+  });
+  if (!eligible) continue;
+  row.querySelector('.options').onclick = event => { if (!row.suppressClick) { cancelDiscovery(); lastTrigger = event.currentTarget; showMenu(item); } };
+  row.querySelector('.rail button').onclick = event => { lastTrigger = event.currentTarget; requestRemoval(item); };
+  row.querySelector('.pay')?.addEventListener('click', event => { if (!row.suppressClick) { cancelDiscovery(); lastTrigger = event.currentTarget; showPayment(item); } });
+  wireSwipe(row);
+ }
+ if (items().length === 0) list.innerHTML = '<p style="padding: 16px">Sin gastos previstos en esta lista. Los Movimientos permanecen registrados.</p>';
+ status(); discover();
+}
+function wireSwipe(row) {
+ let startX = 0, startY = 0, base = 0, pointer = null, dragging = false, offset = 0;
+ const front = row.querySelector('.front');
+ row.addEventListener('pointerdown', event => {
+  if (event.button !== 0 || event.target.closest('.options,.pay,.rail')) return;
+  cancelDiscovery(); startX = event.clientX; startY = event.clientY;
+  base = row.dataset.open === 'true' ? -104 : 0; pointer = event.pointerId; dragging = false;
+ });
+ row.addEventListener('pointermove', event => {
+  if (event.pointerId !== pointer) return;
+  const dx = event.clientX - startX, dy = event.clientY - startY;
+  if (!dragging) {
+   if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { pointer = null; return; }
+   if (Math.abs(dx) < 8) return;
+   dragging = true; row.setPointerCapture(event.pointerId); front.classList.add('dragging');
+  }
+  offset = Math.max(-104, Math.min(0, base + dx)); front.style.transform = `translateX(${offset / 13}px)`; front.style.width = `calc(100% - ${-offset * 12 / 13}px)`;
+ });
+ row.addEventListener('pointerup', event => {
+  if (event.pointerId !== pointer) return;
+  pointer = null; front.classList.remove('dragging');
+  if (dragging) {
+   row.suppressClick = true; setReveal(row, offset < -42);
+   setTimeout(() => { row.suppressClick = false; }, 0);
+  }
+ });
+ row.addEventListener('pointercancel', () => { pointer = null; front.classList.remove('dragging'); front.style.transform = row.dataset.open === 'true' ? 'translateX(-8px)' : ''; front.style.width = row.dataset.open === 'true' ? 'calc(100% - 96px)' : ''; });
+ row.addEventListener('keydown', event => { if (event.key === 'Escape') { setReveal(row, false); row.querySelector('.options').focus(); } });
+}
+function openSheet(title, body, actions) {
+ cancelDiscovery();
+ sheet.innerHTML = `<h3 id="sheet-title">${escapeHtml(title)}</h3>${body}`;
+ for (const action of actions) {
+  const button = document.createElement('button'); button.textContent = action.label; button.className = action.kind || '';
+  button.onclick = action.run; sheet.append(button);
+ }
+ if (!sheet.open) sheet.showModal();
+ const frame = phone.getBoundingClientRect();
+ sheet.style.position = 'fixed';
+ sheet.style.left = frame.left + 'px';
+ sheet.style.right = 'auto';
+ sheet.style.width = frame.width + 'px';
+ sheet.style.bottom = Math.max(16, innerHeight - frame.bottom) + 'px';
+ sheet.style.maxHeight = Math.min(580, innerHeight - 32) + 'px';
+ (sheet.querySelector('button.cancel') || sheet.querySelector('button'))?.focus();
+}
+function dismiss() { sheet.close(); lastTrigger?.isConnected && lastTrigger.focus(); }
+sheet.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
+function showMenu(item) {
+ openSheet(item.name, `<p>${currency(item.amount)} · ${escapeHtml(item.category)}</p>`, [
+  { label: 'Editar', run: () => showEdit(item) },
+  { label: context === 'Movimientos' ? 'Anular movimiento' : 'Sacar del plan', kind: 'destructive', run: () => requestRemoval(item) },
+  { label: 'Cancelar', kind: 'cancel', run: dismiss }
+ ]); lastAction = 'Menú de ' + item.name; status();
+}
+function showReadOnly(item) {
+ openSheet(item.name, `<p>Mes cerrado. Este registro solo se puede consultar.</p><div class="recap">${currency(item.amount)} · ${escapeHtml(item.category)}</div>`, [{ label: 'Volver', kind: 'cancel', run: dismiss }]);
+}
+function showEdit(item) {
+ openSheet('Editar ' + item.name, `<p>Edición simulada. Tocar la fila sigue siendo el acceso principal.</p><label>Nombre<input id="edit-name" value="${escapeHtml(item.name)}"></label><label>Importe<input id="edit-amount" type="number" min="1" value="${item.amount}"></label>`, [
+  { label: 'Guardar ejemplo', kind: 'primary', run: () => {
+   const name = sheet.querySelector('#edit-name').value.trim(), amount = Number(sheet.querySelector('#edit-amount').value);
+   if (!name || !Number.isFinite(amount) || amount <= 0) return;
+   item.name = name; item.amount = amount; dismiss(); lastAction = 'Edición simulada guardada'; render();
+  } },
+  { label: 'Cancelar', kind: 'cancel', run: dismiss }
+ ]); lastAction = 'Edición de ' + item.name; status();
+}
+function requestRemoval(item) {
+ cancelDiscovery();
+ if (context !== 'Movimientos') {
+  if (context === 'Fijos' && paid(item)) { showPaid(item); return; }
+  data[context === 'Fijos' ? 'fixed' : 'variable'] = items().filter(other => other.id !== item.id);
+  dismiss(); lastAction = `${item.name} salió del plan; Movimientos intactos`; render(); notify(lastAction); return;
+ }
+ openSheet('¿Anular ' + item.name + '?', `<div class="recap">${currency(item.amount)} · ${escapeHtml(item.category)}</div><p>Este gasto dejará de contar en el mes. Quedará registrado que Gian lo anuló. No se borrará el historial.</p>`, [
+  { label: 'Anular movimiento', kind: 'destructive', run: () => {
+   item.active = false; item.struckBy = 'Gian'; dismiss(); lastAction = item.name + ' anulado por Gian'; render(); notify(lastAction);
+  } },
+  { label: 'Cancelar', kind: 'cancel', run: dismiss }
+ ]); lastAction = 'Confirmación pendiente; nada anulado'; status();
+}
+function showPaid(item) {
+ openSheet(item.name + ' está pagado', `<div class="recap">${currency(item.amount)} · Pagado</div><p>No puedes sacarlo del plan mientras su pago esté vigente. Si el pago no ocurrió, ve al Movimiento y anúlalo con confirmación. El gasto fijo volverá a Pendiente; no se quitará automáticamente del plan.</p>`, [
+  { label: 'Ver movimiento de pago', kind: 'primary', run: () => {
+   const movement = data.movements.find(m => m.id === item.payment);
+   openSheet(movement.name, `<p>Movimiento de pago · ${currency(movement.amount)}</p><p>Anularlo cambia el gasto real y devuelve ${escapeHtml(item.name)} a Pendiente. Son dos decisiones distintas: anular el pago y, después, sacar el gasto previsto.</p>`, [
+    { label: 'Editar movimiento', run: () => showEdit(movement) },
+    { label: 'Anular movimiento', kind: 'destructive', run: () => {
+     openSheet('¿Anular el pago de ' + item.name + '?', `<div class="recap">${currency(movement.amount)}</div><p>Dejará de contar como gasto. ${escapeHtml(item.name)} volverá a Pendiente y seguirá en el presupuesto. Gian quedará registrado como quien lo anuló.</p>`, [
+      { label: 'Anular movimiento', kind: 'destructive', run: () => { movement.active = false; movement.struckBy = 'Gian'; dismiss(); lastAction = 'Pago anulado; ' + item.name + ' sigue en el plan como Pendiente'; render(); notify(lastAction); } },
+      { label: 'Cancelar', kind: 'cancel', run: () => showPaid(item) }
+     ]);
+    } },
+    { label: 'Volver al gasto fijo', kind: 'cancel', run: () => showPaid(item) }
+   ]);
+  } },
+  { label: 'Entendido', kind: 'cancel', run: dismiss }
+ ]); lastAction = 'Explicación: Fijo pagado no se retira'; status();
+}
+function showPayment(item) {
+ openSheet('¿Marcar ' + item.name + ' como pagado?', `<div class="recap">${currency(item.amount)} · Casa<br>Registrado por: Gian<br>De: Gian</div><p>Se creará un Movimiento de pago. Esto no saca el gasto previsto del plan.</p>`, [
+  { label: 'Marcar pagado', kind: 'primary', run: () => {
+   const id = 'payment-' + Date.now(); data.movements.push({ id, name: 'Pago de ' + item.name, amount: item.amount, category: item.category, active: true }); item.payment = id;
+   dismiss(); lastAction = item.name + ' pagado; nuevo Movimiento registrado'; render();
+  } },
+  { label: 'Cancelar', kind: 'cancel', run: dismiss }
+ ]);
+}
+let toastTimer;
+function notify(message) { const toast = document.querySelector('#toast'); toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 2800); }
+for (const button of document.querySelectorAll('[data-context]')) button.onclick = () => {
+ dismiss(); context = button.dataset.context; lastAction = 'Lista ' + context;
+ const url = new URL(location.href); url.searchParams.set('context', context); history.replaceState(null, '', url); render();
+};
+document.querySelector('#reveal').onclick = () => setReveal(content.querySelector('[data-eligible="true"]'), true);
+document.querySelector('#reset').onclick = () => { dismiss(); data = initial(); discoverySeen = false; closed = false; lastAction = 'Primera visita reiniciada'; render(); };
+document.querySelector('#closed').onclick = () => { dismiss(); closed = !closed; lastAction = 'Mes ' + (closed ? 'cerrado' : 'abierto'); render(); };
+render();
+</script>
+</body>
+</html>

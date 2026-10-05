@@ -37,9 +37,9 @@ Implement the reviewed screen A using its design as visual reference. Preserve B
 
 ## Observed verification
 
-- `pnpm build:design` and `pnpm check:design`: passed; 34 artboards, zero hardcoded colors.
+- `pnpm build:design` and `pnpm check:design`: passed; 40 artboards, zero hardcoded colors.
 - `pnpm typecheck` and `pnpm lint`: passed.
-- Focused design bundle/palette suite: 236 tests passed. Full unit suite: 99 files, 1,424 tests passed.
+- Original focused design bundle/palette suite: 236 tests passed; rerun for publication after dev integration. After integrating current dev, full unit suite: 99 files, 1,457 tests passed.
 - Chromium: all five variants checked at 390px, URL switching, range totals, invalid-range feedback, provisional month, selected-month detail, menu, and keyboard switching. No runtime errors or horizontal overflow.
 - Static artboard heights measured in Chromium and recorded in the manifest; full comparative screenshot visually inspected.
 - Standards review: no findings. Spec review: two findings corrected (E monthly-first hierarchy and exclusive range-selection indicators).

@@ -1,5 +1,6 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><script src="./support.js"></script></head><body><x-dc><helmet><style>
+<html><head><meta charset="utf-8"><script src="./support.js"></script></head><body>
+<x-dc><helmet><style>
 /* BEGIN generated palette — from src/ui/tokens.css, do not hand-edit (pnpm build:design regenerates this, #138) */
 :root {
   color-scheme: light;
@@ -53,49 +54,50 @@
 body { margin: 0; font-family: system-ui, sans-serif; color: var(--color-text); }
 .screen { width: 390px; height: 664px; background: var(--color-background); position: relative; overflow: hidden; box-sizing: border-box; }
 .header { padding: 12px 16px; display: flex; justify-content: space-between; }
-.heading { padding: 12px 16px; font-size: 26px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+.heading { padding: 12px 16px; font-size: 27px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
 .month { font-size: 13px; font-weight: 400; background: var(--color-surface); border-radius: 20px; padding: 10px; }
 .card { margin: 8px 16px; background: var(--color-surface); border-radius: 14px; overflow: hidden; }
-.row { min-height: 72px; box-sizing: border-box; border-bottom: 1px solid var(--color-separator); display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; gap: 6px; }
+.row { min-height: 72px; box-sizing: border-box; border-bottom: 1px solid var(--color-separator); display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; gap: 6px; }
 .row small { color: var(--color-text-secondary); display: block; }
-.row.paid { color: var(--color-text); font-size: 15px; text-decoration: none; }
-.row.paid:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; }
-.paid-figure { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; font-weight: 600; }
-.paid-badge { font-size: 11px; color: var(--color-accent); background: var(--color-accent-soft); border-radius: 5px; padding: 2px 6px; }
 .figure { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .options { width: 44px; height: 44px; border: 0; background: transparent; color: var(--color-text-secondary); font-size: 24px; padding: 0; flex: none; cursor: pointer; }
 .options:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; border-radius: 8px; }
-.hint { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-accent); padding: 5px 16px; }
-.group { font-size: 12px; font-weight: 700; color: var(--color-text-secondary); padding: 9px 16px 0; }
+.group { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--color-text-secondary); padding: 12px 16px 0; }
 .nav { position: absolute; bottom: 0; height: 60px; width: 100%; background: var(--color-surface); display: flex; align-items: center; justify-content: space-around; font-size: 12px; }
 .note { padding: 12px; font-size: 13px; line-height: 1.4; }
-a { color: var(--color-accent); font-size: 12px; }
 
 .swipe { position: relative; height: 72px; overflow: hidden; background: var(--color-destructive); }
 .swipe > .row { height: 72px; background: var(--color-surface); position: relative; width: calc(100% - 96px); transform: translateX(-8px); }
 .swipe > .row > span:first-child { flex: 1; min-width: 0; }
 .swipe > .action { position: absolute; right: 0; top: 0; width: 104px; height: 72px; border: 0; border-radius: 0; background: var(--color-destructive); color: var(--color-on-destructive); padding: 8px; font-size: 13px; font-weight: 600; }
 .discovery { color: var(--color-text-secondary); font-size: 12px; font-weight: 400; white-space: nowrap; }
-.item { flex: 1; min-width: 0; }
-.pay { width: 112px; min-height: 44px; flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 3px; border: 0; background: transparent; color: var(--color-text); padding: 0; font: inherit; font-weight: 600; }
-.pending-badge { font-size: 11px; font-weight: 400; background: var(--color-fill-on-surface); color: var(--color-text-secondary); border-radius: 5px; padding: 2px 6px; }
-.pay:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; }
-.card.row { min-height: 58px; }
+
+.scrim { position: absolute; inset: 0; background: var(--color-scrim); }
+.sheet { position: absolute; bottom: 0; left: 0; width: 100%; box-sizing: border-box; background: var(--color-surface); border-radius: 20px 20px 0 0; padding: 20px 16px 16px; }
+.sheet h2 { margin: 0 0 8px; font-size: 20px; }
+.sheet p { color: var(--color-text-secondary); font-size: 14px; line-height: 1.5; }
+.sheet .recap { padding: 12px; background: var(--color-fill-on-surface); border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.sheet button { width: 100%; min-height: 48px; border: 0; border-radius: 12px; margin-top: 8px; padding: 10px; background: var(--color-fill-on-surface); color: var(--color-text); font-size: 15px; }
+.sheet .destructive { background: var(--color-destructive-soft); color: var(--color-destructive-text); }
+.sheet .primary { background: var(--color-accent); color: var(--color-on-accent); }
+.sheet .cancel { background: transparent; color: var(--color-accent); }
 </style></helmet>
 <div class="screen">
   <div class="header"><span>Gian</span><span>♧　☰</span></div>
-  <div class="heading">Presupuesto <span class="month">Septiembre ⌄</span></div>
-  <div class="hint"><span>Casa · COP</span><span class="discovery">Opciones ⋯ o desliza ←</span></div>
-  <div class="card row"><span>Gastado<br><b>$ 3.994.900</b></span><span>Presupuestado<br><b>$ 4.603.900</b></span></div>
-  <div class="card row">＋ Agregar al plan</div>
-  <div class="group">FIJOS</div>
+  <div class="heading">Movimientos <span class="month">Septiembre ⌄</span></div>
+  <div class="card row"><span>Ingresos<br><b>$ 5.320.000</b></span><span>Gastos<br><b>$ 3.994.900</b></span></div>
+  <div class="group"><span>HOY</span><span class="discovery">Opciones ⋯ o desliza ←</span></div>
   <div class="card">
-    <div class="swipe"><div class="row pending"><span class="item"><span>Plan celular</span><small>Suscripciones</small></span><button class="pay" aria-label="Marcar Plan celular como pagado"><span>$ 89.000</span><span class="pending-badge">Pendiente</span></button><button class="options" aria-label="Opciones de Plan celular">⋯</button></div><button class="action">Sacar del plan</button></div>
-    <a class="row paid" href="#item-arriendo"><span>Arriendo<small>Vivienda · 1 sep</small></span><span class="paid-figure"><span>$ 1.800.000</span><span class="paid-badge">Pagado</span></span></a>
-    <a class="row paid" href="#item-netflix"><span>Netflix<small>Suscripciones · 5 sep</small></span><span class="paid-figure"><span>$ 44.900</span><span class="paid-badge">Pagado</span></span></a>
-    <div class="row pending"><span class="item"><span>Gimnasio</span><small>Salud</small></span><button class="pay" aria-label="Marcar Gimnasio como pagado"><span>$ 120.000</span><span class="pending-badge">Pendiente</span></button><button class="options" aria-label="Opciones de Gimnasio">⋯</button></div>
+    <div class="row"><span>Éxito<small>Comida · Súper</small></span><span class="figure">$ 128.400 <button class="options" aria-label="Opciones de Éxito">⋯</button></span></div>
+    <div class="row"><span>Panadería La 70<small>Comida · Panadería</small></span><span class="figure">$ 18.000 <button class="options" aria-label="Opciones de Panadería La 70">⋯</button></span></div>
+    <div class="row"><span>Uber<small>Transporte</small></span><span class="figure">$ 24.500 <button class="options" aria-label="Opciones de Uber">⋯</button></span></div>
   </div>
-  <div class="nav">Inicio　 <b>Presupuesto</b>　 Movimientos　 +</div>
+  <div class="group">1 DE SEPTIEMBRE</div>
+  <div class="card">
+    <div class="row"><span>Quincena<small>Ingreso</small></span><span class="figure">+$ 5.000.000 <button class="options" aria-label="Opciones de Quincena">⋯</button></span></div>
+  </div>
+  <div class="nav">Inicio　 Presupuesto　 <b>Movimientos</b>　 +</div>
+  <div class="scrim"></div><div class="sheet"><h2>¿Anular Éxito?</h2><div class="recap">$ 128.400 · Comida · Súper</div><p>Este gasto dejará de contar en el mes. Quedará registrado que Gian lo anuló. El historial permanece.</p><button class="destructive">Anular movimiento</button><button class="cancel">Cancelar</button></div>
 </div>
-<div class="note">REVELADO · La fila se desplaza a la izquierda: la acción aparece en el extremo DERECHO, nunca debajo del nombre. El alto no cambia. El gesto, incluso completo, solo revela; tocar la acción ejecuta el siguiente paso. ⋯ ofrece editar y la misma acción mediante una hoja. La fila se compacta al desplazarse para conservar el nombre y el importe; la hoja identifica el gasto completo. Movimiento confirma y audita; retirar un gasto previsto conserva los Movimientos y las otras previsiones. Sin deshacer ni lote. Safari físico pendiente. El control de pago sigue separado del retiro. Fijo pagado: sin retiro; abrir la fila explica cómo consultar su Movimiento de pago.</div>
+<div class="note">Movimiento · confirmar anulación · Estado dibujado, no aplicación real. La hoja tiene una salida Cancelar/Entendido; teclado, foco y Escape se prueban en el prototipo. El plan nunca anula el pago automáticamente. Safari físico y lector real pendientes.</div>
 </x-dc><script data-dc-script data-props='{"$preview":{"width":390,"height":830}}'>class Component extends DCLogic {}</script></body></html>
