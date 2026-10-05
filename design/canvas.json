@@ -162,18 +162,127 @@
       "h": 664,
       "title": "Corregir el gasto fijo · pagado"
     },
-    { "file": "RetirarDetalle.dc.html", "x": 0, "y": 4900, "w": 390, "h": 844, "title": "Retirar · A · detalle" },
-    { "file": "RetirarMenu.dc.html", "x": 470, "y": 4900, "w": 390, "h": 900, "title": "Retirar · B · menú por fila" },
-    { "file": "RetirarSeleccion.dc.html", "x": 940, "y": 4900, "w": 390, "h": 844, "title": "Retirar · C · seleccionar" },
-    { "file": "RetirarDeslizarMovimientos.dc.html", "x": 0, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Movimientos · antes" },
-    { "file": "RetirarDeslizarMovimientosRevelado.dc.html", "x": 440, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Movimientos · revelado" },
-    { "file": "RetirarDeslizarFijos.dc.html", "x": 880, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Fijos · antes" },
-    { "file": "RetirarDeslizarFijosRevelado.dc.html", "x": 1320, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Fijos · revelado" },
-    { "file": "RetirarDeslizarVariables.dc.html", "x": 1760, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Variables · antes" },
-    { "file": "RetirarDeslizarVariablesRevelado.dc.html", "x": 2200, "y": 5900, "w": 390, "h": 830, "title": "D provisional · Variables · revelado" }
+    {
+      "file": "RetirarDetalle.dc.html",
+      "x": 0,
+      "y": 4900,
+      "w": 390,
+      "h": 844,
+      "title": "Retirar · A · detalle"
+    },
+    {
+      "file": "RetirarMenu.dc.html",
+      "x": 470,
+      "y": 4900,
+      "w": 390,
+      "h": 900,
+      "title": "Retirar · B · menú por fila"
+    },
+    {
+      "file": "RetirarSeleccion.dc.html",
+      "x": 940,
+      "y": 4900,
+      "w": 390,
+      "h": 844,
+      "title": "Retirar · C · seleccionar"
+    },
+    {
+      "file": "RetirarDeslizarMovimientos.dc.html",
+      "x": 0,
+      "y": 5900,
+      "w": 390,
+      "h": 830,
+      "title": "D provisional · Movimientos · antes"
+    },
+    {
+      "file": "RetirarDeslizarMovimientosRevelado.dc.html",
+      "x": 440,
+      "y": 5900,
+      "w": 390,
+      "h": 830,
+      "title": "D provisional · Movimientos · revelado"
+    },
+    {
+      "file": "RetirarDeslizarFijos.dc.html",
+      "x": 880,
+      "y": 5900,
+      "w": 390,
+      "h": 830,
+      "title": "D provisional · Fijos · antes"
+    },
+    {
+      "file": "RetirarDeslizarFijosRevelado.dc.html",
+      "x": 1320,
+      "y": 5900,
+      "w": 390,
+      "h": 830,
+      "title": "D provisional · Fijos · revelado"
+    },
+    {
+      "file": "RetirarDeslizarVariables.dc.html",
+      "x": 1760,
+      "y": 5900,
+      "w": 390,
+      "h": 830,
+      "title": "D provisional · Variables · antes"
+    },
+    {
+      "file": "RetirarDeslizarVariablesRevelado.dc.html",
+      "x": 2200,
+      "y": 5900,
+      "w": 390,
+      "h": 830,
+      "title": "D provisional · Variables · revelado"
+    },
+    {
+      "file": "BalancePrototypeA.dc.html",
+      "x": 0,
+      "y": 7330,
+      "w": 390,
+      "h": 1503,
+      "title": "Balance · A · Panorama"
+    },
+    {
+      "file": "BalancePrototypeB.dc.html",
+      "x": 470,
+      "y": 7330,
+      "w": 390,
+      "h": 1857,
+      "title": "Balance · B · Recorrido"
+    },
+    {
+      "file": "BalancePrototypeC.dc.html",
+      "x": 940,
+      "y": 7330,
+      "w": 390,
+      "h": 1884,
+      "title": "Balance · C · Comparación"
+    },
+    {
+      "file": "BalancePrototypeD.dc.html",
+      "x": 1410,
+      "y": 7330,
+      "w": 390,
+      "h": 1487,
+      "title": "Balance · D · Mapa de meses"
+    },
+    {
+      "file": "BalancePrototypeE.dc.html",
+      "x": 1880,
+      "y": 7330,
+      "w": 390,
+      "h": 1885,
+      "title": "Balance · E · Libro de balance"
+    }
   ],
   "annotations": [
-    { "id": "nota-retirar", "x": 0, "y": 4770, "w": 1320, "text": "#137 · TRES FORMAS DE RETIRAR, NO UNA DECISIÓN. A conserva el detalle actual: poco ruido, poca visibilidad. B expone ⋯ en cada fila: descubrible, pero recarga las listas. C entra en selección para lotes: eficiente en volumen, complejo para un solo retiro y con fallos parciales por resolver. Cada columna muestra Movimiento y gasto del plan; el fijo pagado no se retira. 390×664 es el viewport de referencia iPhone 13 de ADR-0037, no una prueba en Safari iOS ni una línea marcada en el lienzo. No hay gesto oculto ni deshacer inventado. Comparar antes de elegir; nada de esto cambia el producto." },
+    {
+      "id": "nota-retirar",
+      "x": 0,
+      "y": 4770,
+      "w": 1320,
+      "text": "#137 · TRES FORMAS DE RETIRAR, NO UNA DECISIÓN. A conserva el detalle actual: poco ruido, poca visibilidad. B expone ⋯ en cada fila: descubrible, pero recarga las listas. C entra en selección para lotes: eficiente en volumen, complejo para un solo retiro y con fallos parciales por resolver. Cada columna muestra Movimiento y gasto del plan; el fijo pagado no se retira. 390×664 es el viewport de referencia iPhone 13 de ADR-0037, no una prueba en Safari iOS ni una línea marcada en el lienzo. No hay gesto oculto ni deshacer inventado. Comparar antes de elegir; nada de esto cambia el producto."
+    },
     {
       "id": "nota-como-esta-dibujado",
       "x": 0,
@@ -222,6 +331,13 @@
       "y": -320,
       "w": 900,
       "text": "LA FILA DE LA CUENTA SE VUELVE EL ENCABEZADO (#65, ADR-0059)\nNingún artboard dibujaba la fila de cuenta que AppShell rendía arriba de toda pantalla adentro de un Espacio — identidad y «Salir» en verde de acento, un pulgar del título, sin confirmación. Presupuesto, Movimientos y Presupuesto · una categoría abierta ganan ahora el mismo encabezado: identidad (avatar + nombre) a la izquierda, la campana (#133) y el ☰ del menú del Espacio a la derecha — dibujado en Sheet · Menú del Espacio, al lado. El alto de las tres subió exactamente 52px, el mismo que ADR-0047 midió para la fila que reemplaza: no es peso nuevo, es peso que el shell ya cargaba puesto por escrito.\n\nEspacios no lo lleva — no hay Espacio del que abrir un menú ahí — pero conserva la única manera de salir que esa ruta tiene: la fila de «Hola, Gian» ahora también lleva un «Salir» apagado (gris, no verde) a la derecha del saludo.\n\nCargar gasto y las dos de corrección quedan afuera, por ADR-0047/ADR-0028: si tipeás y no guardaste, ninguna barra — ni la de tabs, ni esta — tiene lugar ahí. Ídem Crear espacio, que es su propio formulario. Las tres ideas de «agregar al plan» (AgregarUnFormulario, MasHoja, MasIntacto) documentan una decisión ya tomada y no pantallas vivas, y Arrastre · déficit es un recorte de estado sin barra de tabs — a ninguna de las cinco se les dibujó el encabezado."
+    },
+    {
+      "id": "nota-balance-prototype-115",
+      "x": 0,
+      "y": 6950,
+      "w": 1100,
+      "text": "BALANCE DE VARIOS MESES · CINCO PROPUESTAS (#115)\nDiseño para revisión, no implementación. A: Panorama; B: Recorrido; C: Comparación; D: Mapa de meses; E: Libro de balance.\nTodas parten de seis meses cerrados, con rango personalizable y octubre en curso opcional, separado como provisional. El acumulado parte de cero al iniciar el rango: no es saldo bancario ni arrastre del déficit.\nAbrir balance-prototype.html para alternar propuestas y probar los rangos, la selección de mes y el detalle. Datos de ejemplo idénticos entre propuestas. La propuesta A · Panorama fue elegida y aprobada. B–E se conservan como exploración. El PDF se descarga por mes/año y tiene su propio diseño en balance-pdf-design.md; no sustituye esta pantalla."
     }
   ],
   "launch": {
