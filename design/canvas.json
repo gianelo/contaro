@@ -176,7 +176,47 @@
     {"file": "RetirarOpcionesVariable.dc.html", "x": 880, "y": 6850, "w": 390, "h": 830, "title": "⋯ · Variable · opciones"},
     {"file": "RetirarConfirmacionMovimiento.dc.html", "x": 1320, "y": 6850, "w": 390, "h": 830, "title": "Movimiento · confirmar anulación"},
     {"file": "RetirarFijoPagado.dc.html", "x": 1760, "y": 6850, "w": 390, "h": 830, "title": "Fijo pagado · explicación"},
-    {"file": "RetirarConfirmacionPago.dc.html", "x": 2200, "y": 6850, "w": 390, "h": 830, "title": "Pago · confirmar anulación"}
+    {"file": "RetirarConfirmacionPago.dc.html", "x": 2200, "y": 6850, "w": 390, "h": 830, "title": "Pago · confirmar anulación"},
+    {
+      "file": "BalancePrototypeA.dc.html",
+      "x": 0,
+      "y": 8280,
+      "w": 390,
+      "h": 1503,
+      "title": "Balance · A · Panorama"
+    },
+    {
+      "file": "BalancePrototypeB.dc.html",
+      "x": 470,
+      "y": 8280,
+      "w": 390,
+      "h": 1857,
+      "title": "Balance · B · Recorrido"
+    },
+    {
+      "file": "BalancePrototypeC.dc.html",
+      "x": 940,
+      "y": 8280,
+      "w": 390,
+      "h": 1884,
+      "title": "Balance · C · Comparación"
+    },
+    {
+      "file": "BalancePrototypeD.dc.html",
+      "x": 1410,
+      "y": 8280,
+      "w": 390,
+      "h": 1487,
+      "title": "Balance · D · Mapa de meses"
+    },
+    {
+      "file": "BalancePrototypeE.dc.html",
+      "x": 1880,
+      "y": 8280,
+      "w": 390,
+      "h": 1885,
+      "title": "Balance · E · Libro de balance"
+    }
   ],
   "annotations": [
     {"id": "nota-retirar-revision-137", "x": 0, "y": 5750, "w": 2590, "text": "#137 · REVISIÓN INTERACTIVA. Se rechazó la acción debajo del nombre: ahora la fila se desplaza a la izquierda y revela el botón a la derecha, sin variar el alto ni destruir por gesto completo. Tocar la fila abre edición; ⋯ abre una hoja con editar y retiro. La primera fila elegible muestra un pequeño desplazamiento y vuelve una vez por visita del prototipo; Presupuesto primero funciona y movimiento reducido no anima. Menús y confirmaciones están dibujados debajo. Plan elimina solo el gasto previsto elegido, nunca otros ni Movimientos. Fijo pagado: explicación y acceso al Movimiento; anularlo confirma y lo deja Pendiente, no lo saca del plan. Sin undo ni lotes. Persistencia real, Safari físico y lector real pendientes."},
@@ -229,6 +269,13 @@
       "y": -320,
       "w": 900,
       "text": "LA FILA DE LA CUENTA SE VUELVE EL ENCABEZADO (#65, ADR-0059)\nNingún artboard dibujaba la fila de cuenta que AppShell rendía arriba de toda pantalla adentro de un Espacio — identidad y «Salir» en verde de acento, un pulgar del título, sin confirmación. Presupuesto, Movimientos y Presupuesto · una categoría abierta ganan ahora el mismo encabezado: identidad (avatar + nombre) a la izquierda, la campana (#133) y el ☰ del menú del Espacio a la derecha — dibujado en Sheet · Menú del Espacio, al lado. El alto de las tres subió exactamente 52px, el mismo que ADR-0047 midió para la fila que reemplaza: no es peso nuevo, es peso que el shell ya cargaba puesto por escrito.\n\nEspacios no lo lleva — no hay Espacio del que abrir un menú ahí — pero conserva la única manera de salir que esa ruta tiene: la fila de «Hola, Gian» ahora también lleva un «Salir» apagado (gris, no verde) a la derecha del saludo.\n\nCargar gasto y las dos de corrección quedan afuera, por ADR-0047/ADR-0028: si tipeás y no guardaste, ninguna barra — ni la de tabs, ni esta — tiene lugar ahí. Ídem Crear espacio, que es su propio formulario. Las tres ideas de «agregar al plan» (AgregarUnFormulario, MasHoja, MasIntacto) documentan una decisión ya tomada y no pantallas vivas, y Arrastre · déficit es un recorte de estado sin barra de tabs — a ninguna de las cinco se les dibujó el encabezado."
+    },
+    {
+      "id": "nota-balance-prototype-115",
+      "x": 0,
+      "y": 7900,
+      "w": 1100,
+      "text": "BALANCE DE VARIOS MESES · CINCO PROPUESTAS (#115)\nDiseño para revisión, no implementación. A: Panorama; B: Recorrido; C: Comparación; D: Mapa de meses; E: Libro de balance.\nTodas parten de seis meses cerrados, con rango personalizable y octubre en curso opcional, separado como provisional. El acumulado parte de cero al iniciar el rango: no es saldo bancario ni arrastre del déficit.\nAbrir balance-prototype.html para alternar propuestas y probar los rangos, la selección de mes y el detalle. Datos de ejemplo idénticos entre propuestas. La propuesta A · Panorama fue elegida y aprobada. B–E se conservan como exploración. El PDF se descarga por mes/año y tiene su propio diseño en balance-pdf-design.md; no sustituye esta pantalla."
     }
   ],
   "launch": {

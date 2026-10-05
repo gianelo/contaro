@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the thirty-five artboards its manifest lists, and the manifest", () => {
+  it("holds the forty artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(36);
+    expect(files).toHaveLength(41);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -234,6 +234,11 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
   const spaceMenuTrigger = 'aria-label="Abrir menú del Espacio"';
 
   const withHeader = [
+    "BalancePrototypeA.dc.html",
+    "BalancePrototypeB.dc.html",
+    "BalancePrototypeC.dc.html",
+    "BalancePrototypeD.dc.html",
+    "BalancePrototypeE.dc.html",
     "Presupuesto.dc.html",
     "Movimientos.dc.html",
     "Presupuesto63Desplegado.dc.html",
