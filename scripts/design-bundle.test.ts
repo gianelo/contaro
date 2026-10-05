@@ -208,9 +208,9 @@ describe("disagreements", () => {
 });
 
 describe("the design folder in this repo", () => {
-  it("holds the thirty-three artboards its manifest lists, and the manifest", () => {
+  it("holds the thirty-five artboards its manifest lists, and the manifest", () => {
     const files = Object.keys(sourcesIn(design));
-    expect(files).toHaveLength(34);
+    expect(files).toHaveLength(36);
     expect(files.at(-1)).toBe("canvas.json");
   });
 });
@@ -242,8 +242,10 @@ describe("the header (#65), drawn on the screens that carry it and nowhere else"
   const withoutHeader = [
     "RetirarOpcionesMovimiento.dc.html",
     "RetirarOpcionesFijo.dc.html",
+    "RetirarOpcionesVariable.dc.html",
     "RetirarConfirmacionMovimiento.dc.html",
     "RetirarFijoPagado.dc.html",
+    "RetirarConfirmacionPago.dc.html",
     "Main.dc.html",
     "CargarGastoOscuro.dc.html",
     "CrearEspacio.dc.html",
@@ -394,7 +396,7 @@ describe("pending Fixed payment beside removal in the design (#137)", () => {
 
 describe("removal menu and confirmation drawings (#137)", () => {
   it("registers and exports the menu, paid-item explanation and confirmation states", () => {
-    const names = ["RetirarOpcionesMovimiento.dc.html", "RetirarConfirmacionMovimiento.dc.html", "RetirarOpcionesFijo.dc.html", "RetirarFijoPagado.dc.html"];
+    const names = ["RetirarOpcionesMovimiento.dc.html", "RetirarOpcionesFijo.dc.html", "RetirarOpcionesVariable.dc.html", "RetirarConfirmacionMovimiento.dc.html", "RetirarFijoPagado.dc.html", "RetirarConfirmacionPago.dc.html"];
     const manifest = JSON.parse(readFileSync(path.join(design, "canvas.json"), "utf8"));
     const exported = documentIn(readFileSync(path.join(design, "contaro-app.html"), "utf8"));
     for (const name of names) {
@@ -459,8 +461,10 @@ describe("an artboard names a token, not a colour (#138)", () => {
     const correctPageGrounds = [
       "RetirarOpcionesMovimiento.dc.html",
       "RetirarOpcionesFijo.dc.html",
+      "RetirarOpcionesVariable.dc.html",
       "RetirarConfirmacionMovimiento.dc.html",
       "RetirarFijoPagado.dc.html",
+      "RetirarConfirmacionPago.dc.html",
       "RetirarDetalle.dc.html",
       "RetirarMenu.dc.html",
       "RetirarSeleccion.dc.html",
