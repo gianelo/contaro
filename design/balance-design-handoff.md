@@ -31,7 +31,7 @@ After this design PR is merged, update your own working branch from `dev` using 
 - Another agent owns functionality. This PR contains design assets, mockups and design-bundle inventory maintenance, not routes, export APIs, storage or schema changes.
 - #115 is the balance-screen design reference; #114 concerns the month report. Neither is claimed implemented or closed by this design-only publication.
 - Keep the full selected month, not just rows visible on the phone. Additional rows need continuation pages with repeated headers and reconciled totals.
-- Follow existing domain rules refusing open months, handling empty periods, pending/overdue fixed items, optional movement fields and annulled states. The sample is not a new policy for those cases.
+- Follow existing domain rules refusing open months, handling empty periods, historical fixed-item payment states, optional movement fields and annulled states. The sample is not a new policy for those cases.
 - Remove synthetic-data marks and the prototype variant switcher in production; use real dates and data. Never generate another month's report from the September fixture.
 - No design-only switcher or mock download is intended to ship as application code.
 

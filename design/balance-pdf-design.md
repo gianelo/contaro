@@ -45,7 +45,7 @@ For the functional integration, preserve the actual existing export contract:
 - Show all available budget items and movements, including their real statuses and optional fields. This sample does not define treatment of annulled movements or unsupported historical states; follow the existing domain/export rules rather than inventing them.
 - No budget, no movements, larger amounts, long descriptions and more rows require clear states or continuation pages. Never truncate the report to fit this fixture.
 - Repeat table headers on continuation pages, keep rows intact, preserve month identity, and reconcile totals once for the complete month.
-- Fixed payment dates, pending/overdue states or additional supported movement metadata must follow the actual data model. This fixture illustrates all-fixed-paid, not every possible state.
+- Fixed payment states must follow the actual data model: in a closed month an unpaid Fixed says “Nunca se pagó”, without ongoing due notices (ADR 0054). This fixture illustrates all-fixed-paid, not every possible state. Additional movement metadata is included only when supported by the actual report model.
 - The generated PDF is not tagged or accessibility-certified. Text extraction does not establish accessibility.
 
 ## Observed design checks
