@@ -34,6 +34,17 @@ it("prepares full closed-month detail and the final surplus, not today's pace", 
     day: 30, days: 30, standing: { kind: "behind", by: money(3000, "COP") }
   });
 });
+it("keeps the income-minus-expenses balance distinct from the remaining plan", () => {
+  const report = reportOfClosedMonth({
+    space, closed, categories, items: [item], movements: [movement, {
+      ...movement, id: "salary", direction: "income", categoryId: null,
+      amount: money(12000, "COP"),
+    }],
+  });
+  expect(report.net).toEqual(money(5000, "COP"));
+  expect(report.remaining).toEqual(money(3000, "COP"));
+  expect(report.categories[0]?.difference).toEqual(money(3000, "COP"));
+});
 it("includes paid and unpaid Fixed items and Categories with unplanned spending", () => {
   const fixed: BudgetItem = {
     ...item, id: "rent", kind: "fixed", name: "Rent", categoryId: "rent", dueOn: calendarDate("2026-09-05"), payment: null
@@ -47,7 +58,7 @@ it("includes paid and unpaid Fixed items and Categories with unplanned spending"
     space, closed, items: [fixed, paid], movements: [{ ...movement, categoryId: "other" }], categories: [...categories, rent, other]
   });
   expect(report.fixed).toEqual([{ item: fixed, paid: false }, { item: paid, paid: true }]);
-  expect(report.categories).toEqual([
+  expect(report.categories).toMatchObject([
     {
       category: rent, expected: money(20000, "COP"), spent: money(0, "COP")
     },
@@ -90,7 +101,7 @@ it("rolls up a heading's spending while keeping every child Category and Movemen
   const report = reportOfClosedMonth({
     space, closed, categories: [...categories, child], items: [item], movements: [{ ...movement, categoryId: "groceries" }]
   });
-  expect(report.categories).toEqual([
+  expect(report.categories).toMatchObject([
     {
       category: categories[0], expected: money(10000, "COP"), spent: money(7000, "COP")
     },

@@ -9,7 +9,7 @@ import {
 } from "../budget/budget";
 import { categoriesVisibleTo, type Category } from "../category/category";
 import { earned, spent, type Movement } from "../movement/movement";
-import { zero } from "../money/money";
+import { money, zero } from "../money/money";
 import type { ClosedMonth } from "./closure";
 import { carryOverOf } from "./carry-over";
 import type { Space } from "./space";
@@ -52,7 +52,12 @@ export function reportOfClosedMonth(source: {
         space.currency,
       ),
     }))
-    .filter((line) => line.expected.amount > 0 || line.spent.amount > 0);
+    .filter((line) => line.expected.amount > 0 || line.spent.amount > 0)
+    .map((line) => ({
+      ...line,
+      difference: money(line.expected.amount - line.spent.amount, space.currency),
+    }));
+  const income = earned(movements, space.currency);
 
   return {
     space,
@@ -63,7 +68,11 @@ export function reportOfClosedMonth(source: {
       .filter((item) => item.kind === "fixed")
       .map((item) => ({ item, paid: isPaid(item) })),
     categories: lines,
-    income: earned(movements, space.currency),
+    income,
+    net: money(income.amount - totals.spent.amount, space.currency),
+    remaining: totals.share === null
+      ? null
+      : money(totals.expected.amount - totals.spent.amount, space.currency),
     totals,
     balance: carryOverOf(closed.month, totals),
     pace: paceOf(items, movements, categories, space.currency, { day: days, days }),

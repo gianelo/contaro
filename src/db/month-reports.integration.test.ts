@@ -91,7 +91,7 @@ it("prepares the same financial detail for both Members on every request", async
     from: of, kind: "surplus", amount: money(6000, "COP")
   });
   expect(creator.report.categories).toContainEqual({
-    category, expected: money(15000, "COP"), spent: money(9000, "COP")
+    category, expected: money(15000, "COP"), spent: money(9000, "COP"), difference: money(6000, "COP")
   });
   await expect(read(beto.id)).resolves.toEqual(creator);
   await expect(read(ana.id)).resolves.toEqual(creator);

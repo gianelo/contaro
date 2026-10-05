@@ -1,4 +1,7 @@
 import { headers } from "next/headers";
+import { database } from "@/db/client";
+import { closedMonthsFrom } from "@/db/closed-months";
+import { month as calendarMonth } from "@/domain/calendar/month";
 import { GroupedList, GroupedListItem } from "@/ui/grouped-list";
 import { Notice } from "@/ui/notice";
 import { t } from "@/i18n";
@@ -10,6 +13,7 @@ import { MonthPill } from "./month-pill";
 import { SpaceScreen } from "./screen";
 import { openSpace, viewingMember } from "./space";
 import { theCloseWaiting } from "./waiting";
+import { ReportDownload } from "./informe/selector";
 import { monthInView, spaceMembers } from "./movimientos/month";
 import { planToCopyForward, readableBudget } from "./presupuesto/budget";
 import { FixedItems } from "./presupuesto/fixed";
@@ -53,12 +57,14 @@ export default async function SpacePage({
   // comparison before #11 decided what "over" means, and #11 decided it. Both
   // come out of the one reader, so the meter drawn between them can never be a
   // picture of figures other than the two above it (#40).
-  const [plan, members, memberId] = await Promise.all([
+  const [plan, members, memberId, closedReports] = await Promise.all([
     readableBudget(space, month, reader),
     spaceMembers(space.id),
     // Who is reading, so the confirmation on a Fixed item can say who will be
     // recorded as having marked it paid before anything is created (#13).
     viewingMember(),
+    // Reports remain reachable beyond the screen's month-picker window.
+    closedMonthsFrom(database(), space.id, calendarMonth("0000-01")),
   ]);
 
   // Named from the Space's own rows rather than from the session, so the recap
@@ -224,6 +230,7 @@ export default async function SpacePage({
         about, which is where the canvas draws it.
       */}
       <MonthSummary summary={plan.summary} pace={plan.pace} />
+      <ReportDownload spaceId={space.id} closedMonths={[...closedReports]} inView={month} />
 
       {/*
         And what the month before this one left it (#120).
